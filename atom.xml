@@ -1175,34 +1175,6 @@
   </entry>
   
   <entry>
-    <title>[Spark源码四]图解作业生命周期</title>
-    <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"/>
-    <id>https://fudawei.github.io/2016/10/25/[Spark源码四]图解作业生命周期/</id>
-    <published>2016-10-25T14:42:01.000Z</published>
-    <updated>2017-02-08T03:39:19.517Z</updated>
-    
-    <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！&lt;br&gt;&lt;img src=&quot;/img/spark4.1.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
-
-    
-    </summary>
-    
-      <category term="大数据" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
-    
-      <category term="Spark" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Spark/"/>
-    
-    
-      <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
-    
-      <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
-    
-  </entry>
-  
-  <entry>
     <title>[Spark源码三】作业运行过程</title>
     <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E4%B8%89%5D%E4%BD%9C%E4%B8%9A%E8%BF%90%E8%A1%8C%E8%BF%87%E7%A8%8B/"/>
     <id>https://fudawei.github.io/2016/10/25/[Spark源码三]作业运行过程/</id>
@@ -1242,6 +1214,86 @@ eventProcessActor ! JobSubmitted(jobId, rdd, func2, partitions.toArray, allowLoc
       <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
     
       <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>[Spark源码四]图解作业生命周期</title>
+    <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"/>
+    <id>https://fudawei.github.io/2016/10/25/[Spark源码四]图解作业生命周期/</id>
+    <published>2016-10-25T14:42:01.000Z</published>
+    <updated>2017-02-08T03:39:19.517Z</updated>
+    
+    <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！&lt;br&gt;&lt;img src=&quot;/img/spark4.1.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+
+    
+    </summary>
+    
+      <category term="大数据" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
+    
+      <category term="Spark" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Spark/"/>
+    
+    
+      <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
+    
+      <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>ubuntu下恢复rm删除的数据</title>
+    <link href="https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/"/>
+    <id>https://fudawei.github.io/2016/10/19/ubuntu下恢复rm删除的数据/</id>
+    <published>2016-10-19T08:12:41.000Z</published>
+    <updated>2017-02-08T03:39:19.513Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
+<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
+<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
+<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
+<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
+<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
+<li>安装extundelete</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
+<pre><code>umount /dev/sdb2 
+mount -o remount,ro /dev/sdb2
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
+extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
+</code></pre><p>```</p>
+<ul>
+<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
+</ul>
+<ul>
+<li><p>总结经验</p>
+<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
+</li>
+</ul>
+<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;1-论“备份”的重要性&quot;&gt;&lt;a href=&quot;#1-论“备份”的重要性&quot; class=&quot;headerlink&quot; title=&quot;1. 论“备份”的重要性&quot;&gt;&lt;/a&gt;1. 论“备份”的重要性&lt;/h1&gt;&lt;p&gt;今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。&lt;/p&gt;
+&lt;p&gt;被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。&lt;/p&gt;
+&lt;p&gt;我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
+    
+    
+      <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
+    
+      <category term="Ubuntu" scheme="https://fudawei.github.io/tags/Ubuntu/"/>
     
   </entry>
   
@@ -1398,58 +1450,6 @@ c)   关键字的个数n必须满足： ceil(m / 2)-1 &lt;= n &lt;= m-1。
       <category term="数据库" scheme="https://fudawei.github.io/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
     
       <category term="索引" scheme="https://fudawei.github.io/tags/%E7%B4%A2%E5%BC%95/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>ubuntu下恢复rm删除的数据</title>
-    <link href="https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/"/>
-    <id>https://fudawei.github.io/2016/10/19/ubuntu下恢复rm删除的数据/</id>
-    <published>2016-10-19T08:12:41.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
-<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
-<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
-<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
-<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
-<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
-<li>安装extundelete</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
-<pre><code>umount /dev/sdb2 
-mount -o remount,ro /dev/sdb2
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
-extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
-</code></pre><p>```</p>
-<ul>
-<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
-</ul>
-<ul>
-<li><p>总结经验</p>
-<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
-</li>
-</ul>
-<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;1-论“备份”的重要性&quot;&gt;&lt;a href=&quot;#1-论“备份”的重要性&quot; class=&quot;headerlink&quot; title=&quot;1. 论“备份”的重要性&quot;&gt;&lt;/a&gt;1. 论“备份”的重要性&lt;/h1&gt;&lt;p&gt;今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。&lt;/p&gt;
-&lt;p&gt;被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。&lt;/p&gt;
-&lt;p&gt;我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。&lt;br&gt;
-    
-    </summary>
-    
-      <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
-    
-    
-      <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
-    
-      <category term="Ubuntu" scheme="https://fudawei.github.io/tags/Ubuntu/"/>
     
   </entry>
   
@@ -1680,6 +1680,69 @@ extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里
   </entry>
   
   <entry>
+    <title>Redis数据结构和对象-(三)跳跃表</title>
+    <link href="https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E4%B8%89%EF%BC%89%E8%B7%B3%E8%B7%83%E8%A1%A8/"/>
+    <id>https://fudawei.github.io/2016/09/24/Redis数据结构和对象--（三）跳跃表/</id>
+    <published>2016-09-24T06:32:02.000Z</published>
+    <updated>2017-02-08T03:39:19.513Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="定义"><a href="#定义" class="headerlink" title="定义:"></a>定义:</h2><p>它是一种有序数据结构,通过在每个节点中维持多个 指向其他节点<br>的指针,从而达到快速访问节点的目的。</p>
+<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景:"></a>使用场景:</h2><p>Redis使用跳跃表作为有序集合键的底层实现之一,如果一个有序集合包含的元素数量比较多,又或者有序集合中元素的成(member)是比较长的字符串时,Redis就会使用跳跃表来作为有序集合键的底层实现。<br>另外,在集群节点中跳跃表被用作内部数据结构。除此之外在Redis中在无他用</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现:"></a>实现:</h2><p>跳跃表由zskiplistNode和zskiplist两个结构定义,其中zskiplistNode用<br>于表示跳跃表节点,而zskiplist用于保存跳跃表节点的相关信息。</p>
+<p><img src="/img/skipList-1.png" alt=""></p>
+<p>上图为zskiplist结构,其中</p>
+<ul>
+<li>header指向跳跃表的表头节点。</li>
+<li>tail指向表尾节点。</li>
+<li>level记录层数最大的那个节点的层数(注意:表头节点的层数不计算在内),是1-32之间的一个随机数,越大的数出现的概率越小。</li>
+</ul>
+<p>下图右为zskiplist结构,其中层(level):L1、L2、L3等标记各个节点的层,每个层都有前进指针和跨度,当程序从表头向表尾进行遍历时,访问会沿着层的前进指针进行。</p>
+<p><strong>跨度</strong>:层的跨度(level[i].span属性)用于记录两个节点间的距离,节点间的跨度越大,它们相聚的就越远,指向NULL的所有前进指针的跨度都为0,因为它们没有连向任何节点。跨度跟遍历操作无关,是用来计算排位的(可根据排位获取元素节点),如下图,查找分值为3.0、对象为o3的节点时,只经过了一个层,并且层的跨度为3,所以该节点在跳跃表中的排位为3。</p>
+<p><img src="/img/skipList-2.png" alt=""></p>
+<ul>
+<li><strong>后退(backward)指针</strong>:BW标记节点的后退指针,它指向位于当前节点的前一个节点,后退指针在程序从表尾向表头遍历时使用,与前进指针不同,后退针每次只能后退至前一个节点,因为每个节点只有一个后退指针。</li>
+<li><strong>分值</strong>(score):1.0、2.0和3.0是节点所保存的分值,分值是一个double类型的浮点数,可重复,用于节点排序(分值相同则按在字典中大小排)。</li>
+<li><strong>成员对象</strong>(obj):o1、o2和o3是节点所保存的成员对象,成员对象是一个指针,它指向一个字符串对象,而字符串对象则保存着一个SDS值,并且是唯一的。<br><em>注意:表头节点跟其他节点一样,也有后退指针、分值、成员对象等属性,但都不会被用到,故在图中没有画出。</em></li>
+</ul>
+<h2 id="跳跃表API"><a href="#跳跃表API" class="headerlink" title="跳跃表API"></a>跳跃表API</h2><p><img src="/img/skipList-3.png" alt=""></p>
+<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><p>a.跳表具有如下性质:</p>
+<ol>
+<li>由很多层结构组成</li>
+<li>每一层都是一个有序的链表</li>
+<li>最底层(Level 1)的链表包含所有元素</li>
+<li>如果一个元素出现在 Level i 的链表中,则它在 Level i 之下的链表也都会出现。</li>
+<li>每个节点包含两个指针,一个指向同一链表中的下一个元素,一个指向下面一层的元素。</li>
+</ol>
+<p>b.插入</p>
+<p>先确定该元素要占据的层数 K(采用丢硬币的方式,这完全是随机的)<br>然后在 Level 1 … Level K 各个层的链表都插入元素。<br>例子:插入 119, K = 2<br><img src="/img/skipList-4.png" alt=""></p>
+<p>如果 K 大于链表的层数,则要添加新的层。<br>例子:插入 119, K = 4<br><img src="/img/skipList-5.png" alt=""></p>
+<p>c.删除<br>三个步骤:</p>
+<ol>
+<li>在跳跃表中查找到这个元素的位置(如果未找到,则退出)</li>
+<li>将该元素所在整列从表中删除</li>
+<li>将多余的“空链”删除<br><img src="/img/skipList-6.png" alt=""></li>
+</ol>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;定义&quot;&gt;&lt;a href=&quot;#定义&quot; class=&quot;headerlink&quot; title=&quot;定义:&quot;&gt;&lt;/a&gt;定义:&lt;/h2&gt;&lt;p&gt;它是一种有序数据结构,通过在每个节点中维持多个 指向其他节点&lt;br&gt;的指针,从而达到快速访问节点的目的。&lt;/p&gt;
+&lt;h2 id=&quot;使用场
+    
+    </summary>
+    
+      <category term="缓存" scheme="https://fudawei.github.io/categories/%E7%BC%93%E5%AD%98/"/>
+    
+      <category term="Redis" scheme="https://fudawei.github.io/categories/%E7%BC%93%E5%AD%98/Redis/"/>
+    
+    
+      <category term="缓存" scheme="https://fudawei.github.io/tags/%E7%BC%93%E5%AD%98/"/>
+    
+      <category term="Redis" scheme="https://fudawei.github.io/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Redis数据结构和对象-(四)整数集合</title>
     <link href="https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E5%9B%9B%EF%BC%89%E6%95%B4%E6%95%B0%E9%9B%86%E5%90%88/"/>
     <id>https://fudawei.github.io/2016/09/24/Redis数据结构和对象--（四）整数集合/</id>
@@ -1761,69 +1824,6 @@ extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里
     <summary type="html">
     
       &lt;h1 id=&quot;整数集合&quot;&gt;&lt;a href=&quot;#整数集合&quot; class=&quot;headerlink&quot; title=&quot;整数集合&quot;&gt;&lt;/a&gt;整数集合&lt;/h1&gt;&lt;p&gt;整数集合（intset）是集合键的底层实现之一： 当一个集合只包含整数值元素， 并且这个集合的元素数量不多时， Redis 
-    
-    </summary>
-    
-      <category term="缓存" scheme="https://fudawei.github.io/categories/%E7%BC%93%E5%AD%98/"/>
-    
-      <category term="Redis" scheme="https://fudawei.github.io/categories/%E7%BC%93%E5%AD%98/Redis/"/>
-    
-    
-      <category term="缓存" scheme="https://fudawei.github.io/tags/%E7%BC%93%E5%AD%98/"/>
-    
-      <category term="Redis" scheme="https://fudawei.github.io/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis数据结构和对象-(三)跳跃表</title>
-    <link href="https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E4%B8%89%EF%BC%89%E8%B7%B3%E8%B7%83%E8%A1%A8/"/>
-    <id>https://fudawei.github.io/2016/09/24/Redis数据结构和对象--（三）跳跃表/</id>
-    <published>2016-09-24T06:32:02.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="定义"><a href="#定义" class="headerlink" title="定义:"></a>定义:</h2><p>它是一种有序数据结构,通过在每个节点中维持多个 指向其他节点<br>的指针,从而达到快速访问节点的目的。</p>
-<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景:"></a>使用场景:</h2><p>Redis使用跳跃表作为有序集合键的底层实现之一,如果一个有序集合包含的元素数量比较多,又或者有序集合中元素的成(member)是比较长的字符串时,Redis就会使用跳跃表来作为有序集合键的底层实现。<br>另外,在集群节点中跳跃表被用作内部数据结构。除此之外在Redis中在无他用</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现:"></a>实现:</h2><p>跳跃表由zskiplistNode和zskiplist两个结构定义,其中zskiplistNode用<br>于表示跳跃表节点,而zskiplist用于保存跳跃表节点的相关信息。</p>
-<p><img src="/img/skipList-1.png" alt=""></p>
-<p>上图为zskiplist结构,其中</p>
-<ul>
-<li>header指向跳跃表的表头节点。</li>
-<li>tail指向表尾节点。</li>
-<li>level记录层数最大的那个节点的层数(注意:表头节点的层数不计算在内),是1-32之间的一个随机数,越大的数出现的概率越小。</li>
-</ul>
-<p>下图右为zskiplist结构,其中层(level):L1、L2、L3等标记各个节点的层,每个层都有前进指针和跨度,当程序从表头向表尾进行遍历时,访问会沿着层的前进指针进行。</p>
-<p><strong>跨度</strong>:层的跨度(level[i].span属性)用于记录两个节点间的距离,节点间的跨度越大,它们相聚的就越远,指向NULL的所有前进指针的跨度都为0,因为它们没有连向任何节点。跨度跟遍历操作无关,是用来计算排位的(可根据排位获取元素节点),如下图,查找分值为3.0、对象为o3的节点时,只经过了一个层,并且层的跨度为3,所以该节点在跳跃表中的排位为3。</p>
-<p><img src="/img/skipList-2.png" alt=""></p>
-<ul>
-<li><strong>后退(backward)指针</strong>:BW标记节点的后退指针,它指向位于当前节点的前一个节点,后退指针在程序从表尾向表头遍历时使用,与前进指针不同,后退针每次只能后退至前一个节点,因为每个节点只有一个后退指针。</li>
-<li><strong>分值</strong>(score):1.0、2.0和3.0是节点所保存的分值,分值是一个double类型的浮点数,可重复,用于节点排序(分值相同则按在字典中大小排)。</li>
-<li><strong>成员对象</strong>(obj):o1、o2和o3是节点所保存的成员对象,成员对象是一个指针,它指向一个字符串对象,而字符串对象则保存着一个SDS值,并且是唯一的。<br><em>注意:表头节点跟其他节点一样,也有后退指针、分值、成员对象等属性,但都不会被用到,故在图中没有画出。</em></li>
-</ul>
-<h2 id="跳跃表API"><a href="#跳跃表API" class="headerlink" title="跳跃表API"></a>跳跃表API</h2><p><img src="/img/skipList-3.png" alt=""></p>
-<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><p>a.跳表具有如下性质:</p>
-<ol>
-<li>由很多层结构组成</li>
-<li>每一层都是一个有序的链表</li>
-<li>最底层(Level 1)的链表包含所有元素</li>
-<li>如果一个元素出现在 Level i 的链表中,则它在 Level i 之下的链表也都会出现。</li>
-<li>每个节点包含两个指针,一个指向同一链表中的下一个元素,一个指向下面一层的元素。</li>
-</ol>
-<p>b.插入</p>
-<p>先确定该元素要占据的层数 K(采用丢硬币的方式,这完全是随机的)<br>然后在 Level 1 … Level K 各个层的链表都插入元素。<br>例子:插入 119, K = 2<br><img src="/img/skipList-4.png" alt=""></p>
-<p>如果 K 大于链表的层数,则要添加新的层。<br>例子:插入 119, K = 4<br><img src="/img/skipList-5.png" alt=""></p>
-<p>c.删除<br>三个步骤:</p>
-<ol>
-<li>在跳跃表中查找到这个元素的位置(如果未找到,则退出)</li>
-<li>将该元素所在整列从表中删除</li>
-<li>将多余的“空链”删除<br><img src="/img/skipList-6.png" alt=""></li>
-</ol>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h2 id=&quot;定义&quot;&gt;&lt;a href=&quot;#定义&quot; class=&quot;headerlink&quot; title=&quot;定义:&quot;&gt;&lt;/a&gt;定义:&lt;/h2&gt;&lt;p&gt;它是一种有序数据结构,通过在每个节点中维持多个 指向其他节点&lt;br&gt;的指针,从而达到快速访问节点的目的。&lt;/p&gt;
-&lt;h2 id=&quot;使用场
     
     </summary>
     
