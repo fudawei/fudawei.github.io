@@ -29,7 +29,7 @@
 
 
 
-  <meta name="keywords" content="Java,多线程,内置锁," />
+  <meta name="keywords" content="内置锁," />
 
 
 
@@ -48,7 +48,7 @@
 <meta property="og:description" content="概述偏向锁是JDK 1.6提出的一种锁优化方式，起核心思想是如果程序没有竞争，则取消之前已经取得锁的线程的同步操作。也就是说，某一个锁被一个线程获取之后，便进入了偏向锁模式，当该线程再次请求这个锁时，就无需再进行相关的同步操作，从而节省了操作时间。但是如果在此期间，有其他线程申请了这个锁，则退出偏向锁模式。在JVM中可以使用-XX:+UseBiasedLocking设置启用偏向锁。">
 <meta property="og:image" content="http://img.blog.csdn.net/20150605140140392">
 <meta property="og:image" content="http://img.blog.csdn.net/20150605140228893">
-<meta property="og:updated_time" content="2017-02-08T06:32:44.693Z">
+<meta property="og:updated_time" content="2017-02-08T06:43:06.804Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="[Java锁学习一]偏向锁">
 <meta name="twitter:description" content="概述偏向锁是JDK 1.6提出的一种锁优化方式，起核心思想是如果程序没有竞争，则取消之前已经取得锁的线程的同步操作。也就是说，某一个锁被一个线程获取之后，便进入了偏向锁模式，当该线程再次请求这个锁时，就无需再进行相关的同步操作，从而节省了操作时间。但是如果在此期间，有其他线程申请了这个锁，则退出偏向锁模式。在JVM中可以使用-XX:+UseBiasedLocking设置启用偏向锁。">
@@ -358,18 +358,6 @@
 
               
               
-                ， 
-              
-
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/Java/多线程/内置锁/" itemprop="url" rel="index">
-                  <span itemprop="name">内置锁</span>
-                </a>
-              </span>
-
-              
-              
 
             
           </span>
@@ -433,10 +421,6 @@
     <footer class="post-footer">
       
         <div class="post-tags">
-          
-            <a href="/tags/Java/" rel="tag">#Java</a>
-          
-            <a href="/tags/多线程/" rel="tag">#多线程</a>
           
             <a href="/tags/内置锁/" rel="tag">#内置锁</a>
           
@@ -685,14 +669,14 @@
 
           <div class="site-state-item site-state-categories">
             <a href="/categories">
-              <span class="site-state-item-count">54</span>
+              <span class="site-state-item-count">52</span>
               <span class="site-state-item-name">分类</span>
               </a>
           </div>
 
           <div class="site-state-item site-state-tags">
             <a href="/tags">
-              <span class="site-state-item-count">80</span>
+              <span class="site-state-item-count">79</span>
               <span class="site-state-item-name">标签</span>
               </a>
           </div>

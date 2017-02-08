@@ -829,24 +829,6 @@
     </entry>
     
     <entry>
-      <title><![CDATA[Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系]]></title>
-      <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/</url>
-      <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
-<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
-<p>Spring的总体架构</p>
-<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
-<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
-<p>Spring的设计理念</p>
-<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
-<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
-<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
-<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
-<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
-<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[Spring架构详解：Bean详解和Context组件详解]]></title>
       <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ABean%E8%AF%A6%E8%A7%A3%E5%92%8CContext%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3/</url>
       <content type="html"><![CDATA[<h1 id="Bean详解"><a href="#Bean详解" class="headerlink" title="Bean详解"></a>Bean详解</h1><p>前面已经说明了Bean组件对Spring的重要性，下面看看Bean这个组件式怎么设计的。Bean组件在Spring的org.springframework.beans包下。这个包下的所有类主要解决了三件事：Bean的定义、Bean 的创建以及对Bean的解析。对Spring的使用者来说唯一需要关心的就是Bean的创建，其他两个由Spring在内部帮你完成了，对你来说是透明的。</p>
@@ -863,6 +845,24 @@
 <p>再往下分就是按照构建Context的文件类型，接着就是访问Context的方式。这样一级一级构成了完整的Context等级层次。</p>
 <p>总体来说ApplicationContext必须要完成以下几件事：</p>
 <p>标识一个应用环境<br>利用BeanFactory创建Bean对象<br>保存对象关系表<br>能够捕获各种事件<br>Context作为Spring的Ioc容器，基本上整合了Spring的大部分功能，或者说是大部分功能的基础。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系]]></title>
+      <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/</url>
+      <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
+<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
+<p>Spring的总体架构</p>
+<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
+<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
+<p>Spring的设计理念</p>
+<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
+<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
+<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
+<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
+<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
+<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
 ]]></content>
     </entry>
     
@@ -4355,7 +4355,7 @@ return numbers
     
     <entry>
       <title><![CDATA[海量数据处理]]></title>
-      <url>https://fudawei.github.io/2015/09/06/%E6%B5%B7%E9%87%8F%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86/</url>
+      <url>https://fudawei.github.io/2015/09/06/%E5%A4%A7%E6%95%B0%E6%8D%AE%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
       <content type="html"><![CDATA[<p>作者：July、youwang、yanxionglu。<br>出处：<a href="http://blog.csdn.net/v_JULY_v。" target="_blank" rel="external">http://blog.csdn.net/v_JULY_v。</a></p>
 <h2 id="十道海量数据处理面试题"><a href="#十道海量数据处理面试题" class="headerlink" title="十道海量数据处理面试题"></a>十道海量数据处理面试题</h2><ul>
 <li>提取出某日访问百度次数最多的那个IP。</li>
@@ -4474,7 +4474,7 @@ return numbers
     
     <entry>
       <title><![CDATA[海量数据处理]]></title>
-      <url>https://fudawei.github.io/2015/09/06/%E5%A4%A7%E6%95%B0%E6%8D%AE%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
+      <url>https://fudawei.github.io/2015/09/06/%E6%B5%B7%E9%87%8F%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86/</url>
       <content type="html"><![CDATA[<p>作者：July、youwang、yanxionglu。<br>出处：<a href="http://blog.csdn.net/v_JULY_v。" target="_blank" rel="external">http://blog.csdn.net/v_JULY_v。</a></p>
 <h2 id="十道海量数据处理面试题"><a href="#十道海量数据处理面试题" class="headerlink" title="十道海量数据处理面试题"></a>十道海量数据处理面试题</h2><ul>
 <li>提取出某日访问百度次数最多的那个IP。</li>
