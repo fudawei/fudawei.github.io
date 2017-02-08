@@ -987,38 +987,6 @@ eventProcessActor ! JobSubmitted(jobId, rdd, func2, partitions.toArray, allowLoc
     </entry>
     
     <entry>
-      <title><![CDATA[ubuntu下恢复rm删除的数据]]></title>
-      <url>https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/</url>
-      <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
-<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
-<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
-<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
-<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
-<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
-<li>安装extundelete</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
-<pre><code>umount /dev/sdb2 
-mount -o remount,ro /dev/sdb2
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
-extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
-</code></pre><p>```</p>
-<ul>
-<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
-</ul>
-<ul>
-<li><p>总结经验</p>
-<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
-</li>
-</ul>
-<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[Btree]]></title>
       <url>https://fudawei.github.io/2016/10/19/Btree/</url>
       <content type="html"><![CDATA[<h1 id="1-前言："><a href="#1-前言：" class="headerlink" title="1.前言："></a>1.前言：</h1><p>动态查找树主要有：二叉查找树（Binary Search Tree），平衡二叉查找树（Balanced Binary Search Tree），红黑树 (Red-Black Tree )，B-tree/B+-tree/ B*-tree (B~Tree)。前三者是典型的二叉查找树结构，其查找的时间复杂度O(log2N)与树的深度相关，那么降低树的深度自然对查找效率是有所提高的；还有一个实际问题：就是大规模数据存储中，实现索引查询这样一个实际背景下，树节点存储的元素数量是有限的（如果元素数量非常多的话，查找就退化成节点内部的线性查找了），这样导致二叉查找树结构由于树的深度过大而造成磁盘I/O读写过于频繁，进而导致查询效率低下（为什么会出现这种情况，待会在外部存储器-磁盘中有所解释），那么如何减少树的深度（当然是不能减少查询的数据量），一个基本的想法就是：采用多叉树结构（由于树节点元素数量是有限的，自然该节点的子树数量也就是有限的）。</p>
@@ -1151,6 +1119,38 @@ c)   关键字的个数n必须满足： ceil(m / 2)-1 &lt;= n &lt;= m-1。
   在大规模数据存储的文件系统中，B~tree系列数据结构，起着很重要的作用，对于存储不同的数据，节点相关的信息也是有所不同，这里根据自己的理解，画的一个查找以职工号为关键字，职工号为38的记录的简单示意图。(这里假设每个物理块容纳3个索引，磁盘的I/O操作的基本单位是块（block),磁盘访问很费时，采用B+-tree有效的减少了访问磁盘的次数。）
 </code></pre><p>对于像MySQL，DB2，Oracle等数据库中的索引结构有待深入的了解才行，不过网上可以找到很多B-tree相关的开源代码可以用来研究。</p>
 <p><img src="/img/btree_24.png" alt=""></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[ubuntu下恢复rm删除的数据]]></title>
+      <url>https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/</url>
+      <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
+<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
+<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
+<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
+<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
+<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
+<li>安装extundelete</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
+<pre><code>umount /dev/sdb2 
+mount -o remount,ro /dev/sdb2
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
+extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
+</code></pre><p>```</p>
+<ul>
+<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
+</ul>
+<ul>
+<li><p>总结经验</p>
+<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
+</li>
+</ul>
+<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
 ]]></content>
     </entry>
     
@@ -1906,53 +1906,6 @@ c)   关键字的个数n必须满足： ceil(m / 2)-1 &lt;= n &lt;= m-1。
 <li><a href="https://bandwagonhost.com/index.php" target="_blank" rel="external">搬瓦工</a> 美国的VPS网站，最低大概120人民币一年</li>
 </ul>
 <a id="more"></a>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[中间件]]></title>
-      <url>https://fudawei.github.io/2016/06/09/%E4%B8%AD%E9%97%B4%E4%BB%B6/</url>
-      <content type="html"><![CDATA[<p>读写分离解决的是读压力大的问题，对于数据量大或更新量大的情况并不适用。数据水平拆分与数据垂直拆分的区别是：垂直拆分是把不同的表拆分到不同的数据库中，而水平拆分的是把同一个表拆分到不同的数据库中<br>水平拆分给业务应用带来的影响：</p>
-<ol>
-<li>访问用户信息的应用程序需要解决SQL路由的问题</li>
-<li>主键的处理也不同，自增字段不能简单的使用了，并且在不同的数据库中也不能直接使用一些数据库的限制来保证主键不重复了</li>
-</ol>
-<p>消息中间件(异步和解耦)<br>Message-oriented middleware(MOM) is software infrastructure focused on sending and receiving message between distributed systems</p>
-<p>三个领域的中间件</p>
-<ol>
-<li>远程过程调用和对象访问中间件：主要解决分布式环境下应用的互相访问问题。这也是支撑我们介绍应用服务化的基础</li>
-<li>消息中间件：主要解决应用之间的消息传递、解耦、异步的问题</li>
-<li>数据访问中间件：主要解决应用访问数据库的共性问题的组件。</li>
-</ol>
-<p>线程池的作用</p>
-<ol>
-<li><p>使用线程池</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line">public class PoolTest &#123;</div><div class="line">	public static void main(String[] args) &#123;</div><div class="line">		int count=20000;</div><div class="line">		long startTime = System.currentTimeMillis();</div><div class="line">		final LinkedList&lt;Integer&gt; lst = new LinkedList&lt;Integer&gt;();</div><div class="line">		ThreadPoolExecutor tp = new ThreadPoolExecutor(1, 1, 60, TimeUnit.SECONDS,</div><div class="line">				new LinkedBlockingDeque&lt;Runnable&gt;(count));</div><div class="line">		final Random random = new Random();</div><div class="line">		for(int i=0;i&lt;count;i++)&#123;</div><div class="line">			tp.execute(new Runnable() &#123;</div><div class="line"></div><div class="line">				@Override</div><div class="line">				public void run() &#123;</div><div class="line">					lst.add(random.nextInt());</div><div class="line">				&#125;</div><div class="line">			&#125;);</div><div class="line">		&#125;</div><div class="line">		tp.shutdown();</div><div class="line">		try &#123;</div><div class="line">			tp.awaitTermination(1, TimeUnit.DAYS);</div><div class="line">		&#125; catch (Exception e) &#123;</div><div class="line">		&#125;</div><div class="line">		System.out.println(System.currentTimeMillis() - startTime);</div><div class="line">		System.out.println(lst.size());</div><div class="line">	&#125;</div><div class="line">&#125;</div><div class="line">用时 117</div></pre></td></tr></table></figure>
-</li>
-<li><p>不使用线程池</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">public class GeneralTest &#123;</div><div class="line">	public static void main(String[] args) &#123;</div><div class="line">		int count=20000;</div><div class="line">		long startTime = System.currentTimeMillis();</div><div class="line">		final LinkedList&lt;Integer&gt; lst = new LinkedList&lt;Integer&gt;();</div><div class="line">		final Random random = new Random();</div><div class="line">		for(int i=0;i&lt;count;i++)&#123;</div><div class="line">			Thread thread = new Thread()&#123;</div><div class="line">				@Override</div><div class="line">				public void run() &#123;</div><div class="line">					lst.add(random.nextInt());</div><div class="line">				&#125;</div><div class="line">			&#125;;</div><div class="line">			thread.start();</div><div class="line">			try &#123;</div><div class="line">				thread.join();</div><div class="line">			&#125; catch (Exception e) &#123;</div><div class="line">			&#125;</div><div class="line">		&#125;</div><div class="line">		System.out.println(System.currentTimeMillis() - startTime);</div><div class="line">		System.out.println(lst.size());</div><div class="line">	&#125;</div><div class="line">&#125;</div><div class="line">用时 2000毫秒</div></pre></td></tr></table></figure>
-</li>
-</ol>
-<p>AtomicInteger的用法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">public class AtomTest&#123;</div><div class="line">	private AtomicInteger counter = new AtomicInteger(0);</div><div class="line">	public void increment()&#123;</div><div class="line">		counter.incrementAndGet();</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	public int getCount()&#123;</div><div class="line">		return counter.get();</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	public static void main(String[] args) &#123;</div><div class="line">		final AtomTest at = new AtomTest();</div><div class="line">		for(int i=0;i&lt;100;i++)&#123;</div><div class="line">			Thread thread =new Thread()&#123;</div><div class="line">				@Override</div><div class="line">				public void run() &#123;</div><div class="line">					at.increment();</div><div class="line">				&#125;;</div><div class="line">			&#125;;</div><div class="line"></div><div class="line">			thread.start();</div><div class="line">			try &#123;</div><div class="line">				// 即join()的作用是：“等待该线程终止”，这里需要理解的就是该线程是指的主线程等待子线程的终止</div><div class="line">				thread.join();</div><div class="line">			&#125; catch (Exception e) &#123;</div><div class="line">			&#125;</div><div class="line">		&#125;</div><div class="line"></div><div class="line">		System.out.println(at.getCount());</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>注意： 对wait、notify和notifyAll的调用都必须是在对象的synchronized块中<br>在时间中，对wait的使用一般是嵌在一个循环中，并且会判断相关的数据状态是否达到预期，如果没有则会继续等待，这么做也是为了防止虚假唤醒</p>
-<p>调用函数后马上返回，然后继续向下执行。两种方式实现；一个是用Future，另一个使用回调。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">private Future&lt;HashMap&gt; getDataFromRemote2()&#123;</div><div class="line">	reutrn threadPool.submit(new Callable&lt;HashMap&gt;()&#123;</div><div class="line">		public HashMap call() throw Exception&#123;</div><div class="line">			return getDataFromRemote();</div><div class="line">		&#125;</div><div class="line">	&#125;);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>原子类<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div></pre></td><td class="code"><pre><div class="line">public class AtomTest&#123;</div><div class="line">	private AtomicInteger counter = new AtomicInteger(0);</div><div class="line">	public void increment()&#123;</div><div class="line">		counter.incrementAndGet();</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	public int getCount()&#123;</div><div class="line">		return counter.get();</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	public static void main(String[] args) &#123;</div><div class="line">		final AtomTest at = new AtomTest();</div><div class="line">		for(int i=0;i&lt;100;i++)&#123;</div><div class="line">			Thread thread =new Thread()&#123;</div><div class="line">				@Override</div><div class="line">				public void run() &#123;</div><div class="line">					at.increment();</div><div class="line">				&#125;;</div><div class="line">			&#125;;</div><div class="line"></div><div class="line">			thread.start();</div><div class="line">			try &#123;</div><div class="line">				// 即join()的作用是：“等待该线程终止”，这里需要理解的就是该线程是指的主线程等待子线程的终止</div><div class="line">				thread.join();</div><div class="line">			&#125; catch (Exception e) &#123;</div><div class="line">			&#125;</div><div class="line">		&#125;</div><div class="line">		System.out.println(at.getCount());</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>动态代理</p>
-<p>与动态代理一样，反射也是中间件实现的重要基础。反射是Java提供的非常方便又强大的功能。Java反射机制是指在运行状态中，对于任意一个类，都能够知道这个类的所有属性和方法；对于任意一个对象，都能调用它的任意个方法和属性。Java反射机制主要提供一下功能：在运行时判断任意一个对象所属的类；在运行时构造任意一个类的对象；在运行时判断任意一个类所具有的成员变量和成员方法；在运行时调用任意一个对象的方法；生成动态代理。</p>
-<p>String className = clazz.getName()              // 获取类的名称<br>Method[] methods = clazz.getDeclaredMethods()   //获取类中定义的方法<br>Field[] fields = clazz.getDeclaredFields();     // 获取类中定义的方法<br>Class.forName(“className”).newInstance();<br>注意通过newInstance调用来构造对象时，要求被构造的对象的类一定要有一个 <strong> 无参数的构造方法 </strong> ，否则异常</p>
-<p>服务框架要解决的问题 ： 接口调用、寻址路由、编码、通信<br>一般规则服务器的方式更多的运用在有状态的场景。像数据这种状态要求很高的场景，或者缓存这种尽量要有状态的场景，都会用到规则服务器的方式来解决寻址问题，在无状态的服务场景中，则不太用规则服务器的方式来处理。</p>
-<p>序列化就是把内存对象变为二进制数据的过程，而反序列化就是把二进制数据变为内存中可用对象的过程。</p>
-<p>四种常见的异步远程通信方式：Oneway是一个单向的通知，Callback则是回调，是一种被动的方式，Callback的执行不是在原请求线程中；而Future是一种能够主动控制超时、获取结果的方式i，并且它的执行仍然在原请求线程中；可靠异步方式能保证异步请求在远程被执行。</p>
-<p>垂直拆分带来影响</p>
-<ol>
-<li>单机的ACID保证被打破了，要么放弃原来的单机事务，修改实现，要么引入分布式事务</li>
-<li>join操作不能使用</li>
-<li>靠外键去进行约束的场景受影响<br>水平拆分带来影响</li>
-<li>同上1,2,3</li>
-<li>依赖单库的自增序列生成唯一ID受影响</li>
-<li>针对单个逻辑意义的表的查询要跨库</li>
-</ol>
-<p>分布式事务<br>分布式事务是指事务的参与者、支持事务的服务器、资源服务器以及事务管理器分别位于分布式系统的不同节点上。<br>在分布式系统中，我们一般还是选择加强可用性和分区容忍性而牺牲一致性，保证数据最终一致性</p>
 ]]></content>
     </entry>
     
@@ -2734,28 +2687,6 @@ return numbers
     </entry>
     
     <entry>
-      <title><![CDATA[排序算法的稳定性]]></title>
-      <url>https://fudawei.github.io/2016/04/16/%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95%E7%9A%84%E7%A8%B3%E5%AE%9A%E6%80%A7/</url>
-      <content type="html"><![CDATA[<p>稳定排序和不稳定排序</p>
-<blockquote>
-<p>这几天笔试了好几次了，连续碰到一个关于常见排序算法稳定性判别的问题，往往还是多选，对于我以及和我一样拿不准的同学可不是一个能轻易下结论的题目，当然如果你笔试之前已经记住了数据结构书上哪些是稳定的，哪些不是稳定的，做起来应该可以轻松搞定。本文是针对老是记不住这个或者想真正明白到底为什么是稳定或者不稳定的人准备的。<br>首先，排序算法的稳定性大家应该都知道，通俗地讲就是能保证排序前2个相等的数其在序列的前后位置顺序和排序后它们两个的前后位置顺序相同。在简单形式化一下，如果Ai = Aj，Ai原来在位置前，排序后Ai还是要在Aj位置前。<br>其次，说一下稳定性的好处。排序算法如果是稳定的，那么从一个键上排序，然后再从另一个键上排序，第一个键排序的结果可以为第二个键排序所用。基数排序就是这样，先按低位排序，逐次按高位排序，低位相同的元素其顺序再高位也相同时是不会改变的。另外，如果排序算法稳定，对基于比较的排序算法而言，元素交换的次数可能会少一些（个人感觉，没有证实）。</p>
-</blockquote>
-<p>回到主题，现在分析一下常见的排序算法的稳定性，每个都给出简单的理由。</p>
-<p>(1)冒泡排序</p>
-<p>冒泡排序就是把小的元素往前调或者把大的元素往后调。比较是相邻的两个元素比较，交换也发生在这两个元素之间。所以，如果两个元素相等，我想你是不会再无聊地把他们俩交换一下的；如果两个相等的元素没有相邻，那么即使通过前面的两两交换把两个相邻起来，这时候也不会交换，所以相同元素的前后顺序并没有改变，所以冒泡排序是一种稳定排序算法。</p>
-<p>(2)选择排序</p>
-<p>选择排序是给每个位置选择当前元素最小的，比如给第一个位置选择最小的，在剩余元素里面给第二个元素选择第二小的，依次类推，直到第n - 1个元素，第n个元素不用选择了，因为只剩下它一个最大的元素了。那么，在一趟选择，如果当前元素比一个元素小，而该小的元素又出现在一个和当前元素相等的元素后面，那么交换后稳定性就被破坏了。比较拗口，举个例子，序列5 8 5 2 9，我们知道第一遍选择第1个元素5会和2交换，那么原序列中2个5的相对前后顺序就被破坏了，所以选择排序不是一个稳定的排序算法。</p>
-<p>(3)插入排序<br>插入排序是在一个已经有序的小序列的基础上，一次插入一个元素。当然，刚开始这个有序的小序列只有1个元素，就是第一个元素。比较是从有序序列的末尾开始，也就是想要插入的元素和已经有序的最大者开始比起，如果比它大则直接插入在其后面，否则一直往前找直到找到它该插入的位置。如果碰见一个和插入元素相等的，那么插入元素把想插入的元素放在相等元素的后面。所以，相等元素的前后顺序没有改变，从原无序序列出去的顺序就是排好序后的顺序，所以插入排序是稳定的。</p>
-<p>(4)快速排序<br>快速排序有两个方向，左边的i下标一直往右走，当a[i] &lt;= a[center_index]，其中center_index是中枢元素的数组下标，一般取为数组第0个元素。而右边的j下标一直往左走，当a[j] &gt; a[center_index]。如果i和j都走不动了，i &lt;= j，交换a[i]和a[j],重复上面的过程，直到i &gt; j。 交换a[j]和a[center_index]，完成一趟快速排序。在中枢元素和a[j]交换的时候，很有可能把前面的元素的稳定性打乱，比如序列为5 3 3 4 3 8 9 10 11，现在中枢元素5和3（第5个元素，下标从1开始计）交换就会把元素3的稳定性打乱，所以快速排序是一个不稳定的排序算法，不稳定发生在中枢元素和a[j] 交换的时刻。</p>
-<p>(5)归并排序<br>归并排序是把序列递归地分成短序列，递归出口是短序列只有1个元素（认为直接有序）或者2个序列（1次比较和交换），然后把各个有序的段序列合并成一个有序的长序列，不断合并直到原序列全部排好序。可以发现，在1个或2个元素时，1个元素不会交换，2个元素如果大小相等也没有人故意交换，这不会破坏稳定性。那么，在短的有序序列合并的过程中，稳定是是否受到破坏？没有，合并过程中我们可以保证如果两个当前元素相等时，我们把处在前面的序列的元素保存在结果序列的前面，这样就保证了稳定性。所以，归并排序也是稳定的排序算法。</p>
-<p>(6)基数排序<br>基数排序是按照低位先排序，然后收集；再按照高位排序，然后再收集；依次类推，直到最高位。有时候有些属性是有优先级顺序的，先按低优先级排序，再按高优先级排序，最后的次序就是高优先级高的在前，高优先级相同的低优先级高的在前。基数排序基于分别排序，分别收集，所以其是稳定的排序算法。</p>
-<p>(7)希尔排序(shell)<br>希尔排序是按照不同步长对元素进行插入排序，当刚开始元素很无序的时候，步长最大，所以插入排序的元素个数很少，速度很快；当元素基本有序了，步长很小， 插入排序对于有序的序列效率很高。所以，希尔排序的时间复杂度会比O(n^2)好一些。由于多次插入排序，我们知道一次插入排序是稳定的，不会改变相同元素的相对顺序，但在不同的插入排序过程中，相同的元素可能在各自的插入排序中移动，最后其稳定性就会被打乱，所以shell排序是不稳定的。</p>
-<p>(8)堆排序<br>我们知道堆的结构是节点i的孩子为2 <em> i和2 </em> i + 1节点，大顶堆要求父节点大于等于其2个子节点，小顶堆要求父节点小于等于其2个子节点。在一个长为n 的序列，堆排序的过程是从第n / 2开始和其子节点共3个值选择最大（大顶堆）或者最小（小顶堆），这3个元素之间的选择当然不会破坏稳定性。但当为n / 2 - 1， n / 2 - 2， … 1这些个父节点选择元素时，就会破坏稳定性。有可能第n / 2个父节点交换把后面一个元素交换过去了，而第n / 2 - 1个父节点把后面一个相同的元素没 有交换，那么这2个相同的元素之间的稳定性就被破坏了。所以，堆排序不是稳定的排序算法。</p>
-<p>综上，得出结论: 选择排序、快速排序、希尔排序、堆排序不是稳定的排序算法，而冒泡排序、插入排序、归并排序和基数排序是稳定的排序算法<br>PS: 快[快速排序]些[希尔排序]选[选择排序]一堆[堆排序]不稳定排序</p>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[六大原则]]></title>
       <url>https://fudawei.github.io/2016/04/16/%E5%85%AD%E5%A4%A7%E5%8E%9F%E5%88%99/</url>
       <content type="html"><![CDATA[<h3 id="单一职责原则"><a href="#单一职责原则" class="headerlink" title="单一职责原则"></a>单一职责原则</h3><p>高内聚，低耦合。每一个类应该只有一个职责，对外只能提供一种功能，而引起类变化的原因应该只有一个。将不同的职责分别进行封装，不要将其组合在一个勒种，要使这个类只有一个可能会以前它变化的原因。</p>
@@ -2779,6 +2710,28 @@ return numbers
 <blockquote>
 <p>抽象类可以有构造方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">public abstract class AMan &#123;</div><div class="line">	protected IPrettyGirl prettyGirl;</div><div class="line">	public AMan(IPrettyGirl prettyGirl)&#123;</div><div class="line">		this.prettyGirl = prettyGirl;</div><div class="line">	&#125;</div><div class="line">	public abstract void findGirl();</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
 </blockquote>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[排序算法的稳定性]]></title>
+      <url>https://fudawei.github.io/2016/04/16/%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95%E7%9A%84%E7%A8%B3%E5%AE%9A%E6%80%A7/</url>
+      <content type="html"><![CDATA[<p>稳定排序和不稳定排序</p>
+<blockquote>
+<p>这几天笔试了好几次了，连续碰到一个关于常见排序算法稳定性判别的问题，往往还是多选，对于我以及和我一样拿不准的同学可不是一个能轻易下结论的题目，当然如果你笔试之前已经记住了数据结构书上哪些是稳定的，哪些不是稳定的，做起来应该可以轻松搞定。本文是针对老是记不住这个或者想真正明白到底为什么是稳定或者不稳定的人准备的。<br>首先，排序算法的稳定性大家应该都知道，通俗地讲就是能保证排序前2个相等的数其在序列的前后位置顺序和排序后它们两个的前后位置顺序相同。在简单形式化一下，如果Ai = Aj，Ai原来在位置前，排序后Ai还是要在Aj位置前。<br>其次，说一下稳定性的好处。排序算法如果是稳定的，那么从一个键上排序，然后再从另一个键上排序，第一个键排序的结果可以为第二个键排序所用。基数排序就是这样，先按低位排序，逐次按高位排序，低位相同的元素其顺序再高位也相同时是不会改变的。另外，如果排序算法稳定，对基于比较的排序算法而言，元素交换的次数可能会少一些（个人感觉，没有证实）。</p>
+</blockquote>
+<p>回到主题，现在分析一下常见的排序算法的稳定性，每个都给出简单的理由。</p>
+<p>(1)冒泡排序</p>
+<p>冒泡排序就是把小的元素往前调或者把大的元素往后调。比较是相邻的两个元素比较，交换也发生在这两个元素之间。所以，如果两个元素相等，我想你是不会再无聊地把他们俩交换一下的；如果两个相等的元素没有相邻，那么即使通过前面的两两交换把两个相邻起来，这时候也不会交换，所以相同元素的前后顺序并没有改变，所以冒泡排序是一种稳定排序算法。</p>
+<p>(2)选择排序</p>
+<p>选择排序是给每个位置选择当前元素最小的，比如给第一个位置选择最小的，在剩余元素里面给第二个元素选择第二小的，依次类推，直到第n - 1个元素，第n个元素不用选择了，因为只剩下它一个最大的元素了。那么，在一趟选择，如果当前元素比一个元素小，而该小的元素又出现在一个和当前元素相等的元素后面，那么交换后稳定性就被破坏了。比较拗口，举个例子，序列5 8 5 2 9，我们知道第一遍选择第1个元素5会和2交换，那么原序列中2个5的相对前后顺序就被破坏了，所以选择排序不是一个稳定的排序算法。</p>
+<p>(3)插入排序<br>插入排序是在一个已经有序的小序列的基础上，一次插入一个元素。当然，刚开始这个有序的小序列只有1个元素，就是第一个元素。比较是从有序序列的末尾开始，也就是想要插入的元素和已经有序的最大者开始比起，如果比它大则直接插入在其后面，否则一直往前找直到找到它该插入的位置。如果碰见一个和插入元素相等的，那么插入元素把想插入的元素放在相等元素的后面。所以，相等元素的前后顺序没有改变，从原无序序列出去的顺序就是排好序后的顺序，所以插入排序是稳定的。</p>
+<p>(4)快速排序<br>快速排序有两个方向，左边的i下标一直往右走，当a[i] &lt;= a[center_index]，其中center_index是中枢元素的数组下标，一般取为数组第0个元素。而右边的j下标一直往左走，当a[j] &gt; a[center_index]。如果i和j都走不动了，i &lt;= j，交换a[i]和a[j],重复上面的过程，直到i &gt; j。 交换a[j]和a[center_index]，完成一趟快速排序。在中枢元素和a[j]交换的时候，很有可能把前面的元素的稳定性打乱，比如序列为5 3 3 4 3 8 9 10 11，现在中枢元素5和3（第5个元素，下标从1开始计）交换就会把元素3的稳定性打乱，所以快速排序是一个不稳定的排序算法，不稳定发生在中枢元素和a[j] 交换的时刻。</p>
+<p>(5)归并排序<br>归并排序是把序列递归地分成短序列，递归出口是短序列只有1个元素（认为直接有序）或者2个序列（1次比较和交换），然后把各个有序的段序列合并成一个有序的长序列，不断合并直到原序列全部排好序。可以发现，在1个或2个元素时，1个元素不会交换，2个元素如果大小相等也没有人故意交换，这不会破坏稳定性。那么，在短的有序序列合并的过程中，稳定是是否受到破坏？没有，合并过程中我们可以保证如果两个当前元素相等时，我们把处在前面的序列的元素保存在结果序列的前面，这样就保证了稳定性。所以，归并排序也是稳定的排序算法。</p>
+<p>(6)基数排序<br>基数排序是按照低位先排序，然后收集；再按照高位排序，然后再收集；依次类推，直到最高位。有时候有些属性是有优先级顺序的，先按低优先级排序，再按高优先级排序，最后的次序就是高优先级高的在前，高优先级相同的低优先级高的在前。基数排序基于分别排序，分别收集，所以其是稳定的排序算法。</p>
+<p>(7)希尔排序(shell)<br>希尔排序是按照不同步长对元素进行插入排序，当刚开始元素很无序的时候，步长最大，所以插入排序的元素个数很少，速度很快；当元素基本有序了，步长很小， 插入排序对于有序的序列效率很高。所以，希尔排序的时间复杂度会比O(n^2)好一些。由于多次插入排序，我们知道一次插入排序是稳定的，不会改变相同元素的相对顺序，但在不同的插入排序过程中，相同的元素可能在各自的插入排序中移动，最后其稳定性就会被打乱，所以shell排序是不稳定的。</p>
+<p>(8)堆排序<br>我们知道堆的结构是节点i的孩子为2 <em> i和2 </em> i + 1节点，大顶堆要求父节点大于等于其2个子节点，小顶堆要求父节点小于等于其2个子节点。在一个长为n 的序列，堆排序的过程是从第n / 2开始和其子节点共3个值选择最大（大顶堆）或者最小（小顶堆），这3个元素之间的选择当然不会破坏稳定性。但当为n / 2 - 1， n / 2 - 2， … 1这些个父节点选择元素时，就会破坏稳定性。有可能第n / 2个父节点交换把后面一个元素交换过去了，而第n / 2 - 1个父节点把后面一个相同的元素没 有交换，那么这2个相同的元素之间的稳定性就被破坏了。所以，堆排序不是稳定的排序算法。</p>
+<p>综上，得出结论: 选择排序、快速排序、希尔排序、堆排序不是稳定的排序算法，而冒泡排序、插入排序、归并排序和基数排序是稳定的排序算法<br>PS: 快[快速排序]些[希尔排序]选[选择排序]一堆[堆排序]不稳定排序</p>
 ]]></content>
     </entry>
     
@@ -4355,7 +4308,7 @@ return numbers
     
     <entry>
       <title><![CDATA[海量数据处理]]></title>
-      <url>https://fudawei.github.io/2015/09/06/%E5%A4%A7%E6%95%B0%E6%8D%AE%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
+      <url>https://fudawei.github.io/2015/09/06/%E6%B5%B7%E9%87%8F%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86/</url>
       <content type="html"><![CDATA[<p>作者：July、youwang、yanxionglu。<br>出处：<a href="http://blog.csdn.net/v_JULY_v。" target="_blank" rel="external">http://blog.csdn.net/v_JULY_v。</a></p>
 <h2 id="十道海量数据处理面试题"><a href="#十道海量数据处理面试题" class="headerlink" title="十道海量数据处理面试题"></a>十道海量数据处理面试题</h2><ul>
 <li>提取出某日访问百度次数最多的那个IP。</li>
@@ -4474,7 +4427,7 @@ return numbers
     
     <entry>
       <title><![CDATA[海量数据处理]]></title>
-      <url>https://fudawei.github.io/2015/09/06/%E6%B5%B7%E9%87%8F%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86/</url>
+      <url>https://fudawei.github.io/2015/09/06/%E5%A4%A7%E6%95%B0%E6%8D%AE%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
       <content type="html"><![CDATA[<p>作者：July、youwang、yanxionglu。<br>出处：<a href="http://blog.csdn.net/v_JULY_v。" target="_blank" rel="external">http://blog.csdn.net/v_JULY_v。</a></p>
 <h2 id="十道海量数据处理面试题"><a href="#十道海量数据处理面试题" class="headerlink" title="十道海量数据处理面试题"></a>十道海量数据处理面试题</h2><ul>
 <li>提取出某日访问百度次数最多的那个IP。</li>
@@ -5690,32 +5643,6 @@ return numbers
 <h3 id="堆内存三部分（新生代、老年代、永久代）"><a href="#堆内存三部分（新生代、老年代、永久代）" class="headerlink" title="堆内存三部分（新生代、老年代、永久代）"></a>堆内存三部分（新生代、老年代、永久代）</h3><p>1.新生代，新生区是类的诞生、成长、消亡的区域，一个类在这里产生、应用，最后被垃圾回收器收集，结束生命。新生区又分为两部分：伊甸区和幸存者区，<br>所有的类都是在伊甸区被创建的，幸存区有两个：0区（Survivor 0）和1区(Survivor 1)。当伊甸区的空间用完，程序又需要创建对象，JVM的垃圾回收器将<br>对伊甸区进行垃圾回收，将伊甸区中的不再被其他对象所引用的对象进行销毁。然后将伊甸区中的剩余对象移动到幸存0区，若幸存0区也满了，再对该区进行<br>垃圾回收，然后移动到1区，如果1区也满了，就移动到老年区。<br>2.老年代，用于保存从新生区筛选出来的java对象，一般池对象都在这个区域活跃。<br>3.永久代 永久存储区是一个常驻内存区域，用于存放JDK自身所携带的Class Interface 的元数据，也就是说，它存储的是运行环境必须的类信息，被装载进此区域的数据是不会被回收器回收的，关闭JVM才会释放此区域所占用的内存。<br>![java垃圾回收之新生代老年代永久代][1]</p>
 <h3 id="内存泄漏"><a href="#内存泄漏" class="headerlink" title="内存泄漏"></a>内存泄漏</h3><p>由于疏忽或错误造成程序未能释放已经不再使用的内存，失去了对该段内存的控制，造成内存浪费。</p>
 <h3 id="垃圾收集算法"><a href="#垃圾收集算法" class="headerlink" title="垃圾收集算法"></a>垃圾收集算法</h3><p>1.标记-清除算法<br>首先标记出所有需要回收的对象，在标完成后统一回收掉所有被标记的对象。缺点：效率不高，且标记清除之后会产生大量不连续的内存碎片，空间碎片太多可能会导致运行过程中需要分配大对象的时候无法找到足够的连续内存而不得不提前触发另一次垃圾收集动作<br>2.复制算法<br>将可用内存按容量划分为大小相等的两块，每次只使用其中一块。当这一块内存用完了，就将还存活着的对象复制到另外一块上面，然后再把已经使用过的内存空间一次清理掉，内存使用率不高，现在商业虚拟机比如HotSpot都采用8:1的比例（Eden:Survivor）<br>3.标记-整理算法<br>把存活对象往内存的一端移动，然后直接回收边界以外的内存，提高了内存利用率，适合在收集对象存活时间较长的老年代。<br>4.分代收集算法<br>根据对象的存活时间把内存分为新生代和老年代，根据各代对象的存活特点，每个代采用不同的垃圾回收算法，新生代采用标记-复制算法，老年代采用标记-整理算法。</p>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[[git]git命令自动补全]]></title>
-      <url>https://fudawei.github.io/2014/09/02/%5Bgit%5Dgit%E5%91%BD%E4%BB%A4%E8%87%AA%E5%8A%A8%E8%A1%A5%E5%85%A8/</url>
-      <content type="html"><![CDATA[<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>在Mac上安装了git之后，发现命令不能自动补全，使用起来非常不方便，本文介绍怎么让git命令能够自动补全。<br><a id="more"></a></p>
-<h1 id="确保bash能够自动补全"><a href="#确保bash能够自动补全" class="headerlink" title="确保bash能够自动补全"></a>确保bash能够自动补全</h1><p>在终端（本文使用的是OS X的终端）执行如下命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">brew list</div></pre></td></tr></table></figure>
-<p>看看是否已经安装有bash-completion，比如我的机器(已经安装了)运行上面的命令会显示：</p>
-<blockquote>
-<p>bash-completion    node        openssl        pkg-config    wget</p>
-</blockquote>
-<p>如果没有安装，运行如下命令安装bash-completion：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">brew install bash-completion</div></pre></td></tr></table></figure>
-<p>等待安装完成之后，运行如下命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">brew info bash-completion</div></pre></td></tr></table></figure>
-<p>运行上面的命令后会在终端显示下图：<br><img src="http://7xlune.com1.z0.glb.clouddn.com/images/git命令自动补全/bash-completion.png" alt=""></p>
-<p>仔细阅读箭头所指的地方，依照提示将矩形框内的内容添加到~/.bash_profile文件(如果没有该文件，新建)，然后重启终端，bash-completion功能安装完成。</p>
-<h1 id="让git支持自动补全"><a href="#让git支持自动补全" class="headerlink" title="让git支持自动补全"></a>让git支持自动补全</h1><p>从github上clone git的源码到本地：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">git clone https://github.com/git/git.git</div></pre></td></tr></table></figure>
-<p>找到”contrib/completion/“目录下的git-completion.bash，将该文件拷贝到<code>~/</code>目录下下并重命名为.git-completion.bash:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">cp git-completion.bash ~/.git-completion.bash</div></pre></td></tr></table></figure>
-<p>在~/.bashrc文件中追加如下内容：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">source ~/.git-completion.bash</div></pre></td></tr></table></figure>
-<p>重启终端，大功告成，现在git能够使用tab键自动补全命令了，enjoy it！</p>
 ]]></content>
     </entry>
     
