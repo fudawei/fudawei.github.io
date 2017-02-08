@@ -1246,58 +1246,6 @@ eventProcessActor ! JobSubmitted(jobId, rdd, func2, partitions.toArray, allowLoc
   </entry>
   
   <entry>
-    <title>ubuntu下恢复rm删除的数据</title>
-    <link href="https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/"/>
-    <id>https://fudawei.github.io/2016/10/19/ubuntu下恢复rm删除的数据/</id>
-    <published>2016-10-19T08:12:41.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
-<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
-<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
-<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
-<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
-<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
-<li>安装extundelete</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
-<pre><code>umount /dev/sdb2 
-mount -o remount,ro /dev/sdb2
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
-extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
-</code></pre><p>```</p>
-<ul>
-<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
-</ul>
-<ul>
-<li><p>总结经验</p>
-<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
-</li>
-</ul>
-<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;1-论“备份”的重要性&quot;&gt;&lt;a href=&quot;#1-论“备份”的重要性&quot; class=&quot;headerlink&quot; title=&quot;1. 论“备份”的重要性&quot;&gt;&lt;/a&gt;1. 论“备份”的重要性&lt;/h1&gt;&lt;p&gt;今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。&lt;/p&gt;
-&lt;p&gt;被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。&lt;/p&gt;
-&lt;p&gt;我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。&lt;br&gt;
-    
-    </summary>
-    
-      <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
-    
-    
-      <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
-    
-      <category term="Ubuntu" scheme="https://fudawei.github.io/tags/Ubuntu/"/>
-    
-  </entry>
-  
-  <entry>
     <title>Btree</title>
     <link href="https://fudawei.github.io/2016/10/19/Btree/"/>
     <id>https://fudawei.github.io/2016/10/19/Btree/</id>
@@ -1450,6 +1398,58 @@ c)   关键字的个数n必须满足： ceil(m / 2)-1 &lt;= n &lt;= m-1。
       <category term="数据库" scheme="https://fudawei.github.io/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
     
       <category term="索引" scheme="https://fudawei.github.io/tags/%E7%B4%A2%E5%BC%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>ubuntu下恢复rm删除的数据</title>
+    <link href="https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/"/>
+    <id>https://fudawei.github.io/2016/10/19/ubuntu下恢复rm删除的数据/</id>
+    <published>2016-10-19T08:12:41.000Z</published>
+    <updated>2017-02-08T03:39:19.513Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
+<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
+<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
+<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
+<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
+<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
+<li>安装extundelete</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
+<pre><code>umount /dev/sdb2 
+mount -o remount,ro /dev/sdb2
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
+extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
+</code></pre><p>```</p>
+<ul>
+<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
+</ul>
+<ul>
+<li><p>总结经验</p>
+<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
+</li>
+</ul>
+<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;1-论“备份”的重要性&quot;&gt;&lt;a href=&quot;#1-论“备份”的重要性&quot; class=&quot;headerlink&quot; title=&quot;1. 论“备份”的重要性&quot;&gt;&lt;/a&gt;1. 论“备份”的重要性&lt;/h1&gt;&lt;p&gt;今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。&lt;/p&gt;
+&lt;p&gt;被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。&lt;/p&gt;
+&lt;p&gt;我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
+    
+    
+      <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
+    
+      <category term="Ubuntu" scheme="https://fudawei.github.io/tags/Ubuntu/"/>
     
   </entry>
   
