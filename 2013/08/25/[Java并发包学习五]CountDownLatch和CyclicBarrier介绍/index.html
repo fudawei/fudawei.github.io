@@ -1,0 +1,1215 @@
+
+<!doctype html>
+<html class="theme-next use-motion theme-next-mala">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。" />
+
+
+
+  <meta name="keywords" content="Java,并发库," />
+
+
+
+  <link rel="alternate" href="/atom.xml" title="冰鸟" type="application/atom+xml" />
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="概述JDK中提供了一些用于线程之间协同等待的工具类，CountDownLatch和CyclicBarrier就是最典型的两个线程同步辅助类。下面分别详细介绍这两个类，以及他们之间的异同点。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[Java并发包学习五]CountDownLatch和CyclicBarrier介绍">
+<meta property="og:url" content="https://fudawei.github.io/2013/08/25/[Java并发包学习五]CountDownLatch和CyclicBarrier介绍/index.html">
+<meta property="og:site_name" content="冰鸟">
+<meta property="og:description" content="概述JDK中提供了一些用于线程之间协同等待的工具类，CountDownLatch和CyclicBarrier就是最典型的两个线程同步辅助类。下面分别详细介绍这两个类，以及他们之间的异同点。">
+<meta property="og:updated_time" content="2017-02-08T03:39:19.517Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="[Java并发包学习五]CountDownLatch和CyclicBarrier介绍">
+<meta name="twitter:description" content="概述JDK中提供了一些用于线程之间协同等待的工具类，CountDownLatch和CyclicBarrier就是最典型的两个线程同步辅助类。下面分别详细介绍这两个类，以及他们之间的异同点。">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mala',
+    sidebar: 'post'
+  };
+</script>
+
+  <title> [Java并发包学习五]CountDownLatch和CyclicBarrier介绍 | 冰鸟 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">冰鸟-博客</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            <i class="menu-item-icon icon-next-categories"></i> <br />
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            <i class="menu-item-icon icon-next-about"></i> <br />
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            <i class="menu-item-icon icon-next-commonweal"></i> <br />
+            公益404
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    
+      
+
+      
+        <style type="text/css">
+
+    .circle {
+        width: 40px;
+        height: 40px;
+        background: #555 no-repeat;
+        cursor: move;
+    }
+
+    .assist-btn {
+        position: fixed;
+        top: 50％;
+        left: 10px;
+        -moz-border-radius: 50px;
+        -webkit-border-radius: 50px;
+        border-radius: 50px;
+        outline: none;
+        border: none;
+        color: #87daff;
+    }
+
+</style>
+
+<script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+<script type="text/javascript">
+    // 浮动圆点展开与收缩
+    /*
+    $(function () {
+        var assist_box = $('.assist-box');
+        $('#assist_btn').hover(function () {
+            assist_box.stop().show(300);
+        }, function () {
+            assist_box.stop().hide(150);
+        })
+    });
+    */  
+    //浮动圆点拖动
+    $(function () {
+        var box = document.getElementById('assist_btn');
+        box.onmousedown = function (event) {
+            var e = event || window.event,
+                t = e.target || e.srcElement,
+                // 鼠标按下时的坐标x1,y1
+                x1 = e.clientX,
+                y1 = e.clientY,
+                //鼠标按下时的左右偏移量
+                dragLeft = this.offsetLeft,
+                dragTop = this.offsetTop;
+
+            document.onmousemove = function (event) {
+                var e = event || window.event,
+                    t = e.target || e.srcElement,
+                    // 鼠标移动时的动态坐标
+                    x2 = e.clientX,
+                    y2 = e.clientY,
+                    // 鼠标移动时的坐标的变化量
+                    x = x2 - x1,
+                    y = y2 - y1;
+                box.style.left = (dragLeft + x) + 'px';
+                box.style.top = (dragTop + y) + 'px';
+            }
+
+            document.onmouseup = function () {
+                this.onmousemove = null;
+            }
+        }
+    });
+
+/*
+    $whitesmoke   = #f5f5f5
+    $gainsboro    = #eee
+    $gray-lighter = #ddd
+    $grey-light   = #ccc
+    $grey         = #bbb
+    $grey-dark    = #999
+    $grey-dim     = #666
+    $black-light  = #555
+    $black-deep   = #222
+    $red          = #ff2a2a
+    $blue-bright  = #87daff
+    $blue         = #0684bd
+    $blue-deep    = #262a30
+*/
+    // white theme
+    var body = {color: "#555", background: "white"};
+    var a_tag = {color: "#222"};
+    var header = { background: "#f5f5f5"};
+    var logo_line_i = {background: "#222"};
+    // var post_code = {background: "#eee", color: "#222"};
+
+    function switch_theme() {
+        $("body").css(body);
+        $("a:not('.links-of-author-item a, .site-state-item a, .site-state-posts a, .feed-link a, .motion-element a, .post-tags a, .show-commit-cls a, #donate_board a')").css(a_tag);
+        $(".header, .footer").css(header);
+        $(".logo-line-before i, .logo-line-after i").css(logo_line_i);
+        //$(".post code").css(post_code);
+        $("#idhyt-surprise-ball #idhyt-surprise-ball-animation .drag").css(a_tag);
+        $(".post-title-link, .posts-expand .post-meta, .post-comments-count, .disqus-comment-count, .post-category a, .post-nav-next a, .post-nav-item a").css(a_tag);
+        
+        // $("code").css({color: '#c5c8c6', background: '#1d1f21'});
+        $("#assist_btn").hide(1500);
+    }
+
+    $(function () {
+        $("#assist_btn").dblclick(function() {
+            switch_theme();
+        });
+    });
+
+</script>
+
+<div>
+
+    <button class="assist-btn circle" id="assist_btn" title="双击切换">
+        亮
+    </button>
+
+</div>
+
+
+
+
+
+
+
+
+
+      
+
+    
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              [Java并发包学习五]CountDownLatch和CyclicBarrier介绍
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2013-08-25T01:06:01+08:00" content="2013-08-25">
+            2013-08-25
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/" itemprop="url" rel="index">
+                  <span itemprop="name">Java</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/并发库/" itemprop="url" rel="index">
+                  <span itemprop="name">并发库</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2013/08/25/[Java并发包学习五]CountDownLatch和CyclicBarrier介绍/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2013/08/25/[Java并发包学习五]CountDownLatch和CyclicBarrier介绍/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2013/08/25/[Java并发包学习五]CountDownLatch和CyclicBarrier介绍/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2013/08/25/[Java并发包学习五]CountDownLatch和CyclicBarrier介绍/"class="leancloud_visitors" data-flag-title="[Java并发包学习五]CountDownLatch和CyclicBarrier介绍">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>JDK中提供了一些用于线程之间协同等待的工具类，CountDownLatch和CyclicBarrier就是最典型的两个线程同步辅助类。下面分别详细介绍这两个类，以及他们之间的异同点。<br><a id="more"></a></p>
+<h1 id="CountDownLatch类"><a href="#CountDownLatch类" class="headerlink" title="CountDownLatch类"></a>CountDownLatch类</h1><p>CountDownLatch顾名思义：<strong>倒计数锁存器</strong>。没错，他就是一个计数器，并且是倒着计数的。他的应用场景如下：</p>
+<blockquote>
+<p>一个任务A，他需要等待其他的一些任务都执行完毕之后它才能执行。就比如说赛跑的时候，发令员需要等待所有运动员都准备好了才能发令，否则不被K才怪嘞！</p>
+</blockquote>
+<p>此时CountDownLatch就可以大展身手了。</p>
+<h2 id="常用操作"><a href="#常用操作" class="headerlink" title="常用操作"></a>常用操作</h2><p>本节介绍CountDownLatch的基本操作函数。</p>
+<h3 id="构造函数"><a href="#构造函数" class="headerlink" title="构造函数"></a>构造函数</h3><p>函数签名如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">public CountDownLatch(int count)</div></pre></td></tr></table></figure>
+<p>用一个给定的数值初始化CountDownLatch，之后计数器就从这个值开始倒计数，直到计数值达到零。</p>
+<h3 id="await函数"><a href="#await函数" class="headerlink" title="await函数"></a>await函数</h3><p>await函数用两种形式，签名分别如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">public void await() throws InterruptedException</div><div class="line">public boolean await(long timeout, TimeUnit unit)</div></pre></td></tr></table></figure>
+<p>这两个函数的作用都是让线程阻塞等待其他线程，直到CountDownLatch的计数值变为0才继续执行之后的操作。区别在于第一个函数没有等待时间限制，可以等到天荒地老，海枯石烂，第二个函数给定一个等待超时时间，超过该时间就直接放弃了，并且第二个函数具有返回值，超时时间之内CountDownLatch的值达到0就返回<strong>true</strong>,等待时间结束计数值都还没达到0就返回<strong>false</strong>。这两个操作在等待过程中如果等待的线程被中断，则会抛出InterruptedException异常。</p>
+<h3 id="countDown函数"><a href="#countDown函数" class="headerlink" title="countDown函数"></a>countDown函数</h3><p>这个函数用来将CountDownLatch的计数值减一，函数签名如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">public void countDown()</div></pre></td></tr></table></figure>
+<p>需要说明的是，如果调用这个函数的时候CountDownLatch的计数值已经为0，那么这个函数什么也不会做。</p>
+<h3 id="getCount函数"><a href="#getCount函数" class="headerlink" title="getCount函数"></a>getCount函数</h3><p>该函数用来获取当前CountDownLatch的计数值，函数签名如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">public void countDown()</div></pre></td></tr></table></figure>
+<h2 id="模拟实验"><a href="#模拟实验" class="headerlink" title="模拟实验"></a>模拟实验</h2><p>理论知识讲完了，需要真枪实战地来演示一下这个类的作用，我们就以下面这个场景为例子，用CountDownLatch来实现这个需求：</p>
+<blockquote>
+<p>有5个运动员赛跑，开跑之前，裁判需要等待5个运动员都准备好才能发令，并且5个运动员准备好之后也都需要等待裁判发令才能开跑。</p>
+</blockquote>
+<p>首先分析一下依赖关系：</p>
+<blockquote>
+<p>裁判发令 -&gt; 5个运动员都准备好；<br>5个运动员开跑 -&gt; 裁判发令。</p>
+</blockquote>
+<p>好，依赖关系已经出来了，代码实现：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div></pre></td><td class="code"><pre><div class="line">package com.winwill.test;</div><div class="line"></div><div class="line">import java.util.Random;</div><div class="line">import java.util.concurrent.CountDownLatch;</div><div class="line"></div><div class="line">/**</div><div class="line"> * @author qifuguang</div><div class="line"> * @date 15/8/24 23:35</div><div class="line"> */</div><div class="line">public class TestCountDownLatch &#123;</div><div class="line">    private static final int RUNNER_NUMBER = 5; // 运动员个数</div><div class="line">    private static final Random RANDOM = new Random();</div><div class="line"></div><div class="line">    public static void main(String[] args) &#123;</div><div class="line">        // 用于判断发令之前运动员是否已经完全进入准备状态，需要等待5个运动员，所以参数为5</div><div class="line">        CountDownLatch readyLatch = new CountDownLatch(RUNNER_NUMBER);</div><div class="line">        // 用于判断裁判是否已经发令，只需要等待一个裁判，所以参数为1</div><div class="line">        CountDownLatch startLatch = new CountDownLatch(1);</div><div class="line">        for (int i = 0; i &lt; RUNNER_NUMBER; i++) &#123;</div><div class="line">            Thread t = new Thread(new Runner((i + 1) + &quot;号运动员&quot;, readyLatch, startLatch));</div><div class="line">            t.start();</div><div class="line">        &#125;</div><div class="line">        try &#123;</div><div class="line">            readyLatch.await();</div><div class="line">        &#125; catch (InterruptedException e) &#123;</div><div class="line">            e.printStackTrace();</div><div class="line">        &#125;</div><div class="line">        startLatch.countDown();</div><div class="line">        System.out.println(&quot;裁判：所有运动员准备完毕，开始...&quot;);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    static class Runner implements Runnable &#123;</div><div class="line">        private CountDownLatch readyLatch;</div><div class="line">        private CountDownLatch startLatch;</div><div class="line">        private String name;</div><div class="line"></div><div class="line">        public Runner(String name, CountDownLatch readyLatch, CountDownLatch startLatch) &#123;</div><div class="line">            this.name = name;</div><div class="line">            this.readyLatch = readyLatch;</div><div class="line">            this.startLatch = startLatch;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        public void run() &#123;</div><div class="line">            int readyTime = RANDOM.nextInt(1000);</div><div class="line">            System.out.println(name + &quot;：我需要&quot; + readyTime + &quot;秒时间准备.&quot;);</div><div class="line">            try &#123;</div><div class="line">                Thread.sleep(readyTime);</div><div class="line">            &#125; catch (InterruptedException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125;</div><div class="line">            System.out.println(name + &quot;：我已经准备完毕.&quot;);</div><div class="line">            readyLatch.countDown();</div><div class="line">            try &#123;</div><div class="line">                startLatch.await();  // 等待裁判发开始命令</div><div class="line">            &#125; catch (InterruptedException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125;</div><div class="line">            System.out.println(name + &quot;：开跑...&quot;);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>运行结果如下：</p>
+<blockquote>
+<p>1号运动员：我需要389秒时间准备.<br>2号运动员：我需要449秒时间准备.<br>3号运动员：我需要160秒时间准备.<br>4号运动员：我需要325秒时间准备.<br>5号运动员：我需要978秒时间准备.<br>3号运动员：我已经准备完毕.<br>4号运动员：我已经准备完毕.<br>1号运动员：我已经准备完毕.<br>2号运动员：我已经准备完毕.<br>5号运动员：我已经准备完毕.<br>裁判：所有运动员准备完毕，开始…<br>1号运动员：开跑…<br>5号运动员：开跑…<br>2号运动员：开跑…<br>4号运动员：开跑…<br>3号运动员：开跑…  </p>
+</blockquote>
+<p>可以看到，一切都是如此地完美，运动员准备好了之后裁判才发令，裁判发令之后运动员才开跑。</p>
+<h1 id="CyclicBarrier类"><a href="#CyclicBarrier类" class="headerlink" title="CyclicBarrier类"></a>CyclicBarrier类</h1><p>CyclicBarrier翻译过来就是：循环的屏障。什么是循环？可以重复利用呗，对这个类就是一个可以重复利用的屏障类。CyclicBarrier主要用于一组固定大小的线程之间，各个线程之间相互等待，当所有线程都完成某项任务之后，才能执行之后的任务。<br>如下场景：</p>
+<blockquote>
+<p>有若干个线程都需要向一个数据库写数据，但是必须要所有的线程都讲数据写入完毕他们才能继续做之后的事情。</p>
+</blockquote>
+<p>分析一下这个场景的特征： </p>
+<ul>
+<li>各个线程都必须完成某项任务(写数据)才能继续做后续的任务；  </li>
+<li>各个线程需要相互等待，不能独善其身。</li>
+</ul>
+<p>这种场景便可以利用CyclicBarrier来完美解决。</p>
+<h2 id="常用函数"><a href="#常用函数" class="headerlink" title="常用函数"></a>常用函数</h2><p>本节介绍CyclicBarrier的基本操作函数。</p>
+<h3 id="构造函数-1"><a href="#构造函数-1" class="headerlink" title="构造函数"></a>构造函数</h3><p>有两种类型的构造函数，函数签名分别如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">public CyclicBarrier(int parties, Runnable barrierAction)</div><div class="line">public CyclicBarrier(int parties)</div></pre></td></tr></table></figure>
+<p>参数parties表示一共有多少线程参与这次“活动”，参数barrierAction是可选的，用来指定当所有线程都完成这些必须的“神秘任务”之后需要干的事情，所以barrierAction这里的动作在一个相互等待的循环内只会执行一次。</p>
+<h3 id="getParties函数"><a href="#getParties函数" class="headerlink" title="getParties函数"></a>getParties函数</h3><p>getParties用来获取当前的CyclicBarrier一共有多少线程参数与，函数签名如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">public int getParties()</div></pre></td></tr></table></figure>
+<p>返回参与“活动”的线程个数。</p>
+<h3 id="await函数-1"><a href="#await函数-1" class="headerlink" title="await函数"></a>await函数</h3><p>await函数用来执行等待操作，有两种类型的函数签名：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">public int await() throws InterruptedException, BrokenBarrierException</div><div class="line">public int await(long timeout, TimeUnit unit)</div><div class="line">        throws InterruptedException,</div><div class="line">               BrokenBarrierException,</div><div class="line">               TimeoutException</div></pre></td></tr></table></figure>
+<p>第一个函数是一个无参函数，第二个函数可以指定等待的超时时间。它们的作用是：一直等待知道所有参与“活动”的线程都调用过await函数，如果当前线程不是即将调用await函数的的最后一个线程，当前线程将会被挂起，直到下列某一种情况发生：</p>
+<ul>
+<li>最后一个线程调用了await函数；</li>
+<li>某个线程打断了当前线程；</li>
+<li>某个线程打断了其他某个正在等待的线程；</li>
+<li>其他某个线程等待时间超过给定的超时时间；</li>
+<li>其他某个线程调用了reset函数。</li>
+</ul>
+<p>如果等待过程中线程被打断了，则会抛出InterruptedException异常；<br>如果等待过程中出现下列情况中的某一种情况，则会抛出BrokenBarrierException异常：</p>
+<ul>
+<li>其他线程被打断了；</li>
+<li>当前线程等待超时了；</li>
+<li>当前CyclicBarrier被reset了；</li>
+<li>等待过程中CyclicBarrier损坏了；</li>
+<li>构造函数中指定的barrierAction在执行过程中发生了异常。</li>
+</ul>
+<p>如果等待时间超过给定的最大等待时间，则会抛出TimeoutException异常，并且这个时候其他已经嗲用过await函数的线程将会继续后续的动作。</p>
+<p>返回值：返回当前线程在调用过await函数的所以线程中的编号，编号为<strong>parties-1</strong>的表示第一个调用await函数，编号为0表示是最后一个调用await函数。</p>
+<h3 id="isBroken函数"><a href="#isBroken函数" class="headerlink" title="isBroken函数"></a>isBroken函数</h3><p>给函数用来判断barrier是否已经损坏，函数签名如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">public boolean isBroken()</div></pre></td></tr></table></figure>
+<p>如果因为任何原因被损坏返回<strong>true</strong>，否则返回<strong>false</strong>。</p>
+<h3 id="reset函数"><a href="#reset函数" class="headerlink" title="reset函数"></a>reset函数</h3><p>顾名思义，这个函数用来重置barrier，函数签名如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">public void reset()</div></pre></td></tr></table></figure>
+<p>如果调用了该函数，则在等待的线程将会抛出BrokenBarrierException异常。</p>
+<h3 id="getNumberWaiting函数"><a href="#getNumberWaiting函数" class="headerlink" title="getNumberWaiting函数"></a>getNumberWaiting函数</h3><p>该函数用来获取当前正在等待该barrier的线程数，函数签名如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">public int getNumberWaiting()</div></pre></td></tr></table></figure>
+<h2 id="模拟实验-1"><a href="#模拟实验-1" class="headerlink" title="模拟实验"></a>模拟实验</h2><p>下面用代码实现下面的场景：</p>
+<blockquote>
+<p>有5个线程都需要向一个数据库写数据，但是必须要所有的线程都讲数据写入完毕他们才能继续做之后的事情。</p>
+</blockquote>
+<h3 id="一般情况"><a href="#一般情况" class="headerlink" title="一般情况"></a>一般情况</h3><p>代码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div></pre></td><td class="code"><pre><div class="line">package com.winwill.test;</div><div class="line"></div><div class="line">import java.util.Random;</div><div class="line">import java.util.concurrent.BrokenBarrierException;</div><div class="line">import java.util.concurrent.CyclicBarrier;</div><div class="line"></div><div class="line">/**</div><div class="line"> * @author qifuguang</div><div class="line"> * @date 15/8/25 00:34</div><div class="line"> */</div><div class="line">public class TestCyclicBarrier &#123;</div><div class="line">    private static final int THREAD_NUMBER = 5;</div><div class="line">    private static final Random RANDOM = new Random();</div><div class="line"></div><div class="line">    public static void main(String[] args) &#123;</div><div class="line">        CyclicBarrier barrier = new CyclicBarrier(THREAD_NUMBER, new Runnable() &#123;</div><div class="line">            public void run() &#123;</div><div class="line">                System.out.println(Thread.currentThread().getId() + &quot;：我宣布，所有小伙伴写入数据完毕&quot;);</div><div class="line">            &#125;</div><div class="line">        &#125;);</div><div class="line">        for (int i = 0; i &lt; THREAD_NUMBER; i++) &#123;</div><div class="line">            Thread t = new Thread(new Worker(barrier));</div><div class="line">            t.start();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    static class Worker implements Runnable &#123;</div><div class="line">        private CyclicBarrier barrier;</div><div class="line"></div><div class="line">        public Worker(CyclicBarrier barrier) &#123;</div><div class="line">            this.barrier = barrier;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        public void run() &#123;</div><div class="line">            int time = RANDOM.nextInt(1000);</div><div class="line">            System.out.println(Thread.currentThread().getId() + &quot;：我需要&quot; + time + &quot;毫秒时间写入数据.&quot;);</div><div class="line">            try &#123;</div><div class="line">                Thread.sleep(time);</div><div class="line">            &#125; catch (InterruptedException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125;</div><div class="line">            System.out.println(Thread.currentThread().getId() + &quot;：写入数据完毕，等待其他小伙伴...&quot;);</div><div class="line">            try &#123;</div><div class="line">                barrier.await(); // 等待所有线程都调用过此函数才能进行后续动作</div><div class="line">            &#125; catch (InterruptedException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125; catch (BrokenBarrierException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125;</div><div class="line">            System.out.println(Thread.currentThread().getId() + &quot;：所有线程都写入数据完毕，继续干活...&quot;);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>运行结果如下：</p>
+<blockquote>
+<p>10：我需要16毫秒时间写入数据.<br>11：我需要353毫秒时间写入数据.<br>12：我需要101毫秒时间写入数据.<br>13：我需要744毫秒时间写入数据.<br>14：我需要51毫秒时间写入数据.<br>10：写入数据完毕，等待其他小伙伴…<br>14：写入数据完毕，等待其他小伙伴…<br>12：写入数据完毕，等待其他小伙伴…<br>11：写入数据完毕，等待其他小伙伴…<br>13：写入数据完毕，等待其他小伙伴…<br>13：我宣布，所有小伙伴写入数据完毕<br>13：所有线程都写入数据完毕，继续干活…<br>10：所有线程都写入数据完毕，继续干活…<br>12：所有线程都写入数据完毕，继续干活…<br>14：所有线程都写入数据完毕，继续干活…<br>11：所有线程都写入数据完毕，继续干活…   </p>
+</blockquote>
+<p>可以看到，线程小伙伴们非常团结，写完自己的数据之后都在等待其他小伙伴，所有小伙伴都完成之后才继续后续的动作。</p>
+<h3 id="重复使用"><a href="#重复使用" class="headerlink" title="重复使用"></a>重复使用</h3><p>上面的例子并没有体现CyclicBarrier可以循环使用的特点，所以有如下代码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div></pre></td><td class="code"><pre><div class="line">package com.winwill.test;</div><div class="line"></div><div class="line">import java.util.Random;</div><div class="line">import java.util.concurrent.BrokenBarrierException;</div><div class="line">import java.util.concurrent.CyclicBarrier;</div><div class="line"></div><div class="line">/**</div><div class="line"> * @author qifuguang</div><div class="line"> * @date 15/8/25 00:34</div><div class="line"> */</div><div class="line">public class TestCyclicBarrier &#123;</div><div class="line">    private static final int THREAD_NUMBER = 5;</div><div class="line">    private static final Random RANDOM = new Random();</div><div class="line"></div><div class="line">    public static void main(String[] args) throws Exception &#123;</div><div class="line">        CyclicBarrier barrier = new CyclicBarrier(THREAD_NUMBER, new Runnable() &#123;</div><div class="line">            public void run() &#123;</div><div class="line">                System.out.println(Thread.currentThread().getId() + &quot;：我宣布，所有小伙伴写入数据完毕&quot;);</div><div class="line">            &#125;</div><div class="line">        &#125;);</div><div class="line">        for (int i = 0; i &lt; THREAD_NUMBER; i++) &#123;</div><div class="line">            Thread t = new Thread(new Worker(barrier));</div><div class="line">            t.start();</div><div class="line">        &#125;</div><div class="line">        Thread.sleep(10000);</div><div class="line">        System.out.println(&quot;================barrier重用==========================&quot;);</div><div class="line">        for (int i = 0; i &lt; THREAD_NUMBER; i++) &#123;</div><div class="line">            Thread t = new Thread(new Worker(barrier));</div><div class="line">            t.start();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    static class Worker implements Runnable &#123;</div><div class="line">        private CyclicBarrier barrier;</div><div class="line"></div><div class="line">        public Worker(CyclicBarrier barrier) &#123;</div><div class="line">            this.barrier = barrier;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        public void run() &#123;</div><div class="line">            int time = RANDOM.nextInt(1000);</div><div class="line">            System.out.println(Thread.currentThread().getId() + &quot;：我需要&quot; + time + &quot;毫秒时间写入数据.&quot;);</div><div class="line">            try &#123;</div><div class="line">                Thread.sleep(time);</div><div class="line">            &#125; catch (InterruptedException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125;</div><div class="line">            System.out.println(Thread.currentThread().getId() + &quot;：写入数据完毕，等待其他小伙伴...&quot;);</div><div class="line">            try &#123;</div><div class="line">                barrier.await(); // 等待所有线程都调用过此函数才能进行后续动作</div><div class="line">            &#125; catch (InterruptedException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125; catch (BrokenBarrierException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125;</div><div class="line">            System.out.println(Thread.currentThread().getId() + &quot;：所有线程都写入数据完毕，继续干活...&quot;);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>运行结果：</p>
+<blockquote>
+<p>10：我需要228毫秒时间写入数据.<br>11：我需要312毫秒时间写入数据.<br>12：我需要521毫秒时间写入数据.<br>13：我需要720毫秒时间写入数据.<br>14：我需要377毫秒时间写入数据.<br>10：写入数据完毕，等待其他小伙伴…<br>11：写入数据完毕，等待其他小伙伴…<br>14：写入数据完毕，等待其他小伙伴…<br>12：写入数据完毕，等待其他小伙伴…<br>13：写入数据完毕，等待其他小伙伴…<br>13：我宣布，所有小伙伴写入数据完毕<br>13：所有线程都写入数据完毕，继续干活…<br>10：所有线程都写入数据完毕，继续干活…<br>11：所有线程都写入数据完毕，继续干活…<br>14：所有线程都写入数据完毕，继续干活…<br>12：所有线程都写入数据完毕，继续干活…<br>================barrier重用==========================<br>15：我需要212毫秒时间写入数据.<br>16：我需要691毫秒时间写入数据.<br>17：我需要530毫秒时间写入数据.<br>18：我需要758毫秒时间写入数据.<br>19：我需要604毫秒时间写入数据.<br>15：写入数据完毕，等待其他小伙伴…<br>17：写入数据完毕，等待其他小伙伴…<br>19：写入数据完毕，等待其他小伙伴…<br>16：写入数据完毕，等待其他小伙伴…<br>18：写入数据完毕，等待其他小伙伴…<br>18：我宣布，所有小伙伴写入数据完毕<br>18：所有线程都写入数据完毕，继续干活…<br>15：所有线程都写入数据完毕，继续干活…<br>19：所有线程都写入数据完毕，继续干活…<br>16：所有线程都写入数据完毕，继续干活…<br>17：所有线程都写入数据完毕，继续干活…  </p>
+</blockquote>
+<p>可以看到，barrier的确是重用了。</p>
+<h3 id="等待超时"><a href="#等待超时" class="headerlink" title="等待超时"></a>等待超时</h3><p>如果await的时候设置了一个最长等待时间，并且等待超时，则会怎么样呢？下面的例子故意让一个线程延迟一段时间才开始写数据，这样就会出现先等待的线程等待最后一个线程抛出等待超时异常的情况。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div></pre></td><td class="code"><pre><div class="line">package com.winwill.test;</div><div class="line"></div><div class="line">import java.util.Random;</div><div class="line">import java.util.concurrent.BrokenBarrierException;</div><div class="line">import java.util.concurrent.CyclicBarrier;</div><div class="line">import java.util.concurrent.TimeUnit;</div><div class="line">import java.util.concurrent.TimeoutException;</div><div class="line"></div><div class="line">/**</div><div class="line"> * @author qifuguang</div><div class="line"> * @date 15/8/25 00:34</div><div class="line"> */</div><div class="line">public class TestCyclicBarrier &#123;</div><div class="line">    private static final int THREAD_NUMBER = 5;</div><div class="line">    private static final Random RANDOM = new Random();</div><div class="line"></div><div class="line">    public static void main(String[] args) throws Exception &#123;</div><div class="line">        CyclicBarrier barrier = new CyclicBarrier(THREAD_NUMBER, new Runnable() &#123;</div><div class="line">            public void run() &#123;</div><div class="line">                System.out.println(Thread.currentThread().getId() + &quot;：我宣布，所有小伙伴写入数据完毕&quot;);</div><div class="line">            &#125;</div><div class="line">        &#125;);</div><div class="line">        for (int i = 0; i &lt; THREAD_NUMBER; i++) &#123;</div><div class="line">            if (i &lt; THREAD_NUMBER - 1) &#123;</div><div class="line">                Thread t = new Thread(new Worker(barrier));</div><div class="line">                t.start();</div><div class="line">            &#125; else &#123;  //最后一个线程故意延迟3s创建。</div><div class="line">                Thread.sleep(3000);</div><div class="line">                Thread t = new Thread(new Worker(barrier));</div><div class="line">                t.start();</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    static class Worker implements Runnable &#123;</div><div class="line">        private CyclicBarrier barrier;</div><div class="line"></div><div class="line">        public Worker(CyclicBarrier barrier) &#123;</div><div class="line">            this.barrier = barrier;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        public void run() &#123;</div><div class="line">            int time = RANDOM.nextInt(1000);</div><div class="line">            System.out.println(Thread.currentThread().getId() + &quot;：我需要&quot; + time + &quot;毫秒时间写入数据.&quot;);</div><div class="line">            try &#123;</div><div class="line">                Thread.sleep(time);</div><div class="line">            &#125; catch (InterruptedException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125;</div><div class="line">            System.out.println(Thread.currentThread().getId() + &quot;：写入数据完毕，等待其他小伙伴...&quot;);</div><div class="line">            try &#123;</div><div class="line">                barrier.await(2000, TimeUnit.MILLISECONDS); // 只等待2s，必然会等待最后一个线程超时</div><div class="line">            &#125; catch (InterruptedException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125; catch (BrokenBarrierException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125; catch (TimeoutException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125;</div><div class="line">            System.out.println(Thread.currentThread().getId() + &quot;：所有线程都写入数据完毕，继续干活...&quot;);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>运行结果：</p>
+<blockquote>
+<p>10：我需要820毫秒时间写入数据.<br>11：我需要140毫秒时间写入数据.<br>12：我需要640毫秒时间写入数据.<br>13：我需要460毫秒时间写入数据.<br>11：写入数据完毕，等待其他小伙伴…<br>13：写入数据完毕，等待其他小伙伴…<br>12：写入数据完毕，等待其他小伙伴…<br>10：写入数据完毕，等待其他小伙伴…<br>java.util.concurrent.BrokenBarrierException<br>12：所有线程都写入数据完毕，继续干活…<br>    at java.util.concurrent.CyclicBarrier.dowait(CyclicBarrier.java:250)<br>    at java.util.concurrent.CyclicBarrier.await(CyclicBarrier.java:435)<br>13：所有线程都写入数据完毕，继续干活…<br>11：所有线程都写入数据完毕，继续干活…<br>10：所有线程都写入数据完毕，继续干活…<br>    at com.winwill.test.TestCyclicBarrier$Worker.run(TestCyclicBarrier.java:52)<br>    at java.lang.Thread.run(Thread.java:744)<br>java.util.concurrent.BrokenBarrierException<br>    at java.util.concurrent.CyclicBarrier.dowait(CyclicBarrier.java:250)<br>    at java.util.concurrent.CyclicBarrier.await(CyclicBarrier.java:435)<br>    at com.winwill.test.TestCyclicBarrier$Worker.run(TestCyclicBarrier.java:52)<br>    at java.lang.Thread.run(Thread.java:744)<br>java.util.concurrent.TimeoutException<br>    at java.util.concurrent.CyclicBarrier.dowait(CyclicBarrier.java:257)<br>    at java.util.concurrent.CyclicBarrier.await(CyclicBarrier.java:435)<br>    at com.winwill.test.TestCyclicBarrier$Worker.run(TestCyclicBarrier.java:52)<br>    at java.lang.Thread.run(Thread.java:744)<br>java.util.concurrent.BrokenBarrierException<br>    at java.util.concurrent.CyclicBarrier.dowait(CyclicBarrier.java:250)<br>    at java.util.concurrent.CyclicBarrier.await(CyclicBarrier.java:435)<br>    at com.winwill.test.TestCyclicBarrier$Worker.run(TestCyclicBarrier.java:52)<br>    at java.lang.Thread.run(Thread.java:744)<br>14：我需要850毫秒时间写入数据.<br>java.util.concurrent.BrokenBarrierException<br>14：写入数据完毕，等待其他小伙伴…<br>14：所有线程都写入数据完毕，继续干活…<br>    at java.util.concurrent.CyclicBarrier.dowait(CyclicBarrier.java:207)<br>    at java.util.concurrent.CyclicBarrier.await(CyclicBarrier.java:435)<br>    at com.winwill.test.TestCyclicBarrier$Worker.run(TestCyclicBarrier.java:52)<br>    at java.lang.Thread.run(Thread.java:744)  </p>
+</blockquote>
+<p>可以看到，前面四个线程等待最后一个线程超时了，这个时候他们不再等待最后这个小伙伴了，而是抛出异常并都继续后续的动作。最后这个线程屁颠屁颠地完成写入数据操作之后也继续了后续的动作。需要说明的是，发生了超时异常时候，还没有完成“神秘任务”的线程在完成任务之后不会做任何等待，而是会直接执行后续的操作。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>CountDownLatch和CyclicBarrier都能够实现线程之间的等待，只不过它们侧重点不同：</p>
+<ul>
+<li>CountDownLatch一般用于某个线程A等待若干个其他线程执行完任务之后，它才执行；</li>
+<li>CyclicBarrier一般用于一组线程互相等待至某个状态，然后这一组线程再同时执行；</li>
+<li>CountDownLatch是不能够重用的，而CyclicBarrier是可以重用的。</li>
+</ul>
+<h1 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h1><p>转载请注明出处：<a href="http://fudawei.github.io/2015/08/25/[Java并发包学习五]CountDownLatch和CyclicBarrier介绍">http://fudawei.github.io/2015/08/25/[Java并发包学习五]CountDownLatch和CyclicBarrier介绍</a></p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Java/" rel="tag">#Java</a>
+          
+            <a href="/tags/并发库/" rel="tag">#并发库</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2013/08/26/[Java并发包学习六]Semaphore介绍/" rel="prev">[Java并发包学习六]Semaphore介绍</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2013/08/21/[Java并发包学习四]Future和FutureTask/" rel="next">[Java并发包学习四]Future和FutureTask</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div>
+      
+        <style type="text/css">
+
+    .donate_bar {
+        text-align: center;
+        margin-top : 5%;
+    }
+
+    .donate_bar.hidden {
+        display:none;
+    }
+/*
+    .donate_bar a.btn_donate {
+        display: inline-block;
+        width: 82px;
+        height: 82px;
+        margin-left:auto;
+        margin-right:auto;
+
+        background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat;
+        _background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat; 
+
+        -webkit-transition: background 0s;
+        -moz-transition: background 0s;
+        -o-transition: background 0s;
+        -ms-transition: background 0s;
+        transition: background 0s;
+    }
+*/
+    .donate_bar a.btn_donate:hover { 
+        // background-position: 0px -82px;
+        color: #87daff
+    }
+
+    .donate_bar .donate_txt {
+        display: block;
+        color: #9d9d9d;
+        font: 14px/2 "Microsoft Yahei";
+    }
+
+    .bold { 
+        font-weight: bold; 
+    }
+
+    .post-donate a {
+        border-bottom: 0px;
+    }
+
+    #donate_guide table {
+        border: none;
+    }
+
+    #donate_guide td {
+        border-bottom: none;
+        border-right: none;
+        background: #333333;
+        valign: top;
+    }
+
+</style>
+
+
+
+    
+
+    <div class ="post-donate">
+        <div id="donate_board" class="donate_bar center">
+              <a id="btn_donate" class="btn_donate" href="javascript:;" title="打赏">赏</a>
+              <span id="donate_txt" class="donate_txt">
+                   
+                        仅仅是一个功能
+                   
+              </span>
+            <br>
+        </div>  
+  
+        <div id="donate_guide" class="donate_bar center hidden">
+            <!--
+            
+                <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                    style="float:left;margin-left:25%;margin-right:10px;">
+                    <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                </a> 
+              
+
+            
+                <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                    style="margin-right:30%">
+                    <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                </a>
+            
+            -->
+            <table>
+                <tr>
+                    <td>
+                        
+                            <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                                style="float:left;margin-left:25%;margin-right:10px;">
+                                <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                            </a> 
+                         
+                    </td>
+                    <td>
+                        
+                            <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                                style="margin-right:30%">
+                                <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                            </a>
+                        
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+
+        <script type="text/javascript">
+            document.getElementById('btn_donate').onclick = function() {
+                $('#donate_board').addClass('hidden');
+                // $('#donate_guide').removeClass('hidden');
+                $('#donate_guide').show(2000);
+            }
+
+        </script>
+    </div>
+
+    
+
+
+      
+    </div>
+
+    <div class="post-spread">
+      
+        <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+  <a class="jiathis_button_tsina"></a>
+  <a class="jiathis_button_tqq"></a>
+  <a class="jiathis_button_weixin"></a>
+  <a class="jiathis_button_cqq"></a>
+  <a class="jiathis_button_douban"></a>
+  <a class="jiathis_button_renren"></a>
+  <a class="jiathis_button_qzone"></a>
+  <a class="jiathis_button_kaixin001"></a>
+  <a class="jiathis_button_copy"></a>
+  <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank"></a>
+  <a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" >
+  var jiathis_config={
+    hideMore:false
+  }
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+            <!-- 多说热评文章-->
+            <p>热评文章</p>
+            <div class="ds-top-threads" data-range="weekly" data-num-items="4"></div>
+        
+
+        
+          <div class="comments" id="comments">
+            
+              <div class="ds-thread" data-thread-key="2013/08/25/[Java并发包学习五]CountDownLatch和CyclicBarrier介绍/"
+                   data-title="[Java并发包学习五]CountDownLatch和CyclicBarrier介绍" data-url="https://fudawei.github.io/2013/08/25/[Java并发包学习五]CountDownLatch和CyclicBarrier介绍/">
+              </div>
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/default_avatar.jpg" alt="冰鸟" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">冰鸟</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">143</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          <div class="site-state-item site-state-categories">
+            <a href="/categories">
+              <span class="site-state-item-count">55</span>
+              <span class="site-state-item-name">分类</span>
+              </a>
+          </div>
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">80</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="menu-item-icon icon-next-feed"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/fudw1987" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://www.zhihu.com/people/fu-da-wei-70" target="_blank">知乎</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://t.qq.com/fudw764923019" target="_blank">微博</a>
+              </span>
+            
+          
+        </div>
+
+        <div class="links-of-friendly motion-element">
+          
+        </div>
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CountDownLatch类"><span class="nav-number">2.</span> <span class="nav-text">CountDownLatch类</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#常用操作"><span class="nav-number">2.1.</span> <span class="nav-text">常用操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#构造函数"><span class="nav-number">2.1.1.</span> <span class="nav-text">构造函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#await函数"><span class="nav-number">2.1.2.</span> <span class="nav-text">await函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#countDown函数"><span class="nav-number">2.1.3.</span> <span class="nav-text">countDown函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#getCount函数"><span class="nav-number">2.1.4.</span> <span class="nav-text">getCount函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模拟实验"><span class="nav-number">2.2.</span> <span class="nav-text">模拟实验</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CyclicBarrier类"><span class="nav-number">3.</span> <span class="nav-text">CyclicBarrier类</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#常用函数"><span class="nav-number">3.1.</span> <span class="nav-text">常用函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#构造函数-1"><span class="nav-number">3.1.1.</span> <span class="nav-text">构造函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#getParties函数"><span class="nav-number">3.1.2.</span> <span class="nav-text">getParties函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#await函数-1"><span class="nav-number">3.1.3.</span> <span class="nav-text">await函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#isBroken函数"><span class="nav-number">3.1.4.</span> <span class="nav-text">isBroken函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#reset函数"><span class="nav-number">3.1.5.</span> <span class="nav-text">reset函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#getNumberWaiting函数"><span class="nav-number">3.1.6.</span> <span class="nav-text">getNumberWaiting函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模拟实验-1"><span class="nav-number">3.2.</span> <span class="nav-text">模拟实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#一般情况"><span class="nav-number">3.2.1.</span> <span class="nav-text">一般情况</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#重复使用"><span class="nav-number">3.2.2.</span> <span class="nav-text">重复使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#等待超时"><span class="nav-number">3.2.3.</span> <span class="nav-text">等待超时</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#注意事项"><span class="nav-number">5.</span> <span class="nav-text">注意事项</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<div class="copyright" >
+  
+  &copy; &nbsp; 
+  <span itemprop="copyrightYear">2017
+  </span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">冰鸟
+  </span>
+</div>
+
+<div class="powered-by">
+  Powered by <a class="theme-link" href="http://hexo.io">Hexo</a>
+</div>
+
+<div class="theme-info">
+  Theme by <a class="theme-link" href="https://github.com/fudawei">fudawei</a>
+</div>
+ &nbsp; |  &nbsp; 
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+  &nbsp; |  &nbsp; 
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+<!-- busuanzi -->
+
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"fudawei"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+    
+
+    
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+      processEscapes: true,
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for (i=0; i < all.length; i += 1) {
+      all[i].SourceElement().parentNode.className += ' has-jax';
+    }
+  });
+</script>
+
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+
+<!-- custom analytics part create by xiamo -->
+<script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+<script>AV.initialize("SbuO6UqesUpwpVQpFOF85w4b-gzGzoHsz", "nU6WMv6iTcTpjLHKtOIoovuO");</script>
+<script>
+function showTime(Counter) {
+	var query = new AV.Query(Counter);
+	$(".leancloud_visitors").each(function() {
+		var url = $(this).attr("id").trim();
+		query.equalTo("url", url);
+		query.find({
+			success: function(results) {
+				if (results.length == 0) {
+					var content = '0 ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+					return;
+				}
+				for (var i = 0; i < results.length; i++) {
+					var object = results[i];
+					var content = object.get('time') + ' ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+				}
+			},
+			error: function(object, error) {
+				console.log("Error: " + error.code + " " + error.message);
+			}
+		});
+
+	});
+}
+
+function addCount(Counter) {
+	var Counter = AV.Object.extend("Counter");
+	url = $(".leancloud_visitors").attr('id').trim();
+	title = $(".leancloud_visitors").attr('data-flag-title').trim();
+	var query = new AV.Query(Counter);
+	query.equalTo("url", url);
+	query.find({
+		success: function(results) {
+			if (results.length > 0) {
+				var counter = results[0];
+				counter.fetchWhenSave(true);
+				counter.increment("time");
+				counter.save(null, {
+					success: function(counter) {
+						var content =  counter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(counter, error) {
+						console.log('Failed to save Visitor num, with error message: ' + error.message);
+					}
+				});
+			} else {
+				var newcounter = new Counter();
+				newcounter.set("title", title);
+				newcounter.set("url", url);
+				newcounter.set("time", 1);
+				newcounter.save(null, {
+					success: function(newcounter) {
+					    console.log("newcounter.get('time')="+newcounter.get('time'));
+						var content = newcounter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(newcounter, error) {
+						console.log('Failed to create');
+					}
+				});
+			}
+		},
+		error: function(error) {
+			console.log('Error:' + error.code + " " + error.message);
+		}
+	});
+}
+$(function() {
+	var Counter = AV.Object.extend("Counter");
+	if ($('.leancloud_visitors').length == 1) {
+		addCount(Counter);
+	} else if ($('.post-title-link').length > 1) {
+		showTime(Counter);
+	}
+}); 
+</script>
+
+
+</body>
+</html>

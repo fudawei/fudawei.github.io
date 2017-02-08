@@ -1,0 +1,1410 @@
+
+<!doctype html>
+<html class="theme-next use-motion theme-next-mala">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。" />
+
+
+
+  <meta name="keywords" content="linux shell," />
+
+
+
+  <link rel="alternate" href="/atom.xml" title="冰鸟" type="application/atom+xml" />
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="一、什么是sed？sed 是一种在线编辑器，它一次处理一行内容。sed是非交互式的编辑器。它不会修改文件，除非使用shell重定向来保存结果。默认情况下，所有的输出行都被打印到屏幕上。
+二、sed的处理过程   sed编辑器逐行处理文件（或输入），并将结果发送到屏幕。具体过程如下：首先sed把当前正在处理的行保存在一个临时缓存区中（也称为模式空间），然后处理临时缓冲区中的行，完成后把该行发送到屏幕">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Shell--Sed">
+<meta property="og:url" content="https://fudawei.github.io/2017/01/23/Shell学习之Sed/index.html">
+<meta property="og:site_name" content="冰鸟">
+<meta property="og:description" content="一、什么是sed？sed 是一种在线编辑器，它一次处理一行内容。sed是非交互式的编辑器。它不会修改文件，除非使用shell重定向来保存结果。默认情况下，所有的输出行都被打印到屏幕上。
+二、sed的处理过程   sed编辑器逐行处理文件（或输入），并将结果发送到屏幕。具体过程如下：首先sed把当前正在处理的行保存在一个临时缓存区中（也称为模式空间），然后处理临时缓冲区中的行，完成后把该行发送到屏幕">
+<meta property="og:updated_time" content="2017-02-08T03:39:19.513Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Shell--Sed">
+<meta name="twitter:description" content="一、什么是sed？sed 是一种在线编辑器，它一次处理一行内容。sed是非交互式的编辑器。它不会修改文件，除非使用shell重定向来保存结果。默认情况下，所有的输出行都被打印到屏幕上。
+二、sed的处理过程   sed编辑器逐行处理文件（或输入），并将结果发送到屏幕。具体过程如下：首先sed把当前正在处理的行保存在一个临时缓存区中（也称为模式空间），然后处理临时缓冲区中的行，完成后把该行发送到屏幕">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mala',
+    sidebar: 'post'
+  };
+</script>
+
+  <title> Shell--Sed | 冰鸟 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">冰鸟-博客</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            <i class="menu-item-icon icon-next-categories"></i> <br />
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            <i class="menu-item-icon icon-next-about"></i> <br />
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            <i class="menu-item-icon icon-next-commonweal"></i> <br />
+            公益404
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    
+      
+
+      
+        <style type="text/css">
+
+    .circle {
+        width: 40px;
+        height: 40px;
+        background: #555 no-repeat;
+        cursor: move;
+    }
+
+    .assist-btn {
+        position: fixed;
+        top: 50％;
+        left: 10px;
+        -moz-border-radius: 50px;
+        -webkit-border-radius: 50px;
+        border-radius: 50px;
+        outline: none;
+        border: none;
+        color: #87daff;
+    }
+
+</style>
+
+<script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+<script type="text/javascript">
+    // 浮动圆点展开与收缩
+    /*
+    $(function () {
+        var assist_box = $('.assist-box');
+        $('#assist_btn').hover(function () {
+            assist_box.stop().show(300);
+        }, function () {
+            assist_box.stop().hide(150);
+        })
+    });
+    */  
+    //浮动圆点拖动
+    $(function () {
+        var box = document.getElementById('assist_btn');
+        box.onmousedown = function (event) {
+            var e = event || window.event,
+                t = e.target || e.srcElement,
+                // 鼠标按下时的坐标x1,y1
+                x1 = e.clientX,
+                y1 = e.clientY,
+                //鼠标按下时的左右偏移量
+                dragLeft = this.offsetLeft,
+                dragTop = this.offsetTop;
+
+            document.onmousemove = function (event) {
+                var e = event || window.event,
+                    t = e.target || e.srcElement,
+                    // 鼠标移动时的动态坐标
+                    x2 = e.clientX,
+                    y2 = e.clientY,
+                    // 鼠标移动时的坐标的变化量
+                    x = x2 - x1,
+                    y = y2 - y1;
+                box.style.left = (dragLeft + x) + 'px';
+                box.style.top = (dragTop + y) + 'px';
+            }
+
+            document.onmouseup = function () {
+                this.onmousemove = null;
+            }
+        }
+    });
+
+/*
+    $whitesmoke   = #f5f5f5
+    $gainsboro    = #eee
+    $gray-lighter = #ddd
+    $grey-light   = #ccc
+    $grey         = #bbb
+    $grey-dark    = #999
+    $grey-dim     = #666
+    $black-light  = #555
+    $black-deep   = #222
+    $red          = #ff2a2a
+    $blue-bright  = #87daff
+    $blue         = #0684bd
+    $blue-deep    = #262a30
+*/
+    // white theme
+    var body = {color: "#555", background: "white"};
+    var a_tag = {color: "#222"};
+    var header = { background: "#f5f5f5"};
+    var logo_line_i = {background: "#222"};
+    // var post_code = {background: "#eee", color: "#222"};
+
+    function switch_theme() {
+        $("body").css(body);
+        $("a:not('.links-of-author-item a, .site-state-item a, .site-state-posts a, .feed-link a, .motion-element a, .post-tags a, .show-commit-cls a, #donate_board a')").css(a_tag);
+        $(".header, .footer").css(header);
+        $(".logo-line-before i, .logo-line-after i").css(logo_line_i);
+        //$(".post code").css(post_code);
+        $("#idhyt-surprise-ball #idhyt-surprise-ball-animation .drag").css(a_tag);
+        $(".post-title-link, .posts-expand .post-meta, .post-comments-count, .disqus-comment-count, .post-category a, .post-nav-next a, .post-nav-item a").css(a_tag);
+        
+        // $("code").css({color: '#c5c8c6', background: '#1d1f21'});
+        $("#assist_btn").hide(1500);
+    }
+
+    $(function () {
+        $("#assist_btn").dblclick(function() {
+            switch_theme();
+        });
+    });
+
+</script>
+
+<div>
+
+    <button class="assist-btn circle" id="assist_btn" title="双击切换">
+        亮
+    </button>
+
+</div>
+
+
+
+
+
+
+
+
+
+      
+
+    
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              Shell--Sed
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2017-01-23T16:07:02+08:00" content="2017-01-23">
+            2017-01-23
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/linux-shell/" itemprop="url" rel="index">
+                  <span itemprop="name">linux shell</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2017/01/23/Shell学习之Sed/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2017/01/23/Shell学习之Sed/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2017/01/23/Shell学习之Sed/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2017/01/23/Shell学习之Sed/"class="leancloud_visitors" data-flag-title="Shell--Sed">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><h2 id="一、什么是sed？"><a href="#一、什么是sed？" class="headerlink" title="一、什么是sed？"></a>一、什么是sed？</h2><pre><code>sed 是一种在线编辑器，它一次处理一行内容。sed是非交互式的编辑器。它不会修改文件，除非使用shell重定向来保存结果。默认情况下，所有的输出行都被打印到屏幕上。
+</code></pre><h2 id="二、sed的处理过程"><a href="#二、sed的处理过程" class="headerlink" title="二、sed的处理过程"></a>二、sed的处理过程</h2><p>   sed编辑器逐行处理文件（或输入），并将结果发送到屏幕。具体过程如下：首先sed把当前正在处理的行保存在一个临时缓存区中（也称为模式空间），然后处理临时缓冲区中的行，完成后把该行发送到屏幕上。sed每处理完一行就将其从临时缓冲区删除，然后将下一行读入，进行处理和显示。处理完输入文件的最后一行后，sed便结束运行。</p>
+<p>   前面说到sed不会修改文件，那么现在我们可以知道是为什么了？是因为sed把每一行都存在临时缓冲区中，对这个副本进行编辑，所以不会修改原文件。</p>
+<p>补充知识：</p>
+<pre><code>在使用sed的过程中，我们经常会听到“定址”，那么什么是“定址”呢？
+
+定址用于决定对哪些行进行编辑。地址的形式可以是数字、正则表达式、或二者的结合。如果没有指定地址，sed将处理输入文件的所有行。
+</code></pre><p>1、地址是一个数字，则表示行号；是“$”符号，则表示最后一行。</p>
+<p>例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -n &apos;3p&apos; datafile   #只打印第三行</div></pre></td></tr></table></figure>
+<p>2、只显示指定行范围的文件内容</p>
+<p>例如：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -n &apos;100,200p&apos; mysql_slow_query.log  # 只查看文件的第100行到第200行</div></pre></td></tr></table></figure></p>
+<p>3、地址是逗号分隔的，那么需要处理的地址是这两行之间的范围（包括这两行在内）。范围可以用数字、正则表达式、或二者的组合表示。</p>
+<p>例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">sed &apos;2,5d&apos; datafile</div><div class="line">#删除第二到第五行</div><div class="line">sed &apos;/My/,/You/d&apos; datafile</div><div class="line">#删除包含&quot;My&quot;的行到包含&quot;You&quot;的行之间的行</div><div class="line">sed &apos;/My/,10d&apos; datafile</div><div class="line">#删除包含&quot;My&quot;的行到第十行的内容</div></pre></td></tr></table></figure>
+<p>三、sed命令和选项<br>sed命令告诉sed如何处理由地址指定的各输入行，如果没有指定地址则处理所有的输入行。</p>
+<p>1、sed命令</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a\</td>
+<td>在当前行后添加一行或多行。多行时除最后一行外，每行末尾需用“\”续行</td>
+</tr>
+<tr>
+<td>c\</td>
+<td>用此符号后的新文本替换当前行中的文本。多行时除最后一行外，每行末尾需用”\”续行</td>
+</tr>
+<tr>
+<td>i\</td>
+<td>在当前行之前插入文本。多行时除最后一行外，每行末尾需用”\”续行</td>
+</tr>
+<tr>
+<td>d</td>
+<td>删除行</td>
+</tr>
+<tr>
+<td>h</td>
+<td>把模式空间里的内容复制到暂存缓冲区</td>
+</tr>
+<tr>
+<td>H</td>
+<td>把模式空间里的内容追加到暂存缓冲区</td>
+</tr>
+<tr>
+<td>g</td>
+<td>把暂存缓冲区里的内容复制到模式空间，覆盖原有的内容</td>
+</tr>
+<tr>
+<td>G</td>
+<td>把暂存缓冲区的内容追加到模式空间里，追加在原有内容的后面</td>
+</tr>
+<tr>
+<td>l</td>
+<td>列出非打印字符</td>
+</tr>
+<tr>
+<td>p</td>
+<td>打印行</td>
+<td></td>
+</tr>
+<tr>
+<td>n</td>
+<td>读入下一输入行，并从下一条命令而不是第一条命令开始对其的处理</td>
+</tr>
+<tr>
+<td>q</td>
+<td>结束或退出sed</td>
+</tr>
+<tr>
+<td>r</td>
+<td>从文件中读取输入行</td>
+</tr>
+<tr>
+<td>!</td>
+<td>对所选行以外的所有行应用命令</td>
+</tr>
+<tr>
+<td>s</td>
+<td>用一个字符串替换另一个</td>
+</tr>
+<tr>
+<td>g</td>
+<td>在行内进行全局替换</td>
+</tr>
+<tr>
+<td>w</td>
+<td>将所选的行写入文件</td>
+</tr>
+<tr>
+<td>x</td>
+<td>交换暂存缓冲区与模式空间的内容</td>
+</tr>
+<tr>
+<td>y</td>
+<td>将字符替换为另一字符（不能对正则表达式使用y命令）</td>
+</tr>
+</tbody>
+</table>
+<p>2、sed选项</p>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-e</td>
+<td>进行多项编辑，即对输入行应用多条sed命令时使用</td>
+</tr>
+<tr>
+<td>-n</td>
+<td>取消默认的输出</td>
+</tr>
+<tr>
+<td>-f</td>
+<td>指定sed脚本的文件名</td>
+</tr>
+</tbody>
+</table>
+<h2 id="四、正则表达式元字符"><a href="#四、正则表达式元字符" class="headerlink" title="四、正则表达式元字符"></a>四、正则表达式元字符</h2><p>   与grep一样，sed也支持特殊元字符，来进行模式查找、替换。不同的是，sed使用的正则表达式是括在斜杠线”/“之间的模式。</p>
+<p>   如果要把正则表达式分隔符”/“改为另一个字符，比如o，只要在这个字符前加一个反斜线，在字符后跟上正则表达式，再跟上这个字符即可。</p>
+<p>例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -n &apos;\o^Myop&apos; datafile</div></pre></td></tr></table></figure>
+<p>常用的正则表达式如下：</p>
+<table>
+<thead>
+<tr>
+<th>元字符</th>
+<th>功能描述</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>^</td>
+<td>行首定位符</td>
+<td>/^my/ 匹配所有以my开头的行</td>
+</tr>
+<tr>
+<td>$</td>
+<td>行尾定位符</td>
+<td></td>
+<td>/my$/ 匹配所有以my结尾的行</td>
+</tr>
+<tr>
+<td>.</td>
+<td>匹配除换行符以外的单个字符</td>
+<td>/m..y/ 匹配包含字母m，后跟两个任意字符，再跟字母y的行</td>
+</tr>
+<tr>
+<td>*</td>
+<td>匹配零个或多个前导字符</td>
+<td>/my*/ 匹配包含字母m,后跟零个或多个y字母的行</td>
+</tr>
+<tr>
+<td>[]</td>
+<td>匹配指定字符组内的任一字符</td>
+<td>/[Mm]y/ 匹配包含My或my的行</td>
+</tr>
+<tr>
+<td>[^]</td>
+<td>匹配不在指定字符组内的任一字符</td>
+<td>/[^Mm]y/ 匹配包含y，但y之前的那个字符不是M或m的行</td>
+</tr>
+<tr>
+<td>..</td>
+<td>保存已匹配的字符</td>
+<td>1,20s/youself/\1r/ 标记元字符之间的模式，并将其保存为标签1，之后可以使用\1来引用它。最多可以定义9个标签，从左边开始编号，最左边的是第一个。此例中，对第1到第20行进行处理，you被保存为标签1，如果发现youself，则替换为your。</td>
+</tr>
+<tr>
+<td>&amp;</td>
+<td>保存查找串以便在替换串中引用</td>
+<td>s/my/<strong>&amp;</strong>/  符号&amp;代表查找串。my将被替换为<strong>my</strong></td>
+</tr>
+<tr>
+<td>\&lt;</td>
+<td>词首定位符</td>
+<td>/\&lt;my/ 匹配包含以my开头的单词的行</td>
+</tr>
+<tr>
+<td>></td>
+<td>词尾定位符</td>
+<td>/my>/ 匹配包含以my结尾的单词的行</td>
+</tr>
+<tr>
+<td>x{m}</td>
+<td>连续m个x</td>
+<td>/9{5}/匹配包含连续5个9的行</td>
+</tr>
+<tr>
+<td>x{m,}</td>
+<td>至少m个x</td>
+<td>/9{5,}/ 匹配包含至少连续5个9的行</td>
+</tr>
+<tr>
+<td>x{m,n}</td>
+<td>至少m个，但不超过n个x</td>
+<td>/9{5,7}/ 匹配包含连续5到7个9的行</td>
+</tr>
+</tbody>
+</table>
+<h2 id="五、sed的退出状态"><a href="#五、sed的退出状态" class="headerlink" title="五、sed的退出状态"></a>五、sed的退出状态</h2><p>   sed不向grep一样，不管是否找到指定的模式，它的退出状态都是0。只有当命令存在语法错误时，sed的退出状态才不是0。</p>
+<h2 id="六、常用范例"><a href="#六、常用范例" class="headerlink" title="六、常用范例"></a>六、常用范例</h2><p>1、p命令</p>
+<p>   命令p用于显示模式空间的内容。默认情况下，sed把输入行打印在屏幕上，选项-n用于取消默认的打印操作。当选项-n和命令p同时出现时,sed可打印选定的内容。</p>
+<p>例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">（1）sed &apos;/my/p&apos; datafile</div><div class="line">#默认情况下，sed把所有输入行都打印在标准输出上。如果某行匹配模式my，p命令将把该行另外打印一遍。</div><div class="line"></div><div class="line">（2）sed -n &apos;/my/p&apos; datafile</div><div class="line">#选项-n取消sed默认的打印，p命令把匹配模式my的行打印一遍。</div></pre></td></tr></table></figure>
+<p>2、d命令</p>
+<p>   命令d用于删除输入行。sed先将输入行从文件复制到模式空间里，然后对该行执行sed命令，最后将模式空间里的内容显示在屏幕上。如果发出的是命令d，当前模式空间里的输入行会被删除，不被显示。</p>
+<p>例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">（1）sed &apos;$d&apos; datafile</div><div class="line">#删除最后一行，其余的都被显示</div><div class="line"></div><div class="line">（2）sed &apos;/my/d&apos; datafile</div><div class="line">#删除包含my的行，其余的都被显示</div></pre></td></tr></table></figure>
+<p>3、s命令</p>
+<p>例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">（1）sed &apos;s/^My/You/g&apos; datafile</div><div class="line">#命令末端的g表示在行内进行全局替换，也就是说如果某行出现多个My，所有的My都被替换为You。</div><div class="line"></div><div class="line">（2）sed -n &apos;1,20s/My$/You/gp&apos; datafile</div><div class="line">#取消默认输出，处理1到20行里匹配以My结尾的行，把行内所有的My替换为You，并打印到屏幕上。</div><div class="line"></div><div class="line">（3）sed &apos;s#My#Your#g&apos; datafile</div><div class="line">#紧跟在s命令后的字符就是查找串和替换串之间的分隔符。分隔符默认为正斜杠，但可以改变。无论什么字符（换行符、反斜线除外），只要紧跟s命令，就成了新的串分隔符。</div></pre></td></tr></table></figure>
+<p>4、e选项</p>
+<p>   -e是编辑命令，用于sed执行多个编辑任务的情况下。在下一行开始编辑前，所有的编辑动作将应用到模式缓冲区中的行上。</p>
+<p>例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sed -e &apos;1,10d&apos; -e &apos;s/My/Your/g&apos; datafile</div><div class="line">#选项-e用于进行多重编辑。第一重编辑删除第1-3行。第二重编辑将出现的所有My替换为Your。因为是逐行进行这两项编辑（即这两个命令都在模式空间的当前行上执行），所以编辑命令的顺序会影响结果。</div></pre></td></tr></table></figure>
+<p>5、r命令</p>
+<p>r命令是读命令。sed使用该命令将一个文本文件中的内容加到当前文件的特定位置上。</p>
+<p>例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sed &apos;/My/r introduce.txt&apos; datafile</div><div class="line">#如果在文件datafile的某一行匹配到模式My，就在该行后读入文件introduce.txt的内容。如果出现My的行不止一行，则在出现My的各行后都读入introduce.txt文件的内容。</div></pre></td></tr></table></figure>
+<p>6、w命令</p>
+<p>例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -n &apos;/hrwang/w me.txt&apos; datafile</div></pre></td></tr></table></figure>
+<p>7、a\ 命令</p>
+<p>   a\ 命令是追加命令，追加将添加新文本到文件中当前行（即读入模式缓冲区中的行）的后面。所追加的文本行位于sed命令的下方另起一行。如果要追加的内容超过一行，则每一行都必须以反斜线结束，最后一行除外。最后一行将以引号和文件名结束。</p>
+<p>例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">sed &apos;/^hrwang/a\</div><div class="line">&gt;hrwang and mjfan are husband\</div><div class="line">&gt;and wife&apos; datafile</div><div class="line">#如果在datafile文件中发现匹配以hrwang开头的行，则在该行下面追加hrwang and mjfan are husband and wife</div></pre></td></tr></table></figure>
+<p>8、i\ 命令</p>
+<p>i\ 命令是在当前行的前面插入新的文本。</p>
+<p>9、c\ 命令</p>
+<p>sed使用该命令将已有文本修改成新的文本。</p>
+<p>10、n命令</p>
+<p>sed使用该命令获取输入文件的下一行，并将其读入到模式缓冲区中，任何sed命令都将应用到匹配行紧接着的下一行上。</p>
+<p>例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed &apos;/hrwang/&#123;n;s/My/Your/;&#125;&apos; datafile</div></pre></td></tr></table></figure>
+<p>注：如果需要使用多条命令，或者需要在某个地址范围内嵌套地址，就必须用花括号将命令括起来，每行只写一条命令，或这用分号分割同一行中的多条命令。</p>
+<p>11、y命令</p>
+<p>该命令与UNIX/Linux中的tr命令类似，字符按照一对一的方式从左到右进行转换。例如，y/abc/ABC/将把所有小写的a转换成A，小写的b转换成B，小写的c转换成C。</p>
+<p>例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">sed &apos;1,20y/hrwang12/HRWANG^$/&apos; datafile</div><div class="line">#将1到20行内，所有的小写hrwang转换成大写，将1转换成^,将2转换成$。</div><div class="line">#正则表达式元字符对y命令不起作用。与s命令的分隔符一样，斜线可以被替换成其它的字符。</div></pre></td></tr></table></figure>
+<p>12、q命令</p>
+<p> q命令将导致sed程序退出，不再进行其它的处理。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed &apos;/hrwang/&#123;s/hrwang/HRWANG/;q;&#125;&apos; datafile</div></pre></td></tr></table></figure>
+<p>13、h命令和g命令</p>
+<p>为了更好说明这两个命令，我们先创建如下的文本文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">#cat datafile</div><div class="line">My name is hrwang.</div><div class="line">Your name is mjfan.</div><div class="line">hrwang is mjfan&apos;s husband.</div><div class="line">mjfan is hrwang&apos;s wife.</div><div class="line"></div><div class="line">sed -e &apos;/hrwang/h&apos; -e &apos;$G&apos; datafile</div><div class="line">sed -e &apos;/hrwang/H&apos; -e &apos;$G&apos; datafile</div><div class="line">#通过上面两条命令，你会发现h会把原来暂存缓冲区的内容清除，只保存最近一次执行h时保存进去的模式空间的内容。而H命令则把每次匹配hrwnag的行都追加保存在暂存缓冲区。</div><div class="line"></div><div class="line">sed -e &apos;/hrwang/H&apos; -e &apos;$g&apos; datafile</div><div class="line">sed -e &apos;/hrwang/H&apos; -e &apos;$G&apos; datafile</div><div class="line">#通过上面两条命令，你会发现g把暂存缓冲区中的内容替换掉了模式空间中当前行的内容，此处即替换了最后一行。而G命令则把暂存缓冲区的内容追加到了模式空间的当前行后。此处即追加到了末尾。</div></pre></td></tr></table></figure>
+<p>补充知识点：sed特殊用法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">sed -n &apos;/root/w a.txt&apos;    #将匹配行输出到文件</div><div class="line"></div><div class="line">sed &apos;/root/r abc.txt&apos; /etc/passwd #把abc.txt的文件内容读入到root匹配行后</div><div class="line"></div><div class="line">sed -n &apos;/root/w a.txt&apos;</div><div class="line"></div><div class="line">sed -n &apos;/root/&#123;=;p&#125;&apos; /etc/passwd #打印行号和匹配root的行</div><div class="line"></div><div class="line">sed -n &apos;/root/&#123;n;d&#125;&apos; /etc/passwd #将匹配root行的下一行删除</div><div class="line"></div><div class="line">sed -n &apos;/root/&#123;N;d&#125;&apos; /etc/passwd #将匹配root行和下一行都删除</div><div class="line"></div><div class="line">sed &apos;22&#123;h;d&#125;;23,33&#123;H;d&#125;;44G&apos; pass</div></pre></td></tr></table></figure>
+<h2 id="七、sed脚本编写方法"><a href="#七、sed脚本编写方法" class="headerlink" title="七、sed脚本编写方法"></a>七、sed脚本编写方法</h2><p>1、从文件读入命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -f sed.sh</div></pre></td></tr></table></figure>
+<p>sed.sh文件内容：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">s/root/yerik/p</div><div class="line">s/bash/csh/p</div></pre></td></tr></table></figure>
+<p>2、直接运行脚本 ./sed.sh /etc/passwd</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">#!/bib/sed -f</div><div class="line">s/root/yerik/p</div><div class="line">s/bash/csh/p</div></pre></td></tr></table></figure>
+<h2 id="八、小技巧"><a href="#八、小技巧" class="headerlink" title="八、小技巧"></a>八、小技巧</h2><p>1、用sed 输出自己的IP 地址</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ifconfig eth0 |sed &apos;2p&apos; |sed &apos;s/^.*addr:/ /g&apos; |sed &apos;s/B.*$ / /g&apos;</div></pre></td></tr></table></figure>
+<p>2、在sed的命令行中引用shell变量时要使用双引号，而不是通常所用的单引号。下面是一个根据name变量的内容来删除named.conf文件中zone段的脚本：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">name=&apos;zone\ &quot;localhost&quot;&apos;</div><div class="line"></div><div class="line">sed &quot;/$name/,/&#125;;/d&quot; named.conf</div></pre></td></tr></table></figure>
+<p>3、保持和获取：h命令和G命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ sed -e &apos;/test/h&apos; -e &apos;$G example</div></pre></td></tr></table></figure>
+<p> 在sed处理文件的时候，每一行都被保存在一个叫模式空间的临时缓冲区中，除非行被删除或者输出被取消，否则所有被处理的行都将打印在屏幕上。接着模式空间被清空，并存入新的一行等待处理。在这个例子里，匹配test的行被找到后，将存入模式空间，h命令将其复制并存入一个称为保持缓存区的特殊缓冲区内。第二条语句的意思是，当到达最后一行后，G命令取出保持缓冲区的行，然后把它放回模式空间中，且追加到现在已经存在于模式空间中的行的末尾。在这个例子中就是追加到最后一行。简单来说，任何包含test的行都被复制并追加到该文件的末尾。</p>
+<p>4、保持和互换：h命令和x命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ sed -e &apos;/test/h&apos; -e &apos;/check/x&apos; example</div></pre></td></tr></table></figure>
+<p>互换模式空间和保持缓冲区的内容。也就是把包含test与check的行互换。</p>
+<h2 id="九、练习"><a href="#九、练习" class="headerlink" title="九、练习"></a>九、练习</h2><p>1，删除文件每行的第一个字符。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sed -n &apos;s/^.//gp&apos; /etc/passwd</div><div class="line">sed -nr &apos;s/(.)(.*)/\2/p&apos; /etc/passwd</div></pre></td></tr></table></figure>
+<p>2，删除文件每行的第二个字符。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/(.)(.)(.*)/\1\3/p&apos; /etc/passwd</div></pre></td></tr></table></figure>
+<p>3，删除文件每行的最后一个字符。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/.$//p&apos; /etc/passwd</div><div class="line">sed -nr &apos;s/(.*)(.)/\1/p&apos; /etc/passwd</div></pre></td></tr></table></figure>
+<p>4，删除文件每行的倒数第二个字符。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/(.*)(.)(.)/\1\3/p&apos; /etc/passwd</div></pre></td></tr></table></figure>
+<p>5，删除文件每行的第二个单词。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/([^a-Z]*)([a-Z]+)([^a-Z]+)([a-Z]+)(.*)/\1\2\3\5/p&apos; /etc/passwd</div></pre></td></tr></table></figure>
+<p>6，删除文件每行的倒数第二个单词。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/(.*)([^a-Z]+)([a-Z]+)([^a-Z]+)([a-Z]+)([^a-Z]*)/\1\2\4\5\6/p&apos; /etc/samba/smb.conf</div></pre></td></tr></table></figure>
+<p>7，删除文件每行的最后一个单词。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/(.*)([^a-Z]+)([a-Z]+)([^a-Z]*)/\1\2\4/p&apos; /etc/samba/smb.conf</div></pre></td></tr></table></figure>
+<p>8，交换每行的第一个字符和第二个字符。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/(.)(.)(.*)/\2\1\3/p&apos; /etc/passwd</div></pre></td></tr></table></figure>
+<p>9，交换每行的第一个单词和第二个单词。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/([^a-Z]*)([a-Z]+)([^a-Z]+)([a-Z]+)(.*)/\1\4\3\2\5/p&apos; /etc/samba/smb.conf</div></pre></td></tr></table></figure>
+<p>10，交换每行的第一个单词和最后一个单词。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/([^a-Z]*)([a-Z]+)([^a-Z]+)([a-Z]+)(.*)/\1\4\3\2\5/p&apos; /etc/passwd</div></pre></td></tr></table></figure>
+<p>11，删除一个文件中所有的数字。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed &apos;s/[0-9]*//g&apos; /etc/passwd</div></pre></td></tr></table></figure>
+<p>12，删除每行开头的所有空格。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sed -n &apos;s/^\ *//p&apos; /etc/samba/smb.conf</div><div class="line">sed -nr &apos;s/( *)(.*)/\2/p&apos; testp</div></pre></td></tr></table></figure>
+<p>13，用制表符替换文件中出现的所有空格。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -n &apos;s/\ /\t/gp&apos; pass</div></pre></td></tr></table></figure>
+<p>14，把所有大写字母用括号（）括起来。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/([A-Z])/(&amp;)/gp&apos; testp</div><div class="line">sed -n &apos;s/[A-Z]/(&amp;)/gp&apos; testp</div></pre></td></tr></table></figure>
+<p>15，打印每行3次。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed &apos;p;p&apos; pass</div></pre></td></tr></table></figure>
+<p>16，隔行删除。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -n &apos;1~2p&apos; pass</div></pre></td></tr></table></figure>
+<p>17，把文件从第22行到第33行复制到第44行后面。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed &apos;1,21h;22h;23,33H;44G&apos; pass</div></pre></td></tr></table></figure>
+<p>18，把文件从第22行到第33行移动到第44行后面。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed &apos;22&#123;h;d&#125;;23,33&#123;H;d&#125;;44G&apos; pass</div></pre></td></tr></table></figure>
+<p>19，只显示每行的第一个单词。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/([^a-Z]*)([a-Z]+)([^a-Z]+)(.*)/\2/p&apos; /etc/passwd</div></pre></td></tr></table></figure>
+<p>20，打印每行的第一个单词和第三个单词。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sed -nr &apos;s/([^a-Z]*)([a-Z]+)([^a-Z]+)([a-Z]+)([^a-Z]+)([a-Z]+)(.*)/\2--\4/p&apos; /etc/passwd</div></pre></td></tr></table></figure>
+<p>21，将格式为    mm/yy/dd    的日期格式换成   mm；yy；dd</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">date +%m/%Y/%d |sed -n &apos;s#/#;#gp&apos;</div></pre></td></tr></table></figure>
+<p>22, 逆向输出<br>sed ‘1!G;h;$!d’ b<br>cat a.txt<br>ABC<br>DEF<br>XYZ<br>输出样式变成<br>XYZ<br>DEF<br>ABC</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/linux-shell/" rel="tag">#linux shell</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/01/24/Shell学习之Expect/" rel="prev">Shell--Expect</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/01/22/Shell学习之Awk/" rel="next">Shell--Awk</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div>
+      
+        <style type="text/css">
+
+    .donate_bar {
+        text-align: center;
+        margin-top : 5%;
+    }
+
+    .donate_bar.hidden {
+        display:none;
+    }
+/*
+    .donate_bar a.btn_donate {
+        display: inline-block;
+        width: 82px;
+        height: 82px;
+        margin-left:auto;
+        margin-right:auto;
+
+        background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat;
+        _background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat; 
+
+        -webkit-transition: background 0s;
+        -moz-transition: background 0s;
+        -o-transition: background 0s;
+        -ms-transition: background 0s;
+        transition: background 0s;
+    }
+*/
+    .donate_bar a.btn_donate:hover { 
+        // background-position: 0px -82px;
+        color: #87daff
+    }
+
+    .donate_bar .donate_txt {
+        display: block;
+        color: #9d9d9d;
+        font: 14px/2 "Microsoft Yahei";
+    }
+
+    .bold { 
+        font-weight: bold; 
+    }
+
+    .post-donate a {
+        border-bottom: 0px;
+    }
+
+    #donate_guide table {
+        border: none;
+    }
+
+    #donate_guide td {
+        border-bottom: none;
+        border-right: none;
+        background: #333333;
+        valign: top;
+    }
+
+</style>
+
+
+
+    
+
+    <div class ="post-donate">
+        <div id="donate_board" class="donate_bar center">
+              <a id="btn_donate" class="btn_donate" href="javascript:;" title="打赏">赏</a>
+              <span id="donate_txt" class="donate_txt">
+                   
+                        仅仅是一个功能
+                   
+              </span>
+            <br>
+        </div>  
+  
+        <div id="donate_guide" class="donate_bar center hidden">
+            <!--
+            
+                <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                    style="float:left;margin-left:25%;margin-right:10px;">
+                    <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                </a> 
+              
+
+            
+                <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                    style="margin-right:30%">
+                    <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                </a>
+            
+            -->
+            <table>
+                <tr>
+                    <td>
+                        
+                            <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                                style="float:left;margin-left:25%;margin-right:10px;">
+                                <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                            </a> 
+                         
+                    </td>
+                    <td>
+                        
+                            <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                                style="margin-right:30%">
+                                <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                            </a>
+                        
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+
+        <script type="text/javascript">
+            document.getElementById('btn_donate').onclick = function() {
+                $('#donate_board').addClass('hidden');
+                // $('#donate_guide').removeClass('hidden');
+                $('#donate_guide').show(2000);
+            }
+
+        </script>
+    </div>
+
+    
+
+
+      
+    </div>
+
+    <div class="post-spread">
+      
+        <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+  <a class="jiathis_button_tsina"></a>
+  <a class="jiathis_button_tqq"></a>
+  <a class="jiathis_button_weixin"></a>
+  <a class="jiathis_button_cqq"></a>
+  <a class="jiathis_button_douban"></a>
+  <a class="jiathis_button_renren"></a>
+  <a class="jiathis_button_qzone"></a>
+  <a class="jiathis_button_kaixin001"></a>
+  <a class="jiathis_button_copy"></a>
+  <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank"></a>
+  <a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" >
+  var jiathis_config={
+    hideMore:false
+  }
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+            <!-- 多说热评文章-->
+            <p>热评文章</p>
+            <div class="ds-top-threads" data-range="weekly" data-num-items="4"></div>
+        
+
+        
+          <div class="comments" id="comments">
+            
+              <div class="ds-thread" data-thread-key="2017/01/23/Shell学习之Sed/"
+                   data-title="Shell--Sed" data-url="https://fudawei.github.io/2017/01/23/Shell学习之Sed/">
+              </div>
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/default_avatar.jpg" alt="冰鸟" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">冰鸟</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">143</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          <div class="site-state-item site-state-categories">
+            <a href="/categories">
+              <span class="site-state-item-count">55</span>
+              <span class="site-state-item-name">分类</span>
+              </a>
+          </div>
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">80</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="menu-item-icon icon-next-feed"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/fudw1987" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://www.zhihu.com/people/fu-da-wei-70" target="_blank">知乎</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://t.qq.com/fudw764923019" target="_blank">微博</a>
+              </span>
+            
+          
+        </div>
+
+        <div class="links-of-friendly motion-element">
+          
+        </div>
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#一、什么是sed？"><span class="nav-number">1.</span> <span class="nav-text">一、什么是sed？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#二、sed的处理过程"><span class="nav-number">2.</span> <span class="nav-text">二、sed的处理过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#四、正则表达式元字符"><span class="nav-number">3.</span> <span class="nav-text">四、正则表达式元字符</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#五、sed的退出状态"><span class="nav-number">4.</span> <span class="nav-text">五、sed的退出状态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#六、常用范例"><span class="nav-number">5.</span> <span class="nav-text">六、常用范例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#七、sed脚本编写方法"><span class="nav-number">6.</span> <span class="nav-text">七、sed脚本编写方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#八、小技巧"><span class="nav-number">7.</span> <span class="nav-text">八、小技巧</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#九、练习"><span class="nav-number">8.</span> <span class="nav-text">九、练习</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<div class="copyright" >
+  
+  &copy; &nbsp; 
+  <span itemprop="copyrightYear">2017
+  </span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">冰鸟
+  </span>
+</div>
+
+<div class="powered-by">
+  Powered by <a class="theme-link" href="http://hexo.io">Hexo</a>
+</div>
+
+<div class="theme-info">
+  Theme by <a class="theme-link" href="https://github.com/fudawei">fudawei</a>
+</div>
+ &nbsp; |  &nbsp; 
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+  &nbsp; |  &nbsp; 
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+<!-- busuanzi -->
+
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"fudawei"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+    
+
+    
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+      processEscapes: true,
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for (i=0; i < all.length; i += 1) {
+      all[i].SourceElement().parentNode.className += ' has-jax';
+    }
+  });
+</script>
+
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+
+<!-- custom analytics part create by xiamo -->
+<script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+<script>AV.initialize("SbuO6UqesUpwpVQpFOF85w4b-gzGzoHsz", "nU6WMv6iTcTpjLHKtOIoovuO");</script>
+<script>
+function showTime(Counter) {
+	var query = new AV.Query(Counter);
+	$(".leancloud_visitors").each(function() {
+		var url = $(this).attr("id").trim();
+		query.equalTo("url", url);
+		query.find({
+			success: function(results) {
+				if (results.length == 0) {
+					var content = '0 ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+					return;
+				}
+				for (var i = 0; i < results.length; i++) {
+					var object = results[i];
+					var content = object.get('time') + ' ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+				}
+			},
+			error: function(object, error) {
+				console.log("Error: " + error.code + " " + error.message);
+			}
+		});
+
+	});
+}
+
+function addCount(Counter) {
+	var Counter = AV.Object.extend("Counter");
+	url = $(".leancloud_visitors").attr('id').trim();
+	title = $(".leancloud_visitors").attr('data-flag-title').trim();
+	var query = new AV.Query(Counter);
+	query.equalTo("url", url);
+	query.find({
+		success: function(results) {
+			if (results.length > 0) {
+				var counter = results[0];
+				counter.fetchWhenSave(true);
+				counter.increment("time");
+				counter.save(null, {
+					success: function(counter) {
+						var content =  counter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(counter, error) {
+						console.log('Failed to save Visitor num, with error message: ' + error.message);
+					}
+				});
+			} else {
+				var newcounter = new Counter();
+				newcounter.set("title", title);
+				newcounter.set("url", url);
+				newcounter.set("time", 1);
+				newcounter.save(null, {
+					success: function(newcounter) {
+					    console.log("newcounter.get('time')="+newcounter.get('time'));
+						var content = newcounter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(newcounter, error) {
+						console.log('Failed to create');
+					}
+				});
+			}
+		},
+		error: function(error) {
+			console.log('Error:' + error.code + " " + error.message);
+		}
+	});
+}
+$(function() {
+	var Counter = AV.Object.extend("Counter");
+	if ($('.leancloud_visitors').length == 1) {
+		addCount(Counter);
+	} else if ($('.post-title-link').length > 1) {
+		showTime(Counter);
+	}
+}); 
+</script>
+
+
+</body>
+</html>

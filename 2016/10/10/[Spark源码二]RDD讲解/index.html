@@ -1,0 +1,1166 @@
+
+<!doctype html>
+<html class="theme-next use-motion theme-next-mala">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。" />
+
+
+
+  <meta name="keywords" content="大数据,Spark," />
+
+
+
+  <link rel="alternate" href="/atom.xml" title="冰鸟" type="application/atom+xml" />
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="1、什么是RDD？
+ RDD的全名是Resilient Distributed Dataset，意思是容错的分布式数据集，每一个RDD都会有5个特征：
+1、有一个分片列表。就是能被切分，和hadoop一样的，能够切分的数据才能并行计算。2、有一个函数计算每一个分片，这里指的是下面会提到的compute函数。3、对其他的RDD的依赖列表，依赖还具体分为宽依赖和窄依赖，但并不是所有的RDD都有依赖。4">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[Spark源码二】RDD讲解">
+<meta property="og:url" content="https://fudawei.github.io/2016/10/10/[Spark源码二]RDD讲解/index.html">
+<meta property="og:site_name" content="冰鸟">
+<meta property="og:description" content="1、什么是RDD？
+ RDD的全名是Resilient Distributed Dataset，意思是容错的分布式数据集，每一个RDD都会有5个特征：
+1、有一个分片列表。就是能被切分，和hadoop一样的，能够切分的数据才能并行计算。2、有一个函数计算每一个分片，这里指的是下面会提到的compute函数。3、对其他的RDD的依赖列表，依赖还具体分为宽依赖和窄依赖，但并不是所有的RDD都有依赖。4">
+<meta property="og:updated_time" content="2017-02-08T03:39:19.517Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="[Spark源码二】RDD讲解">
+<meta name="twitter:description" content="1、什么是RDD？
+ RDD的全名是Resilient Distributed Dataset，意思是容错的分布式数据集，每一个RDD都会有5个特征：
+1、有一个分片列表。就是能被切分，和hadoop一样的，能够切分的数据才能并行计算。2、有一个函数计算每一个分片，这里指的是下面会提到的compute函数。3、对其他的RDD的依赖列表，依赖还具体分为宽依赖和窄依赖，但并不是所有的RDD都有依赖。4">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mala',
+    sidebar: 'post'
+  };
+</script>
+
+  <title> [Spark源码二】RDD讲解 | 冰鸟 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">冰鸟-博客</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            <i class="menu-item-icon icon-next-categories"></i> <br />
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            <i class="menu-item-icon icon-next-about"></i> <br />
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            <i class="menu-item-icon icon-next-commonweal"></i> <br />
+            公益404
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    
+      
+
+      
+        <style type="text/css">
+
+    .circle {
+        width: 40px;
+        height: 40px;
+        background: #555 no-repeat;
+        cursor: move;
+    }
+
+    .assist-btn {
+        position: fixed;
+        top: 50％;
+        left: 10px;
+        -moz-border-radius: 50px;
+        -webkit-border-radius: 50px;
+        border-radius: 50px;
+        outline: none;
+        border: none;
+        color: #87daff;
+    }
+
+</style>
+
+<script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+<script type="text/javascript">
+    // 浮动圆点展开与收缩
+    /*
+    $(function () {
+        var assist_box = $('.assist-box');
+        $('#assist_btn').hover(function () {
+            assist_box.stop().show(300);
+        }, function () {
+            assist_box.stop().hide(150);
+        })
+    });
+    */  
+    //浮动圆点拖动
+    $(function () {
+        var box = document.getElementById('assist_btn');
+        box.onmousedown = function (event) {
+            var e = event || window.event,
+                t = e.target || e.srcElement,
+                // 鼠标按下时的坐标x1,y1
+                x1 = e.clientX,
+                y1 = e.clientY,
+                //鼠标按下时的左右偏移量
+                dragLeft = this.offsetLeft,
+                dragTop = this.offsetTop;
+
+            document.onmousemove = function (event) {
+                var e = event || window.event,
+                    t = e.target || e.srcElement,
+                    // 鼠标移动时的动态坐标
+                    x2 = e.clientX,
+                    y2 = e.clientY,
+                    // 鼠标移动时的坐标的变化量
+                    x = x2 - x1,
+                    y = y2 - y1;
+                box.style.left = (dragLeft + x) + 'px';
+                box.style.top = (dragTop + y) + 'px';
+            }
+
+            document.onmouseup = function () {
+                this.onmousemove = null;
+            }
+        }
+    });
+
+/*
+    $whitesmoke   = #f5f5f5
+    $gainsboro    = #eee
+    $gray-lighter = #ddd
+    $grey-light   = #ccc
+    $grey         = #bbb
+    $grey-dark    = #999
+    $grey-dim     = #666
+    $black-light  = #555
+    $black-deep   = #222
+    $red          = #ff2a2a
+    $blue-bright  = #87daff
+    $blue         = #0684bd
+    $blue-deep    = #262a30
+*/
+    // white theme
+    var body = {color: "#555", background: "white"};
+    var a_tag = {color: "#222"};
+    var header = { background: "#f5f5f5"};
+    var logo_line_i = {background: "#222"};
+    // var post_code = {background: "#eee", color: "#222"};
+
+    function switch_theme() {
+        $("body").css(body);
+        $("a:not('.links-of-author-item a, .site-state-item a, .site-state-posts a, .feed-link a, .motion-element a, .post-tags a, .show-commit-cls a, #donate_board a')").css(a_tag);
+        $(".header, .footer").css(header);
+        $(".logo-line-before i, .logo-line-after i").css(logo_line_i);
+        //$(".post code").css(post_code);
+        $("#idhyt-surprise-ball #idhyt-surprise-ball-animation .drag").css(a_tag);
+        $(".post-title-link, .posts-expand .post-meta, .post-comments-count, .disqus-comment-count, .post-category a, .post-nav-next a, .post-nav-item a").css(a_tag);
+        
+        // $("code").css({color: '#c5c8c6', background: '#1d1f21'});
+        $("#assist_btn").hide(1500);
+    }
+
+    $(function () {
+        $("#assist_btn").dblclick(function() {
+            switch_theme();
+        });
+    });
+
+</script>
+
+<div>
+
+    <button class="assist-btn circle" id="assist_btn" title="双击切换">
+        亮
+    </button>
+
+</div>
+
+
+
+
+
+
+
+
+
+      
+
+    
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              [Spark源码二】RDD讲解
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2016-10-10T22:42:01+08:00" content="2016-10-10">
+            2016-10-10
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/大数据/" itemprop="url" rel="index">
+                  <span itemprop="name">大数据</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/大数据/Spark/" itemprop="url" rel="index">
+                  <span itemprop="name">Spark</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2016/10/10/[Spark源码二]RDD讲解/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2016/10/10/[Spark源码二]RDD讲解/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2016/10/10/[Spark源码二]RDD讲解/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2016/10/10/[Spark源码二]RDD讲解/"class="leancloud_visitors" data-flag-title="[Spark源码二】RDD讲解">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><p>1、什么是RDD？</p>
+<p> RDD的全名是Resilient Distributed Dataset，意思是容错的分布式数据集，每一个RDD都会有5个特征：</p>
+<p>1、有一个分片列表。就是能被切分，和hadoop一样的，能够切分的数据才能并行计算。<br>2、有一个函数计算每一个分片，这里指的是下面会提到的compute函数。<br>3、对其他的RDD的依赖列表，依赖还具体分为宽依赖和窄依赖，但并不是所有的RDD都有依赖。<br>4、可选：key-value型的RDD是根据哈希来分区的，类似于mapreduce当中的Paritioner接口，控制key分到哪个reduce。<br>5、可选：每一个分片的优先计算位置（preferred locations），比如HDFS的block的所在位置应该是优先计算的位置。</p>
+<p>我们一项一项按着看。首先我们找到RDD这个文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">//对一个分片进行计算，得出一个可遍历的结果</div><div class="line">def compute(split: Partition, context: TaskContext): Iterator[T]</div><div class="line">//只调用一次，返回RDD分区</div><div class="line">protected def getPartitions: Array[Partition]</div><div class="line"> //也只会调用一次，返回依赖的Rdd</div><div class="line">protected def getDependencies: Seq[Dependency[_]] = deps</div></pre></td></tr></table></figure>
+<p>多种RDD之间的转换<br>下面用一个实例讲解一下吧，就拿我们常用的一段代码来讲吧，然后会把我们常用的RDD都会讲到。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">val hdfsFile = sc.textFile(args(1))</div><div class="line">val flatMapRdd = hdfsFile.flatMap(s =&gt; s.split(&quot; &quot;))</div><div class="line">val filterRdd = flatMapRdd.filter(_.length == 2)</div><div class="line">val mapRdd = filterRdd.map(word =&gt; (word, 1))</div><div class="line">val reduce = mapRdd.reduceByKey(_ + _)</div></pre></td></tr></table></figure>
+<p>这里涉及到多个RDD，首先sc.textFile得到一个HadoopRDD经过map之后MapPartitionsRDD经过flatMap之后为MapPartitionsRDD，经过filter之后MapPartitionsRDD经过map之后隐式转换未PairRDDFunctions静reduceByKey后转化为ShuffledRDD</p>
+<p>我们先看一下<br>问题导读：<br>1.什么是RDD?<br>2.如何实现RDD转换？</p>
+<p>1、什么是RDD？<br>上一章讲了Spark提交作业的过程，这一章我们要讲RDD。简单的讲，RDD就是Spark的input，知道input是啥吧，就是输入的数据。</p>
+<p>RDD的全名是Resilient Distributed Dataset，意思是容错的分布式数据集，每一个RDD都会有5个特征：</p>
+<p>1、有一个分片列表。就是能被切分，和hadoop一样的，能够切分的数据才能并行计算。<br>2、有一个函数计算每一个分片，这里指的是下面会提到的compute函数。<br>3、对其他的RDD的依赖列表，依赖还具体分为宽依赖和窄依赖，但并不是所有的RDD都有依赖。<br>4、可选：key-value型的RDD是根据哈希来分区的，类似于mapreduce当中的Paritioner接口，控制key分到哪个reduce。<br>5、可选：每一个分片的优先计算位置（preferred locations），比如HDFS的block的所在位置应该是优先计算的位置。</p>
+<p>对应着上面这几点，我们在RDD里面能找到这4个方法和1个属性，别着急，下面我们会慢慢展开说这5个东东。</p>
+<p>//只计算一次<br>  protected def getPartitions: Array[Partition]<br>  //对一个分片进行计算，得出一个可遍历的结果<br>  def compute(split: Partition, context: TaskContext): Iterator[T]<br>  //只计算一次，计算RDD对父RDD的依赖<br>  protected def getDependencies: Seq[Dependency[_]] = deps<br>  //可选的，分区的方法，针对第4点，类似于mapreduce当中的Paritioner接口，控制key分到哪个reduce<br>  @transient val partitioner: Option[Partitioner] = None<br>  //可选的，指定优先位置，输入参数是split分片，输出结果是一组优先的节点位置<br>  protected def getPreferredLocations(split: Partition): Seq[String] = Nil<br>复制代码</p>
+<p>2、多种RDD之间的转换<br>下面用一个实例讲解一下吧，就拿我们常用的一段代码来讲吧，然后会把我们常用的RDD都会讲到。</p>
+<p>val hdfsFile = sc.textFile(args(1))<br>    val flatMapRdd = hdfsFile.flatMap(s =&gt; s.split(“ “))<br>    val filterRdd = flatMapRdd.filter(<em>.length == 2)<br>    val mapRdd = filterRdd.map(word =&gt; (word, 1))<br>    val reduce = mapRdd.reduceByKey(</em> + _)<br>复制代码</p>
+<p>这里涉及到很多个RDD，textFile是一个HadoopRDD经过map后的MappredRDD，经过flatMap是一个FlatMappedRDD，经过filter方法之后生成了一个FilteredRDD，经过map函数之后，变成一个MappedRDD，通过隐式转换成 PairRDD，最后经过reduceByKey。</p>
+<p>我们首先看textFile的这个方法，进入SparkContext这个方法，找到它。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">def textFile(</div><div class="line">     path: String,</div><div class="line">     minPartitions: Int = defaultMinPartitions): RDD[String] = withScope &#123;</div><div class="line">   assertNotStopped()</div><div class="line">   hadoopFile(path, classOf[TextInputFormat], classOf[LongWritable], classOf[Text],</div><div class="line">     minPartitions).map(pair =&gt; pair._2.toString).setName(path)</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
+<p>这个方法能读取hdfs文件、本地文件以及hadoop支持的其他文本文件，里面调用了hadoopFile,接着看这个方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">def hadoopFile[K, V](</div><div class="line">      path: String,</div><div class="line">      inputFormatClass: Class[_ &lt;: InputFormat[K, V]],</div><div class="line">      keyClass: Class[K],</div><div class="line">      valueClass: Class[V],</div><div class="line">      minPartitions: Int = defaultMinPartitions): RDD[(K, V)] = withScope &#123;</div><div class="line">    assertNotStopped()</div><div class="line">    // A Hadoop configuration can be about 10 KB, which is pretty big, so broadcast it.</div><div class="line">    val confBroadcast = broadcast(new SerializableConfiguration(hadoopConfiguration))</div><div class="line">    val setInputPathsFunc = (jobConf: JobConf) =&gt; FileInputFormat.setInputPaths(jobConf, path)</div><div class="line">    new HadoopRDD(</div><div class="line">      this,</div><div class="line">      confBroadcast,</div><div class="line">      Some(setInputPathsFunc),</div><div class="line">      inputFormatClass,</div><div class="line">      keyClass,</div><div class="line">      valueClass,</div><div class="line">      minPartitions).setName(path)</div><div class="line">  &#125;</div></pre></td></tr></table></figure></p>
+<p>hadoopFile方法内静hadoop的配置文件放到广播变量，人后new 了一个HadoopRDD然后调用setName返回HadoopRDD，<br>以下构造HadoopRDD的参数<br>   sc:spark上下文<br> 　broadcastedConf：广播变量配置（hadoop的配置文件<br> 　initLocalJobConfFuncOpt:用于初始化HadoopRDD的job配置文件<br>   inputFormatClass:格式化读取数据文件<br> 　keyClass：为inputFormatClass指定的key<br> 　valueClass： inputFormatClass的Class<br> 　minPartitions：　HadoopRDD最小分区数<br>我们看一下HadoopRDD的主要方法：<br>首先getPartitions<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">override def getPartitions: Array[Partition] = &#123;</div><div class="line">    val jobConf = getJobConf()</div><div class="line">    // add the credentials here as this can be called before SparkContext initialized</div><div class="line">    SparkHadoopUtil.get.addCredentials(jobConf)</div><div class="line">    val inputFormat = getInputFormat(jobConf)</div><div class="line">    val inputSplits = inputFormat.getSplits(jobConf, minPartitions)</div><div class="line">    val array = new Array[Partition](inputSplits.size)</div><div class="line">    for (i &lt;- 0 until inputSplits.size) &#123;</div><div class="line">      array(i) = new HadoopPartition(id, i, inputSplits(i))</div><div class="line">    &#125;</div><div class="line">    array</div><div class="line">  &#125;</div></pre></td></tr></table></figure></p>
+<p>HadoopRDD按照inputSplits.size分割数据来分区的,然后把分片HadoopPartition包装到到array里面返回。</p>
+<p>我们接下来看compute方法，它的输入值是一个Partition，返回是一个Iterator[(K, V)]类型的数据，这里面我们只需要关注2点即可。</p>
+<p>1、把Partition转成HadoopPartition，然后通过InputSplit创建一个RecordReader<br>2、重写Iterator的getNext方法，通过创建的reader调用next方法读取下一个值。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div></pre></td><td class="code"><pre><div class="line">override def compute(theSplit: Partition, context: TaskContext): InterruptibleIterator[(K, V)] = &#123;</div><div class="line">    val iter = new NextIterator[(K, V)] &#123;</div><div class="line"></div><div class="line">      val split = theSplit.asInstanceOf[HadoopPartition]</div><div class="line">      logInfo(&quot;Input split: &quot; + split.inputSplit)</div><div class="line">      val jobConf = getJobConf()</div><div class="line"></div><div class="line">      val inputMetrics = context.taskMetrics().inputMetrics</div><div class="line">      val existingBytesRead = inputMetrics.bytesRead</div><div class="line"></div><div class="line">      // Sets the thread local variable for the file&apos;s name</div><div class="line">      split.inputSplit.value match &#123;</div><div class="line">        case fs: FileSplit =&gt; InputFileNameHolder.setInputFileName(fs.getPath.toString)</div><div class="line">        case _ =&gt; InputFileNameHolder.unsetInputFileName()</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      // Find a function that will return the FileSystem bytes read by this thread. Do this before</div><div class="line">      // creating RecordReader, because RecordReader&apos;s constructor might read some bytes</div><div class="line">      val getBytesReadCallback: Option[() =&gt; Long] = split.inputSplit.value match &#123;</div><div class="line">        case _: FileSplit | _: CombineFileSplit =&gt;</div><div class="line">          SparkHadoopUtil.get.getFSBytesReadOnThreadCallback()</div><div class="line">        case _ =&gt; None</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      // For Hadoop 2.5+, we get our input bytes from thread-local Hadoop FileSystem statistics.</div><div class="line">      // If we do a coalesce, however, we are likely to compute multiple partitions in the same</div><div class="line">      // task and in the same thread, in which case we need to avoid override values written by</div><div class="line">      // previous partitions (SPARK-13071).</div><div class="line">      def updateBytesRead(): Unit = &#123;</div><div class="line">        getBytesReadCallback.foreach &#123; getBytesRead =&gt;</div><div class="line">          inputMetrics.setBytesRead(existingBytesRead + getBytesRead())</div><div class="line">        &#125;</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      var reader: RecordReader[K, V] = null</div><div class="line">      val inputFormat = getInputFormat(jobConf)</div><div class="line">      HadoopRDD.addLocalConfiguration(new SimpleDateFormat(&quot;yyyyMMddHHmm&quot;).format(createTime),</div><div class="line">        context.stageId, theSplit.index, context.attemptNumber, jobConf)</div><div class="line">      reader = inputFormat.getRecordReader(split.inputSplit.value, jobConf, Reporter.NULL)</div><div class="line"></div><div class="line">      context.addTaskCompletionListener&#123; context =&gt; closeIfNeeded() &#125;</div><div class="line">      val key: K = reader.createKey()</div><div class="line">      val value: V = reader.createValue()</div><div class="line"></div><div class="line">      override def getNext(): (K, V) = &#123;</div><div class="line">       ......</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      override def close() &#123;</div><div class="line">       ......</div><div class="line">      &#125;</div><div class="line">    &#125;</div><div class="line">    new InterruptibleIterator[(K, V)](context, iter)</div><div class="line">  &#125;</div></pre></td></tr></table></figure>
+<p>从这里我们可以看得出来compute方法是通过分片来获得Iterator接口，以遍历分片的数据。</p>
+<p>getPreferredLocations方法就更简单了，直接调用InputSplit的getLocations方法获得所在的位置。</p>
+<p>2.2 依赖<br>下面我们看RDD里面的map方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">def map[U: ClassTag](f: T =&gt; U): RDD[U] = withScope &#123;</div><div class="line">    val cleanF = sc.clean(f)</div><div class="line">    new MapPartitionsRDD[U, T](this, (context, pid, iter) =&gt; iter.map(cleanF))</div><div class="line">  &#125;</div></pre></td></tr></table></figure></p>
+<p>直接new了一个MapPartitionsRDD然后讲函数穿进去，我们杀进MapPartitionsRDD<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">private[spark] class MapPartitionsRDD[U: ClassTag, T: ClassTag](</div><div class="line">    var prev: RDD[T],</div><div class="line">    f: (TaskContext, Int, Iterator[T]) =&gt; Iterator[U],  // (TaskContext, partition index, iterator)</div><div class="line">    preservesPartitioning: Boolean = false)</div><div class="line">  extends RDD[U](prev) &#123;</div><div class="line"></div><div class="line">  override val partitioner = if (preservesPartitioning) firstParent[T].partitioner else None</div><div class="line"></div><div class="line">  override def getPartitions: Array[Partition] = firstParent[T].partitions</div><div class="line"></div><div class="line">  override def compute(split: Partition, context: TaskContext): Iterator[U] =</div><div class="line">    f(context, split.index, firstParent[T].iterator(split, context))</div><div class="line">  // 清空父RDD</div><div class="line">  override def clearDependencies() &#123;</div><div class="line">    super.clearDependencies()</div><div class="line">    prev = null</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>先看一下RDD对应的构造方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">def this(@transient oneParent: RDD[_]) =</div><div class="line">    this(oneParent.context, List(new OneToOneDependency(oneParent)))</div></pre></td></tr></table></figure></p>
+<p>就这样你会发现它把RDD复制给了deps，HadoopRDD成了我们杀进MapPartitionsRDD的父依赖了，这个OneToOneDependency是一个窄依赖，子RDD直接依赖于父RDD，继续看firstParent。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">protected[spark] def firstParent[U: ClassTag]: RDD[U] = &#123;</div><div class="line">   dependencies.head.rdd.asInstanceOf[RDD[U]]</div><div class="line"> &#125;</div></pre></td></tr></table></figure></p>
+<p>由此我们可以得出两个结论：</p>
+<p>1、getPartitions直接沿用了父RDD的分片信息<br>2、compute函数是在父RDD遍历每一行数据时套一个匿名函数f进行处理<br>好吧，现在我们可以理解compute函数真正是在干嘛的了</p>
+<p>它的两个显著作用：</p>
+<p>1、在没有依赖的条件下，根据分片的信息生成遍历数据的Iterable接口<br>2、在有前置依赖的条件下，在父RDD的Iterable接口上给遍历每个元素的时候再套上一个方法</p>
+<p>我们看看点击进入map(f)的方法进去看一下<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">def map[B](f: A =&gt; B): Iterator[B] = new AbstractIterator[B] &#123;</div><div class="line">    def hasNext = self.hasNext</div><div class="line">    def next() = f(self.next())</div><div class="line">  &#125;</div></pre></td></tr></table></figure></p>
+<p>map方法将数据集的每一个数据按照f函数执行后返回数据</p>
+<p>我们接着看RDD的flatMap方法，你会发现它和map函数几乎没什么区别，但是flatMap和map的效果还是差别挺大的。</p>
+<p>比如((1,2),(3,4)), 如果是调用了flatMap函数，我们访问到的就是(1,2,3,4)4个元素；如果是map的话，我们访问到的就是(1,2),(3,4)两个元素。</p>
+<p>有兴趣的可以去看看FlatMappedRDD和FilteredRDD</p>
+<p>2.3 reduceByKey<br>下面我们看一下reduceByKey的实现。<br>reduceByKey隐藏的比较深，并没有在RDD中，而是在因式转换为PairRDDFunctions才可以使用，所以我们去PairRDDFunctions找一下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"> def reduceByKey(func: (V, V) =&gt; V): RDD[(K, V)] = self.withScope &#123;</div><div class="line">   reduceByKey(defaultPartitioner(self), func)</div><div class="line"> &#125;</div><div class="line"> </div><div class="line">def defaultPartitioner(rdd: RDD[_], others: RDD[_]*): Partitioner = &#123;</div><div class="line">  val bySize = (Seq(rdd) ++ others).sortBy(_.partitions.length).reverse</div><div class="line">  for (r &lt;- bySize if r.partitioner.isDefined &amp;&amp; r.partitioner.get.numPartitions &gt; 0) &#123;</div><div class="line">    return r.partitioner.get</div><div class="line">  &#125;</div><div class="line">  if (rdd.context.conf.contains(&quot;spark.default.parallelism&quot;)) &#123;</div><div class="line">    new HashPartitioner(rdd.context.defaultParallelism)</div><div class="line">  &#125; else &#123;</div><div class="line">    new HashPartitioner(bySize.head.partitions.length)</div><div class="line">  &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">def reduceByKey(partitioner: Partitioner, func: (V, V) =&gt; V): RDD[(K, V)] = self.withScope &#123;</div><div class="line">   combineByKeyWithClassTag[V]((v: V) =&gt; v, func, func, partitioner)</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
+<p>我们可以看到reduceByKeyreduceByKeyWithClassTag方法，有心去可以看一下<br> <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div></pre></td><td class="code"><pre><div class="line">def combineByKeyWithClassTag[C](</div><div class="line">     createCombiner: V =&gt; C,</div><div class="line">     mergeValue: (C, V) =&gt; C,</div><div class="line">     mergeCombiners: (C, C) =&gt; C,</div><div class="line">     partitioner: Partitioner,</div><div class="line">     mapSideCombine: Boolean = true,</div><div class="line">     serializer: Serializer = null)(implicit ct: ClassTag[C]): RDD[(K, C)] = self.withScope &#123;</div><div class="line">   require(mergeCombiners != null, &quot;mergeCombiners must be defined&quot;) // required as of Spark 0.9.0</div><div class="line">   if (keyClass.isArray) &#123;</div><div class="line">     if (mapSideCombine) &#123;</div><div class="line">       throw new SparkException(&quot;Cannot use map-side combining with array keys.&quot;)</div><div class="line">     &#125;</div><div class="line">     if (partitioner.isInstanceOf[HashPartitioner]) &#123;</div><div class="line">       throw new SparkException(&quot;Default partitioner cannot partition array keys.&quot;)</div><div class="line">     &#125;</div><div class="line">   &#125;</div><div class="line">   val aggregator = new Aggregator[K, V, C](</div><div class="line">     self.context.clean(createCombiner),  //设置句聚合函数</div><div class="line">     self.context.clean(mergeValue),   //valueMrege函数</div><div class="line">     self.context.clean(mergeCombiners)) // 最终结果的整合函数</div><div class="line">   if (self.partitioner == Some(partitioner)) &#123;</div><div class="line">   //不存在自定义分区</div><div class="line">     self.mapPartitions(iter =&gt; &#123;</div><div class="line">       val context = TaskContext.get()</div><div class="line">       new InterruptibleIterator(context, aggregator.combineValuesByKey(iter, context))</div><div class="line">     &#125;, preservesPartitioning = true)</div><div class="line">   &#125; else &#123;</div><div class="line">   //不存在自定义分区</div><div class="line">     new ShuffledRDD[K, V, C](self, partitioner)</div><div class="line">       .setSerializer(serializer)</div><div class="line">       .setAggregator(aggregator)</div><div class="line">       .setMapSideCombine(mapSideCombine)</div><div class="line">   &#125;</div><div class="line"> &#125;</div><div class="line"> </div><div class="line"> .......</div><div class="line"> </div><div class="line"> override def getDependencies: Seq[Dependency[_]] = &#123;</div><div class="line">   val serializer = userSpecifiedSerializer.getOrElse &#123;</div><div class="line">     val serializerManager = SparkEnv.get.serializerManager</div><div class="line">     if (mapSideCombine) &#123;</div><div class="line">       serializerManager.getSerializer(implicitly[ClassTag[K]], implicitly[ClassTag[C]])</div><div class="line">     &#125; else &#123;</div><div class="line">       serializerManager.getSerializer(implicitly[ClassTag[K]], implicitly[ClassTag[V]])</div><div class="line">     &#125;</div><div class="line">   &#125;</div><div class="line">   //</div><div class="line">   List(new ShuffleDependency(prev, part, serializer, keyOrdering, aggregator, mapSideCombine))</div><div class="line"> &#125;</div></pre></td></tr></table></figure></p>
+<p>reduce流程可以总结为<br>1、将分区包装秤HashPartitioner分区<br>2、如果没有自定义分区则，直接执行combineCombinersByKey<br>3、  如果有自定义分区，则对shuffle自行combineCombinersByKey</p>
+<p>下面我们先看MapPartitionsRDD，我把和别的RDD有别的两行给拿出来了，很明显的区别，f方法是套在iterator的外边，这样才能对iterator的所有数据做一个合并。</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"> override val partitioner = if (preservesPartitioning) firstParent[T].partitioner else None</div><div class="line">  override def compute(split: Partition, context: TaskContext) =</div><div class="line">    f(context, split.index, firstParent[T].iterator(split, context))</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>接下来我们看Aggregator的combineValuesByKey的方法吧。</p>
+<p>def combineValuesByKey(iter: Iterator[_ &lt;: Product2[K, V]],<br>                         context: TaskContext): Iterator[(K, C)] = {<br>    // 是否使用外部排序，是由参数spark.shuffle.spill，默认是true<br>    if (!externalSorting) {<br>      val combiners = new AppendOnlyMap[K,C]<br>      var kv: Product2[K, V] = null<br>      val update = (hadValue: Boolean, oldValue: C) =&gt; {<br>        if (hadValue) mergeValue(oldValue, kv._2) else createCombiner(kv.<em>2)<br>      }<br>      // 用map来去重，用update方法来更新值，如果没值的时候，返回值，如果有值的时候，通过mergeValue方法来合并<br>      // mergeValue方法就是我们在reduceByKey里面写的那个匿名函数，在这里就是（</em> + _）<br>      while (iter.hasNext) {<br>        kv = iter.next()<br>        combiners.changeValue(kv._1, update)<br>      }<br>      combiners.iterator<br>    } else {<br>      // 用了一个外部排序的map来去重，就不停的往里面插入值即可，基本原理和上面的差不多，区别在于需要外部排序<br>      val combiners = new ExternalAppendOnlyMap<a href="createCombiner, mergeValue, mergeCombiners">K, V, C</a><br>      while (iter.hasNext) {<br>        val (k, v) = iter.next()<br>        combiners.insert(k, v)<br>      }<br>      combiners.iterator<br>}</p>
+<p>这个就是一个很典型的按照key来做合并的方法了，我们继续看ShuffledRDD吧。</p>
+<p>ShuffledRDD和之前的RDD很明显的特征是</p>
+<p>1、它的依赖传了一个Nil（空列表）进去，表示它没有依赖。<br>2、它的compute计算方式比较特别，这个在之后的文章说，过程比较复杂。<br>3、它的分片默认是采用HashPartitioner，数量和前面的RDD的分片数量一样，也可以不一样，我们可以在reduceByKey的时候多传一个分片数量即可。</p>
+<p>在new完ShuffledRDD之后又来了一遍mapPartitionsWithContext，不过调用的匿名函数变成了combineCombinersByKey。</p>
+<p>combineCombinersByKey和combineValuesByKey的逻辑基本相同，只是输入输出的类型有区别。combineCombinersByKey只是做单纯的合并，不会对输入输出的类型进行改变，combineValuesByKey会把iter[K, V]的V值变成iter[K, C]。</p>
+<p>case class Aggregator[K, V, C] (<br>　　createCombiner: V =&gt; C,<br>　　mergeValue: (C, V) =&gt; C,<br>　　mergeCombiners: (C, C) =&gt; C)<br>　　……<br>}<br>复制代码</p>
+<p>这个方法会根据我们传进去的匿名方法的参数的类型做一个自动转换。<br>到这里，作业都没有真正执行，只是将RDD各种嵌套，我们通过RDD的id和类型的变化观测到这一点，RDD[1]-&gt;RDD[2]-&gt;RDD[3]……</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/大数据/" rel="tag">#大数据</a>
+          
+            <a href="/tags/Spark/" rel="tag">#Spark</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/10/19/ubuntu下恢复rm删除的数据/" rel="prev">ubuntu下恢复rm删除的数据</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/09/27/[Spark源码一]spark-submit提交作业/" rel="next">[Spark源码一】spark-submit提交作业过程</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div>
+      
+        <style type="text/css">
+
+    .donate_bar {
+        text-align: center;
+        margin-top : 5%;
+    }
+
+    .donate_bar.hidden {
+        display:none;
+    }
+/*
+    .donate_bar a.btn_donate {
+        display: inline-block;
+        width: 82px;
+        height: 82px;
+        margin-left:auto;
+        margin-right:auto;
+
+        background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat;
+        _background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat; 
+
+        -webkit-transition: background 0s;
+        -moz-transition: background 0s;
+        -o-transition: background 0s;
+        -ms-transition: background 0s;
+        transition: background 0s;
+    }
+*/
+    .donate_bar a.btn_donate:hover { 
+        // background-position: 0px -82px;
+        color: #87daff
+    }
+
+    .donate_bar .donate_txt {
+        display: block;
+        color: #9d9d9d;
+        font: 14px/2 "Microsoft Yahei";
+    }
+
+    .bold { 
+        font-weight: bold; 
+    }
+
+    .post-donate a {
+        border-bottom: 0px;
+    }
+
+    #donate_guide table {
+        border: none;
+    }
+
+    #donate_guide td {
+        border-bottom: none;
+        border-right: none;
+        background: #333333;
+        valign: top;
+    }
+
+</style>
+
+
+
+    
+
+    <div class ="post-donate">
+        <div id="donate_board" class="donate_bar center">
+              <a id="btn_donate" class="btn_donate" href="javascript:;" title="打赏">赏</a>
+              <span id="donate_txt" class="donate_txt">
+                   
+                        仅仅是一个功能
+                   
+              </span>
+            <br>
+        </div>  
+  
+        <div id="donate_guide" class="donate_bar center hidden">
+            <!--
+            
+                <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                    style="float:left;margin-left:25%;margin-right:10px;">
+                    <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                </a> 
+              
+
+            
+                <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                    style="margin-right:30%">
+                    <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                </a>
+            
+            -->
+            <table>
+                <tr>
+                    <td>
+                        
+                            <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                                style="float:left;margin-left:25%;margin-right:10px;">
+                                <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                            </a> 
+                         
+                    </td>
+                    <td>
+                        
+                            <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                                style="margin-right:30%">
+                                <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                            </a>
+                        
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+
+        <script type="text/javascript">
+            document.getElementById('btn_donate').onclick = function() {
+                $('#donate_board').addClass('hidden');
+                // $('#donate_guide').removeClass('hidden');
+                $('#donate_guide').show(2000);
+            }
+
+        </script>
+    </div>
+
+    
+
+
+      
+    </div>
+
+    <div class="post-spread">
+      
+        <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+  <a class="jiathis_button_tsina"></a>
+  <a class="jiathis_button_tqq"></a>
+  <a class="jiathis_button_weixin"></a>
+  <a class="jiathis_button_cqq"></a>
+  <a class="jiathis_button_douban"></a>
+  <a class="jiathis_button_renren"></a>
+  <a class="jiathis_button_qzone"></a>
+  <a class="jiathis_button_kaixin001"></a>
+  <a class="jiathis_button_copy"></a>
+  <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank"></a>
+  <a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" >
+  var jiathis_config={
+    hideMore:false
+  }
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+            <!-- 多说热评文章-->
+            <p>热评文章</p>
+            <div class="ds-top-threads" data-range="weekly" data-num-items="4"></div>
+        
+
+        
+          <div class="comments" id="comments">
+            
+              <div class="ds-thread" data-thread-key="2016/10/10/[Spark源码二]RDD讲解/"
+                   data-title="[Spark源码二】RDD讲解" data-url="https://fudawei.github.io/2016/10/10/[Spark源码二]RDD讲解/">
+              </div>
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/default_avatar.jpg" alt="冰鸟" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">冰鸟</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">143</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          <div class="site-state-item site-state-categories">
+            <a href="/categories">
+              <span class="site-state-item-count">55</span>
+              <span class="site-state-item-name">分类</span>
+              </a>
+          </div>
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">80</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="menu-item-icon icon-next-feed"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/fudw1987" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://www.zhihu.com/people/fu-da-wei-70" target="_blank">知乎</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://t.qq.com/fudw764923019" target="_blank">微博</a>
+              </span>
+            
+          
+        </div>
+
+        <div class="links-of-friendly motion-element">
+          
+        </div>
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <p class="post-toc-empty">此文章未包含目录</p>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<div class="copyright" >
+  
+  &copy; &nbsp; 
+  <span itemprop="copyrightYear">2017
+  </span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">冰鸟
+  </span>
+</div>
+
+<div class="powered-by">
+  Powered by <a class="theme-link" href="http://hexo.io">Hexo</a>
+</div>
+
+<div class="theme-info">
+  Theme by <a class="theme-link" href="https://github.com/fudawei">fudawei</a>
+</div>
+ &nbsp; |  &nbsp; 
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+  &nbsp; |  &nbsp; 
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+<!-- busuanzi -->
+
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"fudawei"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+    
+
+    
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+      processEscapes: true,
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for (i=0; i < all.length; i += 1) {
+      all[i].SourceElement().parentNode.className += ' has-jax';
+    }
+  });
+</script>
+
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+
+<!-- custom analytics part create by xiamo -->
+<script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+<script>AV.initialize("SbuO6UqesUpwpVQpFOF85w4b-gzGzoHsz", "nU6WMv6iTcTpjLHKtOIoovuO");</script>
+<script>
+function showTime(Counter) {
+	var query = new AV.Query(Counter);
+	$(".leancloud_visitors").each(function() {
+		var url = $(this).attr("id").trim();
+		query.equalTo("url", url);
+		query.find({
+			success: function(results) {
+				if (results.length == 0) {
+					var content = '0 ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+					return;
+				}
+				for (var i = 0; i < results.length; i++) {
+					var object = results[i];
+					var content = object.get('time') + ' ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+				}
+			},
+			error: function(object, error) {
+				console.log("Error: " + error.code + " " + error.message);
+			}
+		});
+
+	});
+}
+
+function addCount(Counter) {
+	var Counter = AV.Object.extend("Counter");
+	url = $(".leancloud_visitors").attr('id').trim();
+	title = $(".leancloud_visitors").attr('data-flag-title').trim();
+	var query = new AV.Query(Counter);
+	query.equalTo("url", url);
+	query.find({
+		success: function(results) {
+			if (results.length > 0) {
+				var counter = results[0];
+				counter.fetchWhenSave(true);
+				counter.increment("time");
+				counter.save(null, {
+					success: function(counter) {
+						var content =  counter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(counter, error) {
+						console.log('Failed to save Visitor num, with error message: ' + error.message);
+					}
+				});
+			} else {
+				var newcounter = new Counter();
+				newcounter.set("title", title);
+				newcounter.set("url", url);
+				newcounter.set("time", 1);
+				newcounter.save(null, {
+					success: function(newcounter) {
+					    console.log("newcounter.get('time')="+newcounter.get('time'));
+						var content = newcounter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(newcounter, error) {
+						console.log('Failed to create');
+					}
+				});
+			}
+		},
+		error: function(error) {
+			console.log('Error:' + error.code + " " + error.message);
+		}
+	});
+}
+$(function() {
+	var Counter = AV.Object.extend("Counter");
+	if ($('.leancloud_visitors').length == 1) {
+		addCount(Counter);
+	} else if ($('.post-title-link').length > 1) {
+		showTime(Counter);
+	}
+}); 
+</script>
+
+
+</body>
+</html>

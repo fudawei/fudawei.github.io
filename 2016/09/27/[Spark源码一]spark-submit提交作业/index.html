@@ -1,0 +1,1149 @@
+
+<!doctype html>
+<html class="theme-next use-motion theme-next-mala">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。" />
+
+
+
+  <meta name="keywords" content="大数据,Spark," />
+
+
+
+  <link rel="alternate" href="/atom.xml" title="冰鸟" type="application/atom+xml" />
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="使用spark已经有一段时间了，今天开始读spark源码。首先从spark提交作业开始。下图为spark的架构，以及Spark的APP运行图。它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Program的过程。
+这个是Spark的App运行图，它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Progr">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[Spark源码一】spark-submit提交作业过程">
+<meta property="og:url" content="https://fudawei.github.io/2016/09/27/[Spark源码一]spark-submit提交作业/index.html">
+<meta property="og:site_name" content="冰鸟">
+<meta property="og:description" content="使用spark已经有一段时间了，今天开始读spark源码。首先从spark提交作业开始。下图为spark的架构，以及Spark的APP运行图。它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Program的过程。
+这个是Spark的App运行图，它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Progr">
+<meta property="og:image" content="https://fudawei.github.io/img/spark_architecture.png">
+<meta property="og:updated_time" content="2017-02-08T03:39:19.517Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="[Spark源码一】spark-submit提交作业过程">
+<meta name="twitter:description" content="使用spark已经有一段时间了，今天开始读spark源码。首先从spark提交作业开始。下图为spark的架构，以及Spark的APP运行图。它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Program的过程。
+这个是Spark的App运行图，它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Progr">
+<meta name="twitter:image" content="https://fudawei.github.io/img/spark_architecture.png">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mala',
+    sidebar: 'post'
+  };
+</script>
+
+  <title> [Spark源码一】spark-submit提交作业过程 | 冰鸟 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">冰鸟-博客</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            <i class="menu-item-icon icon-next-categories"></i> <br />
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            <i class="menu-item-icon icon-next-about"></i> <br />
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            <i class="menu-item-icon icon-next-commonweal"></i> <br />
+            公益404
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    
+      
+
+      
+        <style type="text/css">
+
+    .circle {
+        width: 40px;
+        height: 40px;
+        background: #555 no-repeat;
+        cursor: move;
+    }
+
+    .assist-btn {
+        position: fixed;
+        top: 50％;
+        left: 10px;
+        -moz-border-radius: 50px;
+        -webkit-border-radius: 50px;
+        border-radius: 50px;
+        outline: none;
+        border: none;
+        color: #87daff;
+    }
+
+</style>
+
+<script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+<script type="text/javascript">
+    // 浮动圆点展开与收缩
+    /*
+    $(function () {
+        var assist_box = $('.assist-box');
+        $('#assist_btn').hover(function () {
+            assist_box.stop().show(300);
+        }, function () {
+            assist_box.stop().hide(150);
+        })
+    });
+    */  
+    //浮动圆点拖动
+    $(function () {
+        var box = document.getElementById('assist_btn');
+        box.onmousedown = function (event) {
+            var e = event || window.event,
+                t = e.target || e.srcElement,
+                // 鼠标按下时的坐标x1,y1
+                x1 = e.clientX,
+                y1 = e.clientY,
+                //鼠标按下时的左右偏移量
+                dragLeft = this.offsetLeft,
+                dragTop = this.offsetTop;
+
+            document.onmousemove = function (event) {
+                var e = event || window.event,
+                    t = e.target || e.srcElement,
+                    // 鼠标移动时的动态坐标
+                    x2 = e.clientX,
+                    y2 = e.clientY,
+                    // 鼠标移动时的坐标的变化量
+                    x = x2 - x1,
+                    y = y2 - y1;
+                box.style.left = (dragLeft + x) + 'px';
+                box.style.top = (dragTop + y) + 'px';
+            }
+
+            document.onmouseup = function () {
+                this.onmousemove = null;
+            }
+        }
+    });
+
+/*
+    $whitesmoke   = #f5f5f5
+    $gainsboro    = #eee
+    $gray-lighter = #ddd
+    $grey-light   = #ccc
+    $grey         = #bbb
+    $grey-dark    = #999
+    $grey-dim     = #666
+    $black-light  = #555
+    $black-deep   = #222
+    $red          = #ff2a2a
+    $blue-bright  = #87daff
+    $blue         = #0684bd
+    $blue-deep    = #262a30
+*/
+    // white theme
+    var body = {color: "#555", background: "white"};
+    var a_tag = {color: "#222"};
+    var header = { background: "#f5f5f5"};
+    var logo_line_i = {background: "#222"};
+    // var post_code = {background: "#eee", color: "#222"};
+
+    function switch_theme() {
+        $("body").css(body);
+        $("a:not('.links-of-author-item a, .site-state-item a, .site-state-posts a, .feed-link a, .motion-element a, .post-tags a, .show-commit-cls a, #donate_board a')").css(a_tag);
+        $(".header, .footer").css(header);
+        $(".logo-line-before i, .logo-line-after i").css(logo_line_i);
+        //$(".post code").css(post_code);
+        $("#idhyt-surprise-ball #idhyt-surprise-ball-animation .drag").css(a_tag);
+        $(".post-title-link, .posts-expand .post-meta, .post-comments-count, .disqus-comment-count, .post-category a, .post-nav-next a, .post-nav-item a").css(a_tag);
+        
+        // $("code").css({color: '#c5c8c6', background: '#1d1f21'});
+        $("#assist_btn").hide(1500);
+    }
+
+    $(function () {
+        $("#assist_btn").dblclick(function() {
+            switch_theme();
+        });
+    });
+
+</script>
+
+<div>
+
+    <button class="assist-btn circle" id="assist_btn" title="双击切换">
+        亮
+    </button>
+
+</div>
+
+
+
+
+
+
+
+
+
+      
+
+    
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              [Spark源码一】spark-submit提交作业过程
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2016-09-27T22:42:01+08:00" content="2016-09-27">
+            2016-09-27
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/大数据/" itemprop="url" rel="index">
+                  <span itemprop="name">大数据</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/大数据/Spark/" itemprop="url" rel="index">
+                  <span itemprop="name">Spark</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2016/09/27/[Spark源码一]spark-submit提交作业/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2016/09/27/[Spark源码一]spark-submit提交作业/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2016/09/27/[Spark源码一]spark-submit提交作业/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2016/09/27/[Spark源码一]spark-submit提交作业/"class="leancloud_visitors" data-flag-title="[Spark源码一】spark-submit提交作业过程">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><p>使用spark已经有一段时间了，今天开始读spark源码。<br>首先从spark提交作业开始。下图为spark的架构，以及Spark的APP运行图。它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Program的过程。</p>
+<p><img src="/img/spark_architecture.png" alt=""><br>这个是Spark的App运行图，它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Program的过程。</p>
+<h1 id="作业提交"><a href="#作业提交" class="headerlink" title="作业提交"></a>作业提交</h1><p>作业提交方法以及参数<br>我们先看一下用Spark Submit提交的方法吧，下面是从官方上面摘抄的内容。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"> Run on a Spark standalone cluster</div><div class="line">./bin/spark-submit \</div><div class="line">  --class org.apache.spark.examples.SparkPi \</div><div class="line">  --master spark://207.184.161.138:7077 \</div><div class="line">  --executor-memory 20G \</div><div class="line">  --total-executor-cores 100 \</div><div class="line">  /path/to/examples.jar \</div><div class="line">  1000</div></pre></td></tr></table></figure>
+<p>这个是提交到standalone集群的方式，打开spark-submit这文件，我们会发现它最后是调用了org.apache.spark.deploy.SparkSubmit这个类。</p>
+<p>直接打开这个类，找到main入口，发现代码很简单<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">def main(args: Array[String]): Unit = &#123;</div><div class="line">   val appArgs = new SparkSubmitArguments(args)</div><div class="line">   if (appArgs.verbose) &#123;</div><div class="line">     // scalastyle:off println</div><div class="line">     printStream.println(appArgs)</div><div class="line">     // scalastyle:on println</div><div class="line">   &#125;</div><div class="line">   appArgs.action match &#123;</div><div class="line">     case SparkSubmitAction.SUBMIT =&gt; submit(appArgs)</div><div class="line">     case SparkSubmitAction.KILL =&gt; kill(appArgs)</div><div class="line">     case SparkSubmitAction.REQUEST_STATUS =&gt; requestStatus(appArgs)</div><div class="line">   &#125;</div><div class="line"> &#125;</div></pre></td></tr></table></figure></p>
+<p>该方法做两件事：<br>1、这里SparkSubmitArguments类初始化过程将会加载spark默认配置文件的配置信息、运行环境信息，另外会将提交的参数覆盖默认配置（并且校验参数的合法性）<br>2、通过反射调用class主方法</p>
+<p>有兴趣可以看一下SparkSubmitArguments，一下为默认环境配置信息的代码（loadEnvironmentArguments()方法内部）<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div></pre></td><td class="code"><pre><div class="line">master = Option(master)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.master&quot;))</div><div class="line">      .orElse(env.get(&quot;MASTER&quot;))</div><div class="line">      .orNull</div><div class="line">    driverExtraClassPath = Option(driverExtraClassPath)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.driver.extraClassPath&quot;))</div><div class="line">      .orNull</div><div class="line">    driverExtraJavaOptions = Option(driverExtraJavaOptions)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.driver.extraJavaOptions&quot;))</div><div class="line">      .orNull</div><div class="line">    driverExtraLibraryPath = Option(driverExtraLibraryPath)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.driver.extraLibraryPath&quot;))</div><div class="line">      .orNull</div><div class="line">    driverMemory = Option(driverMemory)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.driver.memory&quot;))</div><div class="line">      .orElse(env.get(&quot;SPARK_DRIVER_MEMORY&quot;))</div><div class="line">      .orNull</div><div class="line">    driverCores = Option(driverCores)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.driver.cores&quot;))</div><div class="line">      .orNull</div><div class="line">    executorMemory = Option(executorMemory)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.executor.memory&quot;))</div><div class="line">      .orElse(env.get(&quot;SPARK_EXECUTOR_MEMORY&quot;))</div><div class="line">      .orNull</div><div class="line">    executorCores = Option(executorCores)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.executor.cores&quot;))</div><div class="line">      .orElse(env.get(&quot;SPARK_EXECUTOR_CORES&quot;))</div><div class="line">      .orNull</div><div class="line">    totalExecutorCores = Option(totalExecutorCores)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.cores.max&quot;))</div><div class="line">      .orNull</div><div class="line">    name = Option(name).orElse(sparkProperties.get(&quot;spark.app.name&quot;)).orNull</div><div class="line">    jars = Option(jars).orElse(sparkProperties.get(&quot;spark.jars&quot;)).orNull</div><div class="line">    ivyRepoPath = sparkProperties.get(&quot;spark.jars.ivy&quot;).orNull</div><div class="line">    packages = Option(packages).orElse(sparkProperties.get(&quot;spark.jars.packages&quot;)).orNull</div><div class="line">    packagesExclusions = Option(packagesExclusions)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.jars.excludes&quot;)).orNull</div><div class="line">    deployMode = Option(deployMode).orElse(env.get(&quot;DEPLOY_MODE&quot;)).orNull</div><div class="line">    numExecutors = Option(numExecutors)</div><div class="line">      .getOrElse(sparkProperties.get(&quot;spark.executor.instances&quot;).orNull)</div><div class="line">    keytab = Option(keytab).orElse(sparkProperties.get(&quot;spark.yarn.keytab&quot;)).orNull</div><div class="line">    principal = Option(principal).orElse(sparkProperties.get(&quot;spark.yarn.principal&quot;)).orNull</div></pre></td></tr></table></figure></p>
+<p>……</p>
+<h1 id="提交流程"><a href="#提交流程" class="headerlink" title="提交流程"></a>提交流程</h1><p>Driver程序的部署模式有两种，client和cluster，默认是client。client的话默认就是直接在本地运行了Driver程序了，cluster模式还会兜一圈把作业发到集群上面去运行。(指定部署模式需要用参数–deploy-mode来指定，或者在环境变量当中添加DEPLOY_MODE变量来指定。)</p>
+<p>下面讲的是cluster的部署方式，兜一圈的这种情况。</p>
+<p>yarn模式的话mainClass是org.apache.spark.deploy.yarn.Client，standalone的mainClass是org.apache.spark.deploy.Client。<br>这次我们讲org.apache.spark.deploy.Client，yarn的话有时间单独讲，目前超哥还是推荐使用standalone的方式部署spark，具体原因不详，据说是因为资源调度方面的问题。</p>
+<h1 id="Client端"><a href="#Client端" class="headerlink" title="Client端"></a>Client端</h1><p>我们首先看一下Client的实现，首先找到这个类。<br>main函数中主要有一下几行：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">val rpcEnv = RpcEnv.create(&quot;driverClient&quot;, Utils.localHostName(), 0, conf, new  SecurityManager(conf))</div><div class="line">val masterEndpoints = driverArgs.masters.map(RpcAddress.fromSparkURL).</div><div class="line">      map(rpcEnv.setupEndpointRef(_, Master.ENDPOINT_NAME))</div><div class="line">rpcEnv.setupEndpoint(&quot;client&quot;, new ClientEndpoint(rpcEnv, driverArgs, masterEndpoints, conf))</div><div class="line">rpcEnv.awaitTermination()</div></pre></td></tr></table></figure></p>
+<pre><code>这里看到一个rpcEnv，最后还调用了awaitTermination()方法，好像时启动了什么。另外Client继承了RpcEndpoint（ThreadSafeRpcEndpoint），浏览一下RpcEnv和RpcEndpoint的内容，其实就时用做发消息的，之前听说spark用的actor模式，每个进程之间可以看作是一个个独立的实体，他们之间是毫无关联的。但是，他们可以通过消息来通信。所有的任务都是通过消息通信完成。据说spark使用的是akka框架，但RpcEnv和RpcEndpoint没看到akka的实现，只有netty的实现，有可能spark已经讲akka实现移除了。至于actor模型有兴趣大家可自行百度。
+</code></pre><p><strong>为了便于阅读源码我们看一下RpcEndpoint中比较重要的几个函数：</strong><br>onStart()             //rpcEndpoint启动时执行的操作<br>onStop()              //rpcEndpoint停止时执行的操作<br>receive()             //接受并处理RpcEndpointRef.send发送的信息<br>receiveAndReply()     //接受并处理RpcEndpointRef.ask发送的信息</p>
+<p>接下来看一下启动时client做了那些操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div></pre></td><td class="code"><pre><div class="line">override def onStart(): Unit = &#123;</div><div class="line">   driverArgs.cmd match &#123;</div><div class="line">     case &quot;launch&quot; =&gt;</div><div class="line">       // TODO: We could add an env variable here and intercept it in `sc.addJar` that would</div><div class="line">       //       truncate filesystem paths similar to what YARN does. For now, we just require</div><div class="line">       //       people call `addJar` assuming the jar is in the same directory.</div><div class="line">       val mainClass = &quot;org.apache.spark.deploy.worker.DriverWrapper&quot;</div><div class="line"></div><div class="line">       val classPathConf = &quot;spark.driver.extraClassPath&quot;</div><div class="line">       val classPathEntries = sys.props.get(classPathConf).toSeq.flatMap &#123; cp =&gt;</div><div class="line">         cp.split(java.io.File.pathSeparator)</div><div class="line">       &#125;</div><div class="line"></div><div class="line">       val libraryPathConf = &quot;spark.driver.extraLibraryPath&quot;</div><div class="line">       val libraryPathEntries = sys.props.get(libraryPathConf).toSeq.flatMap &#123; cp =&gt;</div><div class="line">         cp.split(java.io.File.pathSeparator)</div><div class="line">       &#125;</div><div class="line"></div><div class="line">       val extraJavaOptsConf = &quot;spark.driver.extraJavaOptions&quot;</div><div class="line">       val extraJavaOpts = sys.props.get(extraJavaOptsConf)</div><div class="line">         .map(Utils.splitCommandString).getOrElse(Seq.empty)</div><div class="line">       val sparkJavaOpts = Utils.sparkJavaOpts(conf)</div><div class="line">       val javaOpts = sparkJavaOpts ++ extraJavaOpts</div><div class="line">       val command = new Command(mainClass,</div><div class="line">         Seq(&quot;&#123;&#123;WORKER_URL&#125;&#125;&quot;, &quot;&#123;&#123;USER_JAR&#125;&#125;&quot;, driverArgs.mainClass) ++ driverArgs.driverOptions,</div><div class="line">         sys.env, classPathEntries, libraryPathEntries, javaOpts)</div><div class="line"></div><div class="line">       val driverDescription = new DriverDescription(</div><div class="line">         driverArgs.jarUrl,</div><div class="line">         driverArgs.memory,</div><div class="line">         driverArgs.cores,</div><div class="line">         driverArgs.supervise,</div><div class="line">         command)</div><div class="line">       ayncSendToMasterAndForwardReply[SubmitDriverResponse](</div><div class="line">         RequestSubmitDriver(driverDescription))</div><div class="line"></div><div class="line">     case &quot;kill&quot; =&gt;</div><div class="line">       val driverId = driverArgs.driverId</div><div class="line">       ayncSendToMasterAndForwardReply[KillDriverResponse](RequestKillDriver(driverId))</div><div class="line">   &#125;</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
+<p>从上面的代码看得出来，它需要设置master的连接地址，最后提交了一个RequestSubmitDriver的信息。在receive方法里面，就是等待接受回应了，有两个Response分别对应着这里的launch和kill。这里发送的message信息是RequestSubmitDriver，顺便看一下ayncSendToMasterAndForwardReply实现：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">private def ayncSendToMasterAndForwardReply[T: ClassTag](message: Any): Unit = &#123;</div><div class="line">   for (masterEndpoint &lt;- masterEndpoints) &#123;</div><div class="line">     masterEndpoint.ask[T](message).onComplete &#123;</div><div class="line">       case Success(v) =&gt; self.send(v)</div><div class="line">       case Failure(e) =&gt;</div><div class="line">         logWarning(s&quot;Error sending messages to master $masterEndpoint&quot;, e)</div><div class="line">     &#125;(forwardMessageExecutionContext)</div><div class="line">   &#125;</div><div class="line"> &#125;</div></pre></td></tr></table></figure></p>
+<p>注意：这里调用的是masterEndpoint.ask.</p>
+<p><strong>小结：</strong></p>
+<p>Client通过实现rpc框架实现了请求、接收请求、传递的消息、注册的地址和端口这些功能。</p>
+<h1 id="Master端"><a href="#Master端" class="headerlink" title="Master端"></a>Master端</h1><p>接下来我们继续看Master段的代码</p>
+<p>Master类同样继承了RpcEndpoint。Client端发送消息使用的时ask所以我们看一下receiveAndReply函数，找一下对应的消息接受处理：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = &#123;</div><div class="line"> case RequestSubmitDriver(description) =&gt;</div><div class="line">      if (state != RecoveryState.ALIVE) &#123;</div><div class="line">        val msg = s&quot;$&#123;Utils.BACKUP_STANDALONE_MASTER_PREFIX&#125;: $state. &quot; +</div><div class="line">          &quot;Can only accept driver submissions in ALIVE state.&quot;</div><div class="line">        context.reply(SubmitDriverResponse(self, false, None, msg))</div><div class="line">      &#125; else &#123;</div><div class="line">        logInfo(&quot;Driver submitted &quot; + description.command.mainClass)</div><div class="line">        val driver = createDriver(description)</div><div class="line">        persistenceEngine.addDriver(driver)</div><div class="line">        waitingDrivers += driver</div><div class="line">        drivers.add(driver)</div><div class="line">        //调度</div><div class="line">        schedule()</div><div class="line">        // 告诉client，提交成功了，把driver.id告诉它</div><div class="line">        context.reply(SubmitDriverResponse(self, true, Some(driver.id),</div><div class="line">          s&quot;Driver successfully submitted as $&#123;driver.id&#125;&quot;))</div><div class="line">      &#125;</div></pre></td></tr></table></figure></p>
+<p>接下来看调度方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div></pre></td><td class="code"><pre><div class="line">private def schedule(): Unit = &#123;</div><div class="line">  if (state != RecoveryState.ALIVE) &#123;</div><div class="line">    return</div><div class="line">  &#125;</div><div class="line">  // 首先调度Driver程序，从workers里面随机抽一些出来</div><div class="line">  val shuffledAliveWorkers = Random.shuffle(workers.toSeq.filter(_.state == WorkerState.ALIVE))</div><div class="line">  val numWorkersAlive = shuffledAliveWorkers.size</div><div class="line">  var curPos = 0</div><div class="line">  for (driver &lt;- waitingDrivers.toList) &#123; // iterate over a copy of waitingDrivers</div><div class="line">    // We assign workers to each waiting driver in a round-robin fashion. For each driver, we</div><div class="line">    // start from the last worker that was assigned a driver, and continue onwards until we have</div><div class="line">    // explored all alive workers.</div><div class="line">    var launched = false</div><div class="line">    var numWorkersVisited = 0</div><div class="line">    while (numWorkersVisited &lt; numWorkersAlive &amp;&amp; !launched) &#123;</div><div class="line">      val worker = shuffledAliveWorkers(curPos)</div><div class="line">      numWorkersVisited += 1</div><div class="line">      //判断内存和CPU资源是否足够，</div><div class="line">      if (worker.memoryFree &gt;= driver.desc.mem &amp;&amp; worker.coresFree &gt;= driver.desc.cores) &#123;</div><div class="line">        launchDriver(worker, driver)  //向worker发送信息，worker预留内存</div><div class="line">        waitingDrivers -= driver</div><div class="line">        launched = true</div><div class="line">      &#125;</div><div class="line">      curPos = (curPos + 1) % numWorkersAlive</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">  //在worker上启动executor</div><div class="line">  startExecutorsOnWorkers()</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这里仔细看一下worker启动executor的方法</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">private def scheduleExecutorsOnWorkers(</div><div class="line">     app: ApplicationInfo,</div><div class="line">     usableWorkers: Array[WorkerInfo],</div><div class="line">     spreadOutApps: Boolean): Array[Int] = &#123;</div><div class="line">   ......</div><div class="line">   ......</div><div class="line">   ......</div><div class="line">   while (freeWorkers.nonEmpty) &#123;</div><div class="line">     freeWorkers.foreach &#123; pos =&gt;</div><div class="line">       var keepScheduling = true</div><div class="line">       while (keepScheduling &amp;&amp; canLaunchExecutor(pos)) &#123;</div><div class="line">         coresToAssign -= minCoresPerExecutor</div><div class="line">         assignedCores(pos) += minCoresPerExecutor</div><div class="line"></div><div class="line">         // If we are launching one executor per worker, then every iteration assigns 1 core</div><div class="line">         // to the executor. Otherwise, every iteration assigns cores to a new executor.</div><div class="line">         if (oneExecutorPerWorker) &#123;</div><div class="line">           assignedExecutors(pos) = 1</div><div class="line">         &#125; else &#123;</div><div class="line">           assignedExecutors(pos) += 1</div><div class="line">         &#125;</div><div class="line"></div><div class="line">         //spreadout 意味着分配executor时会尽可能均匀的分布到所有的worker节点上，否则会想将一个worker的资源分             //配完才会去其他的worker分配executor</div><div class="line">         if (spreadOutApps) &#123;</div><div class="line">           keepScheduling = false</div><div class="line">         &#125;</div><div class="line">       &#125;</div><div class="line">     &#125;</div><div class="line">     freeWorkers = freeWorkers.filter(canLaunchExecutor)</div><div class="line">   &#125;</div><div class="line">   assignedCores</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
+<p>它的调度器是这样的，先调度Driver程序，然后再调度App，调度App的方式是从各个worker的里面和App进行匹配，看需要分配多少个cpu。<br>那我们接下来看两个方法launchDriver和launchExecutor即可。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">private def launchDriver(worker: WorkerInfo, driver: DriverInfo) &#123;</div><div class="line">   logInfo(&quot;Launching     &quot; + driver.id + &quot; on worker &quot; + worker.id)</div><div class="line">   worker.addDriver(driver)</div><div class="line">   driver.worker = Some(worker)</div><div class="line">   worker.endpoint.send(LaunchDriver(driver.id, driver.desc))</div><div class="line">   driver.state = DriverState.RUNNING</div><div class="line"> &#125;</div></pre></td></tr></table></figure></p>
+<p>给worker发送了一个LaunchDriver的消息，下面在看launchExecutor的方法。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">private def launchExecutor(worker: WorkerInfo, exec: ExecutorDesc): Unit = &#123;</div><div class="line">    logInfo(&quot;Launching executor &quot; + exec.fullId + &quot; on worker &quot; + worker.id)</div><div class="line">    worker.addExecutor(exec)</div><div class="line">    worker.endpoint.send(LaunchExecutor(masterUrl,</div><div class="line">      exec.application.id, exec.id, exec.application.desc, exec.cores, exec.memory))</div><div class="line">    exec.application.driver.send(</div><div class="line">      ExecutorAdded(exec.id, worker.id, worker.hostPort, exec.cores, exec.memory))</div><div class="line">  &#125;</div></pre></td></tr></table></figure></p>
+<p>  它要做的事情多一点，除了给worker发送LaunchExecutor指令外，还需要给driver发送ExecutorAdded的消息，说你的任务已经有人干了。</p>
+<p>在继续Worker讲之前，我们先看看它是怎么注册进来的，每个Worker启动之后，会自动去请求Master去注册自己，具体我们可以看receive的方法里面的RegisterWorker这一段，它需要上报自己的内存、Cpu、地址、端口等信息，注册成功之后返回RegisteredWorker信息给它，说已经注册成功了</p>
+<h1 id="Worker执行"><a href="#Worker执行" class="headerlink" title="Worker执行"></a>Worker执行</h1><p>同样的，我们到Worker里面在receive方法找LaunchDriver和LaunchExecutor就可以找到我们要的东西。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">case LaunchDriver(driverId, driverDesc) =&gt;</div><div class="line">      logInfo(s&quot;Asked to launch driver $driverId&quot;)</div><div class="line">      val driver = new DriverRunner(</div><div class="line">        conf,</div><div class="line">        driverId,</div><div class="line">        workDir,</div><div class="line">        sparkHome,</div><div class="line">        driverDesc.copy(command = Worker.maybeUpdateSSLSettings(driverDesc.command, conf)),</div><div class="line">        self,</div><div class="line">        workerUri,</div><div class="line">        securityMgr)</div><div class="line">      drivers(driverId) = driver</div><div class="line">      driver.start()</div><div class="line"></div><div class="line">      coresUsed += driverDesc.cores</div><div class="line">      memoryUsed += driverDesc.mem</div></pre></td></tr></table></figure>
+<p>这里运行LaunchDriver时，只是预分配了内存和CPU资源，接下来看一下start方法吧，start方法里面，其实是new Thread().start()，run方法里面是通过传过来的DriverDescription构造的一个命令，丢给ProcessBuilder去执行命令，结束之后调用。</p>
+<p>worker ！DriverStateChanged通知worker，worker再通过master ! DriverStateChanged通知master，释放掉worker的cpu和内存。</p>
+<p>接下来看一下看一下LaunchExecutor</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div></pre></td><td class="code"><pre><div class="line">case LaunchExecutor(masterUrl, appId, execId, appDesc, cores_, memory_) =&gt;</div><div class="line">     if (masterUrl != activeMasterUrl) &#123;</div><div class="line">       logWarning(&quot;Invalid Master (&quot; + masterUrl + &quot;) attempted to launch executor.&quot;)</div><div class="line">     &#125; else &#123;</div><div class="line">       try &#123;</div><div class="line">         logInfo(&quot;Asked to launch executor %s/%d for %s&quot;.format(appId, execId, appDesc.name))</div><div class="line"></div><div class="line">         // Create the executor&apos;s working directory</div><div class="line">         val executorDir = new File(workDir, appId + &quot;/&quot; + execId)</div><div class="line">         if (!executorDir.mkdirs()) &#123;</div><div class="line">           throw new IOException(&quot;Failed to create directory &quot; + executorDir)</div><div class="line">         &#125;</div><div class="line"></div><div class="line">         // Create local dirs for the executor. These are passed to the executor via the</div><div class="line">         // SPARK_EXECUTOR_DIRS environment variable, and deleted by the Worker when the</div><div class="line">         // application finishes.</div><div class="line">         val appLocalDirs = appDirectories.getOrElse(appId,</div><div class="line">           Utils.getOrCreateLocalRootDirs(conf).map &#123; dir =&gt;</div><div class="line">             val appDir = Utils.createDirectory(dir, namePrefix = &quot;executor&quot;)</div><div class="line">             Utils.chmod700(appDir)</div><div class="line">             appDir.getAbsolutePath()</div><div class="line">           &#125;.toSeq)</div><div class="line">         appDirectories(appId) = appLocalDirs</div><div class="line">         val manager = new ExecutorRunner(</div><div class="line">           appId,</div><div class="line">           execId,</div><div class="line">           appDesc.copy(command = Worker.maybeUpdateSSLSettings(appDesc.command, conf)),</div><div class="line">           cores_,</div><div class="line">           memory_,</div><div class="line">           self,</div><div class="line">           workerId,</div><div class="line">           host,</div><div class="line">           webUi.boundPort,</div><div class="line">           publicAddress,</div><div class="line">           sparkHome,</div><div class="line">           executorDir,</div><div class="line">           workerUri,</div><div class="line">           conf,</div><div class="line">           appLocalDirs, ExecutorState.RUNNING)</div><div class="line">         executors(appId + &quot;/&quot; + execId) = manager</div><div class="line">         manager.start()</div><div class="line">         coresUsed += cores_</div><div class="line">         memoryUsed += memory_</div><div class="line">         sendToMaster(ExecutorStateChanged(appId, execId, manager.state, None, None))</div><div class="line">       &#125; catch &#123;</div><div class="line">         case e: Exception =&gt;</div><div class="line">           logError(s&quot;Failed to launch executor $appId/$execId for $&#123;appDesc.name&#125;.&quot;, e)</div><div class="line">           if (executors.contains(appId + &quot;/&quot; + execId)) &#123;</div><div class="line">             executors(appId + &quot;/&quot; + execId).kill()</div><div class="line">             executors -= appId + &quot;/&quot; + execId</div><div class="line">           &#125;</div><div class="line">           sendToMaster(ExecutorStateChanged(appId, execId, ExecutorState.FAILED,</div><div class="line">             Some(e.toString), None))</div><div class="line">       &#125;</div><div class="line">     &#125;</div></pre></td></tr></table></figure>
+<p>﻿同理，LaunchExecutor执行完毕了，通过worker ! ExecutorStateChanged通知worker，然后worker通过master ! ExecutorStateChanged通知master，释放掉worker的cpu和内存。</p>
+<p>下面我们再梳理一下这个过程，只包括Driver注册，Driver运行之后的过程在之后的文章再说，比较复杂。</p>
+<p>1、Client通过获得Url地址获得RpcEndPointRef（master的actor引用）,然后通过RpcEndPointRef给Master发送注册Driver请求（RequestSubmitDriver）<br>2、Master接收到请求之后就开始调度了，从workers列表里面找出可以用的Worker<br>3、通过Worker的actor引用RpcEndPointRef给可用的Worker发送启动Driver请求（LaunchDriver）<br>4、调度完毕之后，给Client回复注册成功消息(SubmitDriverResponse)<br>5、Worker接收到LaunchDriver请求之后，通过传过来的DriverDescription的信息构造出命令来，通过ProcessBuilder执行<br>6、ProcessBuilder执行完命令之后，通过DriverStateChanged通过Worker<br>7、Worker最后把DriverStateChanged汇报给Master</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/大数据/" rel="tag">#大数据</a>
+          
+            <a href="/tags/Spark/" rel="tag">#Spark</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/10/10/[Spark源码二]RDD讲解/" rel="prev">[Spark源码二】RDD讲解</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/09/25/Redis 数据结构和对象--（一）简单动态字符串/" rel="next">Redis数据结构和对象-(一)简单动态字符串</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div>
+      
+        <style type="text/css">
+
+    .donate_bar {
+        text-align: center;
+        margin-top : 5%;
+    }
+
+    .donate_bar.hidden {
+        display:none;
+    }
+/*
+    .donate_bar a.btn_donate {
+        display: inline-block;
+        width: 82px;
+        height: 82px;
+        margin-left:auto;
+        margin-right:auto;
+
+        background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat;
+        _background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat; 
+
+        -webkit-transition: background 0s;
+        -moz-transition: background 0s;
+        -o-transition: background 0s;
+        -ms-transition: background 0s;
+        transition: background 0s;
+    }
+*/
+    .donate_bar a.btn_donate:hover { 
+        // background-position: 0px -82px;
+        color: #87daff
+    }
+
+    .donate_bar .donate_txt {
+        display: block;
+        color: #9d9d9d;
+        font: 14px/2 "Microsoft Yahei";
+    }
+
+    .bold { 
+        font-weight: bold; 
+    }
+
+    .post-donate a {
+        border-bottom: 0px;
+    }
+
+    #donate_guide table {
+        border: none;
+    }
+
+    #donate_guide td {
+        border-bottom: none;
+        border-right: none;
+        background: #333333;
+        valign: top;
+    }
+
+</style>
+
+
+
+    
+
+    <div class ="post-donate">
+        <div id="donate_board" class="donate_bar center">
+              <a id="btn_donate" class="btn_donate" href="javascript:;" title="打赏">赏</a>
+              <span id="donate_txt" class="donate_txt">
+                   
+                        仅仅是一个功能
+                   
+              </span>
+            <br>
+        </div>  
+  
+        <div id="donate_guide" class="donate_bar center hidden">
+            <!--
+            
+                <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                    style="float:left;margin-left:25%;margin-right:10px;">
+                    <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                </a> 
+              
+
+            
+                <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                    style="margin-right:30%">
+                    <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                </a>
+            
+            -->
+            <table>
+                <tr>
+                    <td>
+                        
+                            <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                                style="float:left;margin-left:25%;margin-right:10px;">
+                                <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                            </a> 
+                         
+                    </td>
+                    <td>
+                        
+                            <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                                style="margin-right:30%">
+                                <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                            </a>
+                        
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+
+        <script type="text/javascript">
+            document.getElementById('btn_donate').onclick = function() {
+                $('#donate_board').addClass('hidden');
+                // $('#donate_guide').removeClass('hidden');
+                $('#donate_guide').show(2000);
+            }
+
+        </script>
+    </div>
+
+    
+
+
+      
+    </div>
+
+    <div class="post-spread">
+      
+        <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+  <a class="jiathis_button_tsina"></a>
+  <a class="jiathis_button_tqq"></a>
+  <a class="jiathis_button_weixin"></a>
+  <a class="jiathis_button_cqq"></a>
+  <a class="jiathis_button_douban"></a>
+  <a class="jiathis_button_renren"></a>
+  <a class="jiathis_button_qzone"></a>
+  <a class="jiathis_button_kaixin001"></a>
+  <a class="jiathis_button_copy"></a>
+  <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank"></a>
+  <a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" >
+  var jiathis_config={
+    hideMore:false
+  }
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+            <!-- 多说热评文章-->
+            <p>热评文章</p>
+            <div class="ds-top-threads" data-range="weekly" data-num-items="4"></div>
+        
+
+        
+          <div class="comments" id="comments">
+            
+              <div class="ds-thread" data-thread-key="2016/09/27/[Spark源码一]spark-submit提交作业/"
+                   data-title="[Spark源码一】spark-submit提交作业过程" data-url="https://fudawei.github.io/2016/09/27/[Spark源码一]spark-submit提交作业/">
+              </div>
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/default_avatar.jpg" alt="冰鸟" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">冰鸟</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">143</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          <div class="site-state-item site-state-categories">
+            <a href="/categories">
+              <span class="site-state-item-count">55</span>
+              <span class="site-state-item-name">分类</span>
+              </a>
+          </div>
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">80</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="menu-item-icon icon-next-feed"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/fudw1987" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://www.zhihu.com/people/fu-da-wei-70" target="_blank">知乎</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://t.qq.com/fudw764923019" target="_blank">微博</a>
+              </span>
+            
+          
+        </div>
+
+        <div class="links-of-friendly motion-element">
+          
+        </div>
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#作业提交"><span class="nav-number">1.</span> <span class="nav-text">作业提交</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#提交流程"><span class="nav-number">2.</span> <span class="nav-text">提交流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Client端"><span class="nav-number">3.</span> <span class="nav-text">Client端</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Master端"><span class="nav-number">4.</span> <span class="nav-text">Master端</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Worker执行"><span class="nav-number">5.</span> <span class="nav-text">Worker执行</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<div class="copyright" >
+  
+  &copy; &nbsp; 
+  <span itemprop="copyrightYear">2017
+  </span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">冰鸟
+  </span>
+</div>
+
+<div class="powered-by">
+  Powered by <a class="theme-link" href="http://hexo.io">Hexo</a>
+</div>
+
+<div class="theme-info">
+  Theme by <a class="theme-link" href="https://github.com/fudawei">fudawei</a>
+</div>
+ &nbsp; |  &nbsp; 
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+  &nbsp; |  &nbsp; 
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+<!-- busuanzi -->
+
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"fudawei"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+    
+
+    
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+      processEscapes: true,
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for (i=0; i < all.length; i += 1) {
+      all[i].SourceElement().parentNode.className += ' has-jax';
+    }
+  });
+</script>
+
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+
+<!-- custom analytics part create by xiamo -->
+<script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+<script>AV.initialize("SbuO6UqesUpwpVQpFOF85w4b-gzGzoHsz", "nU6WMv6iTcTpjLHKtOIoovuO");</script>
+<script>
+function showTime(Counter) {
+	var query = new AV.Query(Counter);
+	$(".leancloud_visitors").each(function() {
+		var url = $(this).attr("id").trim();
+		query.equalTo("url", url);
+		query.find({
+			success: function(results) {
+				if (results.length == 0) {
+					var content = '0 ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+					return;
+				}
+				for (var i = 0; i < results.length; i++) {
+					var object = results[i];
+					var content = object.get('time') + ' ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+				}
+			},
+			error: function(object, error) {
+				console.log("Error: " + error.code + " " + error.message);
+			}
+		});
+
+	});
+}
+
+function addCount(Counter) {
+	var Counter = AV.Object.extend("Counter");
+	url = $(".leancloud_visitors").attr('id').trim();
+	title = $(".leancloud_visitors").attr('data-flag-title').trim();
+	var query = new AV.Query(Counter);
+	query.equalTo("url", url);
+	query.find({
+		success: function(results) {
+			if (results.length > 0) {
+				var counter = results[0];
+				counter.fetchWhenSave(true);
+				counter.increment("time");
+				counter.save(null, {
+					success: function(counter) {
+						var content =  counter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(counter, error) {
+						console.log('Failed to save Visitor num, with error message: ' + error.message);
+					}
+				});
+			} else {
+				var newcounter = new Counter();
+				newcounter.set("title", title);
+				newcounter.set("url", url);
+				newcounter.set("time", 1);
+				newcounter.save(null, {
+					success: function(newcounter) {
+					    console.log("newcounter.get('time')="+newcounter.get('time'));
+						var content = newcounter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(newcounter, error) {
+						console.log('Failed to create');
+					}
+				});
+			}
+		},
+		error: function(error) {
+			console.log('Error:' + error.code + " " + error.message);
+		}
+	});
+}
+$(function() {
+	var Counter = AV.Object.extend("Counter");
+	if ($('.leancloud_visitors').length == 1) {
+		addCount(Counter);
+	} else if ($('.post-title-link').length > 1) {
+		showTime(Counter);
+	}
+}); 
+</script>
+
+
+</body>
+</html>

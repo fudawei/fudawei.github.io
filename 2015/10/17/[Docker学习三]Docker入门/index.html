@@ -1,0 +1,1168 @@
+
+<!doctype html>
+<html class="theme-next use-motion theme-next-mala">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。" />
+
+
+
+  <meta name="keywords" content="虚拟化,Docker," />
+
+
+
+  <link rel="alternate" href="/atom.xml" title="冰鸟" type="application/atom+xml" />
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="前面的文章讲解了怎么安装Docker，本文将迈出使用Docker的第一步，学习第一个Docker容器。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[Docker学习三]Docker入门">
+<meta property="og:url" content="https://fudawei.github.io/2015/10/17/[Docker学习三]Docker入门/index.html">
+<meta property="og:site_name" content="冰鸟">
+<meta property="og:description" content="前面的文章讲解了怎么安装Docker，本文将迈出使用Docker的第一步，学习第一个Docker容器。">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627111304649">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627112734913">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627112852973">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627113045970">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627113908706">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627114405311">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627114728424">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627120122298">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627120306595">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627120548711">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627121343870">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627121639396">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627121827553">
+<meta property="og:image" content="http://img.blog.csdn.net/20150627121932771">
+<meta property="og:updated_time" content="2017-02-08T03:39:19.517Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="[Docker学习三]Docker入门">
+<meta name="twitter:description" content="前面的文章讲解了怎么安装Docker，本文将迈出使用Docker的第一步，学习第一个Docker容器。">
+<meta name="twitter:image" content="http://img.blog.csdn.net/20150627111304649">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mala',
+    sidebar: 'post'
+  };
+</script>
+
+  <title> [Docker学习三]Docker入门 | 冰鸟 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">冰鸟-博客</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            <i class="menu-item-icon icon-next-categories"></i> <br />
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            <i class="menu-item-icon icon-next-about"></i> <br />
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            <i class="menu-item-icon icon-next-commonweal"></i> <br />
+            公益404
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    
+      
+
+      
+        <style type="text/css">
+
+    .circle {
+        width: 40px;
+        height: 40px;
+        background: #555 no-repeat;
+        cursor: move;
+    }
+
+    .assist-btn {
+        position: fixed;
+        top: 50％;
+        left: 10px;
+        -moz-border-radius: 50px;
+        -webkit-border-radius: 50px;
+        border-radius: 50px;
+        outline: none;
+        border: none;
+        color: #87daff;
+    }
+
+</style>
+
+<script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+<script type="text/javascript">
+    // 浮动圆点展开与收缩
+    /*
+    $(function () {
+        var assist_box = $('.assist-box');
+        $('#assist_btn').hover(function () {
+            assist_box.stop().show(300);
+        }, function () {
+            assist_box.stop().hide(150);
+        })
+    });
+    */  
+    //浮动圆点拖动
+    $(function () {
+        var box = document.getElementById('assist_btn');
+        box.onmousedown = function (event) {
+            var e = event || window.event,
+                t = e.target || e.srcElement,
+                // 鼠标按下时的坐标x1,y1
+                x1 = e.clientX,
+                y1 = e.clientY,
+                //鼠标按下时的左右偏移量
+                dragLeft = this.offsetLeft,
+                dragTop = this.offsetTop;
+
+            document.onmousemove = function (event) {
+                var e = event || window.event,
+                    t = e.target || e.srcElement,
+                    // 鼠标移动时的动态坐标
+                    x2 = e.clientX,
+                    y2 = e.clientY,
+                    // 鼠标移动时的坐标的变化量
+                    x = x2 - x1,
+                    y = y2 - y1;
+                box.style.left = (dragLeft + x) + 'px';
+                box.style.top = (dragTop + y) + 'px';
+            }
+
+            document.onmouseup = function () {
+                this.onmousemove = null;
+            }
+        }
+    });
+
+/*
+    $whitesmoke   = #f5f5f5
+    $gainsboro    = #eee
+    $gray-lighter = #ddd
+    $grey-light   = #ccc
+    $grey         = #bbb
+    $grey-dark    = #999
+    $grey-dim     = #666
+    $black-light  = #555
+    $black-deep   = #222
+    $red          = #ff2a2a
+    $blue-bright  = #87daff
+    $blue         = #0684bd
+    $blue-deep    = #262a30
+*/
+    // white theme
+    var body = {color: "#555", background: "white"};
+    var a_tag = {color: "#222"};
+    var header = { background: "#f5f5f5"};
+    var logo_line_i = {background: "#222"};
+    // var post_code = {background: "#eee", color: "#222"};
+
+    function switch_theme() {
+        $("body").css(body);
+        $("a:not('.links-of-author-item a, .site-state-item a, .site-state-posts a, .feed-link a, .motion-element a, .post-tags a, .show-commit-cls a, #donate_board a')").css(a_tag);
+        $(".header, .footer").css(header);
+        $(".logo-line-before i, .logo-line-after i").css(logo_line_i);
+        //$(".post code").css(post_code);
+        $("#idhyt-surprise-ball #idhyt-surprise-ball-animation .drag").css(a_tag);
+        $(".post-title-link, .posts-expand .post-meta, .post-comments-count, .disqus-comment-count, .post-category a, .post-nav-next a, .post-nav-item a").css(a_tag);
+        
+        // $("code").css({color: '#c5c8c6', background: '#1d1f21'});
+        $("#assist_btn").hide(1500);
+    }
+
+    $(function () {
+        $("#assist_btn").dblclick(function() {
+            switch_theme();
+        });
+    });
+
+</script>
+
+<div>
+
+    <button class="assist-btn circle" id="assist_btn" title="双击切换">
+        亮
+    </button>
+
+</div>
+
+
+
+
+
+
+
+
+
+      
+
+    
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              [Docker学习三]Docker入门
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2015-10-17T09:44:19+08:00" content="2015-10-17">
+            2015-10-17
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/虚拟化/" itemprop="url" rel="index">
+                  <span itemprop="name">虚拟化</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/虚拟化/Docker/" itemprop="url" rel="index">
+                  <span itemprop="name">Docker</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2015/10/17/[Docker学习三]Docker入门/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2015/10/17/[Docker学习三]Docker入门/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2015/10/17/[Docker学习三]Docker入门/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2015/10/17/[Docker学习三]Docker入门/"class="leancloud_visitors" data-flag-title="[Docker学习三]Docker入门">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><p>前面的文章讲解了怎么安装Docker，本文将迈出使用Docker的第一步，学习第一个Docker容器。<br><a id="more"></a></p>
+<h2 id="确保Docker已经就绪"><a href="#确保Docker已经就绪" class="headerlink" title="确保Docker已经就绪"></a>确保Docker已经就绪</h2><p>使用如下命令可以查看docker程序是否存在，功能是否正常：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">[qifuguang@winwill~]$ sudo docker info</div><div class="line">Containers: 5</div><div class="line">Images: 72</div><div class="line">Storage Driver: aufs</div><div class="line"> Root Dir: /var/lib/docker/aufs</div><div class="line"> Backing Filesystem: extfs</div><div class="line"> Dirs: 82</div><div class="line"> Dirperm1 Supported: false</div><div class="line">Execution Driver: native-0.2</div><div class="line">Kernel Version: 3.13.0-53-generic</div><div class="line">Operating System: Ubuntu 14.04.2 LTS</div><div class="line">CPUs: 8</div><div class="line">Total Memory: 15.56 GiB</div><div class="line">Name: qifuguang-OptiPlex-9010</div><div class="line">ID: SNVW:WBCG:76BZ:2L63:AFQR:ZMDS:KI4Z:XIQZ:ENHV:O7PI:QMDP:6DQ3</div><div class="line">Username: quinn2012</div><div class="line">Registry: [https://index.docker.io/v1/]</div><div class="line">WARNING: No swap limit support</div></pre></td></tr></table></figure></p>
+<p>上述的info命令返回docker中所有的容器和镜像的数量，docker使用的执行驱动和存储驱动，以及docker的基本配置。</p>
+<h2 id="运行第一个容器"><a href="#运行第一个容器" class="headerlink" title="运行第一个容器"></a>运行第一个容器</h2><p>现在，我们尝试启动第一个容器。我们可以使用docker run命令创建容器，docker run命令提供了容器的创建和启动功能，在本文中我们使用该命里那个创建新容器：</p>
+<p><img src="http://img.blog.csdn.net/20150627111304649" alt="这里写图片描述"></p>
+<p>首先，我们告诉docker执行docker run命令，并指定-i和-t两个命令行参数。-i标识保证容器的STDIN是开启的，尽管我们并没有附着在容器中。持久的标准输入是交互式shell的“半边天”，而-t则是另外“半边天”，它告诉docker要为创建的容器分配一个伪tty终端。这样，创建的容器才能提供一个交互式的shell。如果要在命令行创建一个我们能与之进行交互的容器，这两个命令参数最基本的参数。</p>
+<p>接下来，告诉docker基于什么镜像来创建容器，上面示例使用的是ubuntu镜像。ubuntu镜像是一个常备镜像，也可以称为“基础镜像”，它由Docker公司提供，保存在Docker Hub Registry上。本例中我们基于ubuntu镜像创建、启动了一个容器，并没有做任何修改。</p>
+<p>这个命令背后的执行流程是怎样的呢？首先Docker会检查本地是否有ubuntu镜像，如果没有该镜像的话，Docker连接官方维护的Docker Hub Registry，查看Docker Hub中是否有该镜像，Docker一旦找到该镜像，就会下载该镜像并保存到本地宿主机中。随后Docker在文件系统内部用这个镜像创建 一个新容器。该容器拥有自己的网络，IP地址，以及一个用来和宿主机进行通信的桥接网络接口。最后，告诉Docker要在新容器中执行什么命令，在本例中执行/bin/bash命令启动一个Bash shell。</p>
+<p>##使用第一个容器<br>我们已经以root用户登录到 了新的容器中，容器ID为faa127f03be9，看起来很不和谐，非常难以记忆，后续会告诉大家怎么为容器命名。</p>
+<h3 id="查看-etc-hosts文件"><a href="#查看-etc-hosts文件" class="headerlink" title="查看/etc/hosts文件"></a>查看/etc/hosts文件</h3><p>看看hosts文件的配置情况：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">root@faa127f03be9:/# cat /etc/hosts</div><div class="line">172.17.0.45 faa127f03be9</div><div class="line">127.0.0.1   localhost</div><div class="line">::1 localhost ip6-localhost ip6-loopback</div><div class="line">fe00::0 ip6-localnet</div><div class="line">ff00::0 ip6-mcastprefix</div><div class="line">ff02::1 ip6-allnodes</div><div class="line">ff02::2 ip6-allrouters</div><div class="line">root@faa127f03be9:/#</div></pre></td></tr></table></figure></p>
+<p>可以看到，Docker已经使用容器ID在/etc/hosts文件中为容器添加了一条主机配置项。</p>
+<h3 id="查看网络配置情况"><a href="#查看网络配置情况" class="headerlink" title="查看网络配置情况"></a>查看网络配置情况</h3><p>我们可以看看容器的网络配置情况：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">root@faa127f03be9:/# ip a</div><div class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN group default</div><div class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</div><div class="line">    inet 127.0.0.1/8 scope host lo</div><div class="line">       valid_lft forever preferred_lft forever</div><div class="line">    inet6 ::1/128 scope host</div><div class="line">       valid_lft forever preferred_lft forever</div><div class="line">100: eth0: &lt;BROADCAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP group default</div><div class="line">    link/ether 02:42:ac:11:00:2d brd ff:ff:ff:ff:ff:ff</div><div class="line">    inet 172.17.0.45/16 scope global eth0</div><div class="line">       valid_lft forever preferred_lft forever</div><div class="line">    inet6 fe80::42:acff:fe11:2d/64 scope link</div><div class="line">       valid_lft forever preferred_lft forever</div><div class="line">root@faa127f03be9:/#</div></pre></td></tr></table></figure></p>
+<p>可以看到，这里有lo回环接口，还有IP为172.17.0.45的白哦准的eth0网络接口，和普通的宿主机完全一样。</p>
+<h3 id="查看容器中运行的进程"><a href="#查看容器中运行的进程" class="headerlink" title="查看容器中运行的进程"></a>查看容器中运行的进程</h3><p>通过如下的命令可以查看容器中运行的进程：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">root@faa127f03be9:/# ps -aux</div><div class="line">USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND</div><div class="line">root         1  0.0  0.0  18164  2020 ?        Ss   03:11   0:00 /bin/bash</div><div class="line">root        17  0.0  0.0  15564  1152 ?        R+   03:17   0:00 ps -aux</div><div class="line">root@faa127f03be9:/#</div></pre></td></tr></table></figure></p>
+<h3 id="在容器中安装软件"><a href="#在容器中安装软件" class="headerlink" title="在容器中安装软件"></a>在容器中安装软件</h3><p>刚刚启动的容器中是没有vim软件包的：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">root@faa127f03be9:/# vim /etc/hosts</div><div class="line">bash: vim: command not found</div><div class="line">root@faa127f03be9:/#</div></pre></td></tr></table></figure></p>
+<p>现在我们在容器中安装vim软件包：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">root@faa127f03be9:/# sudo apt-get install vim</div><div class="line">Reading package lists... Done</div><div class="line">Building dependency tree</div><div class="line">Reading state information... Done</div><div class="line">The following extra packages will be installed:</div><div class="line">  libgpm2 libpython2.7 libpython2.7-minimal libpython2.7-stdlib vim-runtime</div><div class="line">Suggested packages:</div><div class="line">  gpm ctags vim-doc vim-scripts</div><div class="line">The following NEW packages will be installed:</div><div class="line">  libgpm2 libpython2.7 libpython2.7-minimal libpython2.7-stdlib vim</div><div class="line">  vim-runtime</div><div class="line">0 upgraded, 6 newly installed, 0 to remove and 0 not upgraded.</div><div class="line">Need to get 9083 kB of archives.</div><div class="line">After this operation, 42.9 MB of additional disk space will be used.</div><div class="line">Do you want to continue? [Y/n] Y</div><div class="line">Get:1 http://archive.ubuntu.com/ubuntu/ trusty/main libgpm2 amd64 1.20.4-6.1 [16.5 kB]</div><div class="line">Get:2 http://archive.ubuntu.com/ubuntu/ trusty/main libpython2.7-minimal amd64 2.7.6-8 [307 kB]</div><div class="line">Get:3 http://archive.ubuntu.com/ubuntu/ trusty/main libpython2.7-stdlib amd64 2.7.6-8 [1872 kB]</div><div class="line">Get:4 http://archive.ubuntu.com/ubuntu/ trusty/main libpython2.7 amd64 2.7.6-8 [1044 kB]</div><div class="line">Get:5 http://archive.ubuntu.com/ubuntu/ trusty/main vim-runtime all 2:7.4.052-1ubuntu3 [4888 kB]</div><div class="line">......</div><div class="line">Processing triggers for libc-bin (2.19-0ubuntu6.6) ...</div><div class="line">root@faa127f03be9:/#</div></pre></td></tr></table></figure></p>
+<p>vim软件包就已经安装好了，怎么样？是不是和普通宿主机安装软件包一样简单！</p>
+<h3 id="退出容器"><a href="#退出容器" class="headerlink" title="退出容器"></a>退出容器</h3><p>使用如下命令可以退出容器：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">root@faa127f03be9:/# exit</div><div class="line">exit</div><div class="line">[qifuguang@winwill~]$</div></pre></td></tr></table></figure></p>
+<p>现在，容器已经退出了，我们可以使用如下命令看看当前有哪些容器正在运行：</p>
+<p><img src="http://img.blog.csdn.net/20150627112734913" alt="这里写图片描述"></p>
+<p>可以看到，当前没有处于运行状态的容器，但是如果使用如下命令，便会显示所有容器，包含没有处于运行状态的：</p>
+<p><img src="http://img.blog.csdn.net/20150627112852973" alt="这里写图片描述"></p>
+<p>也可以使用如下的命令列出最后一次运行的容器，包含正在运行和没有运行的：</p>
+<p><img src="http://img.blog.csdn.net/20150627113045970" alt="这里写图片描述"></p>
+<h2 id="为容器命名"><a href="#为容器命名" class="headerlink" title="为容器命名"></a>为容器命名</h2><p>上面的例子运行的容器的ID默认是一串没有规律的字符串，可读性非常差，还好，我们可以在创建启动容器的时候给它指定一个名字：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">[qifuguang@winwill~]$ sudo docker run -t -i --name ubuntu ubuntu /bin/bash</div><div class="line">root@fdbcdbed6749:/#</div><div class="line">root@fdbcdbed6749:/#</div><div class="line">root@fdbcdbed6749:/#</div><div class="line">root@fdbcdbed6749:/#</div></pre></td></tr></table></figure></p>
+<p>上面的命令通过参数项–name为创建的容器命名为ubuntu，我们看看生效没有：<br><img src="http://img.blog.csdn.net/20150627113908706" alt="这里写图片描述"><br>从图中可以看到，命名已经生效。</p>
+<p>顺便说一下，容器的命名规则：只能包含大小写字母，数字，下划线，圆点，横线，如果用正则表达式表示这些符号就是[a-zA-Z0-9_.]。</p>
+<h2 id="重启已经停止的容器"><a href="#重启已经停止的容器" class="headerlink" title="重启已经停止的容器"></a>重启已经停止的容器</h2><p>我们可以使用start命令启动已经停止的容器：<br><img src="http://img.blog.csdn.net/20150627114405311" alt="这里写图片描述"><br>也可以使用docker restart命令重新启动一个正在运行的容器。</p>
+<h2 id="附着在容器上"><a href="#附着在容器上" class="headerlink" title="附着在容器上"></a>附着在容器上</h2><p>Docker容器重新启动的时候，会沿用创建容器时（docker run时）指定的参数来运行，因此指定了-t -i参数的容器重新启动之后会运行一个交互式的会话shell，我们可以使用docker attach命令重新附着到该容器的会话上：<br><img src="http://img.blog.csdn.net/20150627114728424" alt="这里写图片描述"></p>
+<h2 id="创建守护式进程"><a href="#创建守护式进程" class="headerlink" title="创建守护式进程"></a>创建守护式进程</h2><p>除了运行交互式的容器，我们还可以创建长期运行的容器，守护式进程没有交互式会话，非常适合于运用程序和服务，大多数时候我们都需要使用交互式方式运行容器。下面我们启动一个守护式容器：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">[qifuguang@winwill~]$ sudo docker run -d --name deamon_ubuntu ubuntu /bin/bash -c &quot;while true; do echo hello word; sleep 1; done&quot;</div><div class="line">48fcd5b118fd86ebee6fefb376cda3235384ddd3c41fa502ef0b59c9e1f2f1d3</div><div class="line">[qifuguang@winwill~]$</div></pre></td></tr></table></figure></p>
+<p>可以看到，这个容器运行之后并没有像交互式容器一样将主机的控制台附着在新的shell会话上，而是仅仅返回一个容器ID。使用docker ps可以看到刚刚创建的交互式的容器正在运行：</p>
+<p><img src="http://img.blog.csdn.net/20150627120122298" alt="这里写图片描述"></p>
+<h2 id="查看容日日志"><a href="#查看容日日志" class="headerlink" title="查看容日日志"></a>查看容日日志</h2><p>对于守护式的容器，我们不能知道他到底在干些什么，但是我们可以通过查看docker容器的日志了解：<br><img src="http://img.blog.csdn.net/20150627120306595" alt="这里写图片描述"><br>可以看到，刚才创建的守护式容器正在后台不停地打印“hello world”。</p>
+<p>也可以使用docker logs -f来监控docker容器的日志，就像ubuntu系统下使用tail -f 一样：</p>
+<h2 id="查看容器内的进程"><a href="#查看容器内的进程" class="headerlink" title="查看容器内的进程"></a>查看容器内的进程</h2><p>除了容器的日志，我们还可以查看容器内部的进程：<br><img src="http://img.blog.csdn.net/20150627120548711" alt="这里写图片描述"><br>通过这个命令，我们可以看到容器内部的所有进程，运行进程的用户以及进程ID。</p>
+<h2 id="在容器内部运行进程"><a href="#在容器内部运行进程" class="headerlink" title="在容器内部运行进程"></a>在容器内部运行进程</h2><p>Docker 1.3之后，可以通过docker exec命令在容器内部额外启动新进程。可以在容器内部运行的进程有两种形式：后台任务和交互式任务。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">[qifuguang@winwill~]$ sudo docker exec -d deamon_ubuntu touch /etc/new_file</div><div class="line">[qifuguang@winwill~]$</div><div class="line">[qifuguang@winwill~]$</div><div class="line">[qifuguang@winwill~]$</div></pre></td></tr></table></figure></p>
+<p>这里的-d标志表明需要运行一个后台任务，-d后面紧跟的是要在哪个容器内部执行命令，接下来是需要执行的命令。</p>
+<p>我们也可以在deamon_ubuntu容器中启动一个打开shell的交互式任务，代码如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">[qifuguang@winwill~]$ sudo docker exec -i -t deamon_ubuntu /bin/bash</div><div class="line">root@48fcd5b118fd:/#</div><div class="line">root@48fcd5b118fd:/#</div><div class="line">root@48fcd5b118fd:/#</div><div class="line">root@48fcd5b118fd:/#</div><div class="line">root@48fcd5b118fd:/#</div></pre></td></tr></table></figure></p>
+<p>这里的-i和-t参数和运行容器时的含义是一样的。</p>
+<h2 id="停止守护式容器"><a href="#停止守护式容器" class="headerlink" title="停止守护式容器"></a>停止守护式容器</h2><p>要停止守护式容器，可以使用stop命令：<br><img src="http://img.blog.csdn.net/20150627121343870" alt="这里写图片描述"></p>
+<h2 id="自动重启容器"><a href="#自动重启容器" class="headerlink" title="自动重启容器"></a>自动重启容器</h2><p>如果由于某种错误导致容器停止运行，我们可以通过–restart表示，让Docker自动重启容器。–restart会检查容器的推出代码，并以此来决定是否要重启容器，默认行为是docker不会重启容器。</p>
+<h2 id="深入容器"><a href="#深入容器" class="headerlink" title="深入容器"></a>深入容器</h2><p>可以使用哪个docker inspect查看容器的详细信息：</p>
+<p><img src="http://img.blog.csdn.net/20150627121639396" alt="这里写图片描述"></p>
+<p>由于信息量太大，还可以使用-f或者–format标识来选定查看结果：</p>
+<p><img src="http://img.blog.csdn.net/20150627121827553" alt="这里写图片描述"></p>
+<h2 id="删除容器"><a href="#删除容器" class="headerlink" title="删除容器"></a>删除容器</h2><p>可以使用docker rm命令删除容器：</p>
+<p><img src="http://img.blog.csdn.net/20150627121932771" alt="这里写图片描述"></p>
+<p>docker基本的操作大概就这么多。</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/虚拟化/" rel="tag">#虚拟化</a>
+          
+            <a href="/tags/Docker/" rel="tag">#Docker</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/10/18/Redis主从复制/" rel="prev">Redis主从复制</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/10/13/Redis持久化/" rel="next">Redis持久化</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div>
+      
+        <style type="text/css">
+
+    .donate_bar {
+        text-align: center;
+        margin-top : 5%;
+    }
+
+    .donate_bar.hidden {
+        display:none;
+    }
+/*
+    .donate_bar a.btn_donate {
+        display: inline-block;
+        width: 82px;
+        height: 82px;
+        margin-left:auto;
+        margin-right:auto;
+
+        background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat;
+        _background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat; 
+
+        -webkit-transition: background 0s;
+        -moz-transition: background 0s;
+        -o-transition: background 0s;
+        -ms-transition: background 0s;
+        transition: background 0s;
+    }
+*/
+    .donate_bar a.btn_donate:hover { 
+        // background-position: 0px -82px;
+        color: #87daff
+    }
+
+    .donate_bar .donate_txt {
+        display: block;
+        color: #9d9d9d;
+        font: 14px/2 "Microsoft Yahei";
+    }
+
+    .bold { 
+        font-weight: bold; 
+    }
+
+    .post-donate a {
+        border-bottom: 0px;
+    }
+
+    #donate_guide table {
+        border: none;
+    }
+
+    #donate_guide td {
+        border-bottom: none;
+        border-right: none;
+        background: #333333;
+        valign: top;
+    }
+
+</style>
+
+
+
+    
+
+    <div class ="post-donate">
+        <div id="donate_board" class="donate_bar center">
+              <a id="btn_donate" class="btn_donate" href="javascript:;" title="打赏">赏</a>
+              <span id="donate_txt" class="donate_txt">
+                   
+                        仅仅是一个功能
+                   
+              </span>
+            <br>
+        </div>  
+  
+        <div id="donate_guide" class="donate_bar center hidden">
+            <!--
+            
+                <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                    style="float:left;margin-left:25%;margin-right:10px;">
+                    <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                </a> 
+              
+
+            
+                <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                    style="margin-right:30%">
+                    <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                </a>
+            
+            -->
+            <table>
+                <tr>
+                    <td>
+                        
+                            <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                                style="float:left;margin-left:25%;margin-right:10px;">
+                                <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                            </a> 
+                         
+                    </td>
+                    <td>
+                        
+                            <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                                style="margin-right:30%">
+                                <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                            </a>
+                        
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+
+        <script type="text/javascript">
+            document.getElementById('btn_donate').onclick = function() {
+                $('#donate_board').addClass('hidden');
+                // $('#donate_guide').removeClass('hidden');
+                $('#donate_guide').show(2000);
+            }
+
+        </script>
+    </div>
+
+    
+
+
+      
+    </div>
+
+    <div class="post-spread">
+      
+        <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+  <a class="jiathis_button_tsina"></a>
+  <a class="jiathis_button_tqq"></a>
+  <a class="jiathis_button_weixin"></a>
+  <a class="jiathis_button_cqq"></a>
+  <a class="jiathis_button_douban"></a>
+  <a class="jiathis_button_renren"></a>
+  <a class="jiathis_button_qzone"></a>
+  <a class="jiathis_button_kaixin001"></a>
+  <a class="jiathis_button_copy"></a>
+  <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank"></a>
+  <a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" >
+  var jiathis_config={
+    hideMore:false
+  }
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+            <!-- 多说热评文章-->
+            <p>热评文章</p>
+            <div class="ds-top-threads" data-range="weekly" data-num-items="4"></div>
+        
+
+        
+          <div class="comments" id="comments">
+            
+              <div class="ds-thread" data-thread-key="2015/10/17/[Docker学习三]Docker入门/"
+                   data-title="[Docker学习三]Docker入门" data-url="https://fudawei.github.io/2015/10/17/[Docker学习三]Docker入门/">
+              </div>
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/default_avatar.jpg" alt="冰鸟" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">冰鸟</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">143</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          <div class="site-state-item site-state-categories">
+            <a href="/categories">
+              <span class="site-state-item-count">55</span>
+              <span class="site-state-item-name">分类</span>
+              </a>
+          </div>
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">80</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="menu-item-icon icon-next-feed"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/fudw1987" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://www.zhihu.com/people/fu-da-wei-70" target="_blank">知乎</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://t.qq.com/fudw764923019" target="_blank">微博</a>
+              </span>
+            
+          
+        </div>
+
+        <div class="links-of-friendly motion-element">
+          
+        </div>
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#确保Docker已经就绪"><span class="nav-number">1.</span> <span class="nav-text">确保Docker已经就绪</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#运行第一个容器"><span class="nav-number">2.</span> <span class="nav-text">运行第一个容器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#查看-etc-hosts文件"><span class="nav-number">2.1.</span> <span class="nav-text">查看/etc/hosts文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查看网络配置情况"><span class="nav-number">2.2.</span> <span class="nav-text">查看网络配置情况</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查看容器中运行的进程"><span class="nav-number">2.3.</span> <span class="nav-text">查看容器中运行的进程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#在容器中安装软件"><span class="nav-number">2.4.</span> <span class="nav-text">在容器中安装软件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#退出容器"><span class="nav-number">2.5.</span> <span class="nav-text">退出容器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#为容器命名"><span class="nav-number">3.</span> <span class="nav-text">为容器命名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重启已经停止的容器"><span class="nav-number">4.</span> <span class="nav-text">重启已经停止的容器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#附着在容器上"><span class="nav-number">5.</span> <span class="nav-text">附着在容器上</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建守护式进程"><span class="nav-number">6.</span> <span class="nav-text">创建守护式进程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看容日日志"><span class="nav-number">7.</span> <span class="nav-text">查看容日日志</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看容器内的进程"><span class="nav-number">8.</span> <span class="nav-text">查看容器内的进程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在容器内部运行进程"><span class="nav-number">9.</span> <span class="nav-text">在容器内部运行进程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#停止守护式容器"><span class="nav-number">10.</span> <span class="nav-text">停止守护式容器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自动重启容器"><span class="nav-number">11.</span> <span class="nav-text">自动重启容器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#深入容器"><span class="nav-number">12.</span> <span class="nav-text">深入容器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#删除容器"><span class="nav-number">13.</span> <span class="nav-text">删除容器</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<div class="copyright" >
+  
+  &copy; &nbsp; 
+  <span itemprop="copyrightYear">2017
+  </span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">冰鸟
+  </span>
+</div>
+
+<div class="powered-by">
+  Powered by <a class="theme-link" href="http://hexo.io">Hexo</a>
+</div>
+
+<div class="theme-info">
+  Theme by <a class="theme-link" href="https://github.com/fudawei">fudawei</a>
+</div>
+ &nbsp; |  &nbsp; 
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+  &nbsp; |  &nbsp; 
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+<!-- busuanzi -->
+
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"fudawei"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+    
+
+    
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+      processEscapes: true,
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for (i=0; i < all.length; i += 1) {
+      all[i].SourceElement().parentNode.className += ' has-jax';
+    }
+  });
+</script>
+
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+
+<!-- custom analytics part create by xiamo -->
+<script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+<script>AV.initialize("SbuO6UqesUpwpVQpFOF85w4b-gzGzoHsz", "nU6WMv6iTcTpjLHKtOIoovuO");</script>
+<script>
+function showTime(Counter) {
+	var query = new AV.Query(Counter);
+	$(".leancloud_visitors").each(function() {
+		var url = $(this).attr("id").trim();
+		query.equalTo("url", url);
+		query.find({
+			success: function(results) {
+				if (results.length == 0) {
+					var content = '0 ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+					return;
+				}
+				for (var i = 0; i < results.length; i++) {
+					var object = results[i];
+					var content = object.get('time') + ' ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+				}
+			},
+			error: function(object, error) {
+				console.log("Error: " + error.code + " " + error.message);
+			}
+		});
+
+	});
+}
+
+function addCount(Counter) {
+	var Counter = AV.Object.extend("Counter");
+	url = $(".leancloud_visitors").attr('id').trim();
+	title = $(".leancloud_visitors").attr('data-flag-title').trim();
+	var query = new AV.Query(Counter);
+	query.equalTo("url", url);
+	query.find({
+		success: function(results) {
+			if (results.length > 0) {
+				var counter = results[0];
+				counter.fetchWhenSave(true);
+				counter.increment("time");
+				counter.save(null, {
+					success: function(counter) {
+						var content =  counter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(counter, error) {
+						console.log('Failed to save Visitor num, with error message: ' + error.message);
+					}
+				});
+			} else {
+				var newcounter = new Counter();
+				newcounter.set("title", title);
+				newcounter.set("url", url);
+				newcounter.set("time", 1);
+				newcounter.save(null, {
+					success: function(newcounter) {
+					    console.log("newcounter.get('time')="+newcounter.get('time'));
+						var content = newcounter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(newcounter, error) {
+						console.log('Failed to create');
+					}
+				});
+			}
+		},
+		error: function(error) {
+			console.log('Error:' + error.code + " " + error.message);
+		}
+	});
+}
+$(function() {
+	var Counter = AV.Object.extend("Counter");
+	if ($('.leancloud_visitors').length == 1) {
+		addCount(Counter);
+	} else if ($('.post-title-link').length > 1) {
+		showTime(Counter);
+	}
+}); 
+</script>
+
+
+</body>
+</html>
