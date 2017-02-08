@@ -182,6 +182,89 @@
     </entry>
     
     <entry>
+      <title><![CDATA[[并发锁(二)]AQS]]></title>
+      <url>https://fudawei.github.io/2017/02/04/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%BA%8C)%5DAQS/</url>
+      <content type="html"><![CDATA[<p>AQS</p>
+<p>首先从理论知识开始，在了解了相关原理后会针对源码进行一些分析，最后加上一些实战来描述。</p>
+<p><img src="/img/lock/lock-1.png" alt=""></p>
+<p>上面的继承体系中，AbstractQueuedSynchronizer是CountDownLatch/FutureTask/ReentrantLock/RenntrantReadWriteLock/Semaphore的基础，因此AbstractQueuedSynchronizer是Lock/Executor实现的前提。公平锁、不公平锁、Condition、CountDownLatch、Semaphore等放到后面的篇幅中说明。</p>
+<p>完整的设计原理可以参考Doug Lea的论文  <a href="http://gee.cs.oswego.edu/dl/papers/aqs.pdf" target="_blank" rel="external">The java .util .concurrent Synchronizer Framework</a>   ，这里做一些简要的分析。</p>
+<p>基本的思想是表现为一个同步器，支持下面两个操作：</p>
+<p>获取锁：首先判断当前状态是否允许获取锁，如果是就获取锁，否则就阻塞操作或者获取失败，也就是说如果是独占锁就可能阻塞，如果是共享锁就可能失败。另外如果是阻塞线程，那么线程就需要进入阻塞队列。当状态位允许获取锁时就修改状态，并且如果进了队列就从队列中移除。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">while(synchronization state does not allow acquire)&#123;</div><div class="line">    enqueue current thread if not already queued;</div><div class="line">    possibly block current thread;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>dequeue current thread if it was queued;</p>
+<p>释放锁:这个过程就是修改状态位，如果有线程因为状态位阻塞的话就唤醒队列中的一个或者更多线程。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">update synchronization state;</div><div class="line"></div><div class="line">if(state may permit a blocked thread to acquire)</div><div class="line"></div><div class="line">    unlock one or more queued threads;</div></pre></td></tr></table></figure></p>
+<p>要支持上面两个操作就必须有下面的条件：</p>
+<p>原子性操作同步器的状态位<br>阻塞和唤醒线程<br>一个有序的队列<br>目标明确，要解决的问题也清晰了，那么剩下的就是解决上面三个问题。</p>
+<p>状态位的原子操作</p>
+<p>这里使用一个32位的整数来描述状态位，前面章节的原子操作的理论知识整好派上用场，在这里依然使用CAS操作来解决这个问题。事实上这里还有一个64位版本的同步器（AbstractQueuedLongSynchronizer），这里暂且不谈。</p>
+<p>阻塞和唤醒线程</p>
+<p>标准的Java API里面是无法挂起（阻塞）一个线程，然后在将来某个时刻再唤醒它的。JDK 1.0的API里面有Thread.suspend和Thread.resume，并且一直延续了下来。但是这些都是过时的API，而且也是不推荐的做法。</p>
+<p>在JDK 5.0以后利用JNI在LockSupport类中实现了此特性。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">LockSupport.park()</div><div class="line">LockSupport.park(Object)</div><div class="line">LockSupport.parkNanos(Object, long)</div><div class="line">LockSupport.parkNanos(long)</div><div class="line">LockSupport.parkUntil(Object, long)</div><div class="line">LockSupport.parkUntil(long)</div><div class="line">LockSupport.unpark(Thread)</div></pre></td></tr></table></figure>
+<p>上面的API中park()是在当前线程中调用，导致线程阻塞，带参数的Object是挂起的对象，这样监视的时候就能够知道此线程是因为什么资源而阻塞的。由于park()立即返回，所以通常情况下需要在循环中去检测竞争资源来决定是否进行下一次阻塞。park()返回的原因有三：</p>
+<p>其他某个线程调用将当前线程作为目标调用  unpark ；<br>其他某个线程中断 当前线程；<br>该调用不合逻辑地（即毫无理由地）返回。<br>其实第三条就决定了需要循环检测了，类似于通常写的while(checkCondition()){Thread.sleep(time);}类似的功能。</p>
+<p>有序队列</p>
+<p>在AQS中采用CHL列表来解决有序的队列的问题。</p>
+<p>  <img src="/img/lock/lock-2.png" alt=""></p>
+<p>AQS采用的CHL模型采用下面的算法完成FIFO的入队列和出队列过程。</p>
+<p>对于入队列(enqueue)： 采用CAS操作，每次比较尾结点是否一致，然后插入的到尾结点中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">do &#123;</div><div class="line">   pred = tail;</div><div class="line">&#125; while ( !compareAndSet(pred,tail,node) );</div></pre></td></tr></table></figure>
+<p>对于出队列(dequeue ):由于每一个节点也缓存了一个状态，决定是否出队列，因此当不满足条件时就需要自旋等待，一旦满足条件就将头结点设置为下一个节点。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">while (pred.status != RELEASED) ;</div><div class="line"></div><div class="line">head  = node;</div></pre></td></tr></table></figure>
+<p>实际上这里自旋等待也是使用LockSupport.park()来实现的。</p>
+<p>AQS里面有三个核心字段：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">private volatile int state;</div><div class="line"></div><div class="line">private transient volatile Node head;</div><div class="line"></div><div class="line">private transient volatile Node tail;</div></pre></td></tr></table></figure>
+<p>其中state描述的有多少个线程取得了锁，对于互斥锁来说state&lt;=1。head/tail加上CAS操作就构成了一个CHL的FIFO队列。下面是Node节点的属性。</p>
+<p>volatile int waitStatus;   节点的等待状态，一个节点可能位于以下几种状态：</p>
+<p>CANCELLED = 1： 节点操作因为超时或者对应的线程被interrupt。节点不应该不留在此状态，一旦达到此状态将从CHL队列中踢出。<br>SIGNAL = -1： 节点的继任节点是（或者将要成为）BLOCKED状态（例如通过LockSupport.park()操作），因此一个节点一旦被释放（解锁）或者取消就需要唤醒（LockSupport.unpack()）它的继任节点。<br>CONDITION = -2：表明节点对应的线程因为不满足一个条件（Condition）而被阻塞。<br>0： 正常状态，新生的非CONDITION节点都是此状态。<br>非负值标识节点不需要被通知（唤醒）。<br>volatile Node prev; 此节点的前一个节点。节点的waitStatus依赖于前一个节点的状态。</p>
+<p>volatile Node next; 此节点的后一个节点。后一个节点是否被唤醒（uppark()）依赖于当前节点是否被释放。</p>
+<p>volatile Thread thread; 节点绑定的线程。</p>
+<p>Node nextWaiter; 下一个等待条件（Condition）的节点，由于Condition是独占模式，因此这里有一个简单的队列来描述Condition上的线程节点。</p>
+<p>AQS 在J.U.C里面是一个非常核心的工具，而且也非常复杂，里面考虑到了非常多的逻辑实现，所以在后面的章节中总是不断的尝试介绍AQS的特性和实现。</p>
+<p>这一个小节主要介绍了一些理论背景和相关的数据结构，在下一个小节中将根据以上知识来了解Lock.lock/unlock是如何实现的。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[[并发锁(一)]Lock与ReentrantLock]]></title>
+      <url>https://fudawei.github.io/2017/02/03/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%B8%80)%5DLock%E4%B8%8EReentrantLock/</url>
+      <content type="html"><![CDATA[<p>JDK 5中的锁是接口Java.util.concurrent.locks.Lock 。另外java.util.concurrent.locks.ReadWriteLock 提供了一对可供读写并发的锁。根据前面的规则，我们从java.util.concurrent.locks.Lock 的API开始。</p>
+<p>void lock();</p>
+<p>获取锁。</p>
+<p>如果锁不可用，出于线程调度目的，将禁用当前线程，并且在获得锁之前，该线程将一直处于休眠状态。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">void lockInterruptibly() throws InterruptedException;</div></pre></td></tr></table></figure>
+<p>如果当前线程未被中断，则获取锁。</p>
+<p>如果锁可用，则获取锁，并立即返回。</p>
+<p>如果锁不可用，出于线程调度目的，将禁用当前线程，并且在发生以下两种情况之一以前，该线程将一直处于休眠状态：</p>
+<p>锁由当前线程获得；或者<br>其他某个线程中断 当前线程，并且支持对锁获取的中断。<br>如果当前线程：</p>
+<p>在进入此方法时已经设置了该线程的中断状态；或者<br>在获取锁时被中断 ，并且支持对锁获取的中断，<br>则将抛出  InterruptedException ，并清除当前线程的已中断状态。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Condition newCondition();</div></pre></td></tr></table></figure></p>
+<p>返回绑定到此  Lock   实例的新  Condition   实例。下一小节中会重点谈Condition，此处不做过多的介绍。</p>
+<p>boolean tryLock();<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"></div></pre></td></tr></table></figure></p>
+<p>仅在调用时锁为空闲状态才获取该锁。</p>
+<p>如果锁可用，则获取锁，并立即返回值  true 。如果锁不可用，则此方法将立即返回值  false 。</p>
+<p>通常对于那些不是必须获取锁的操作可能有用。</p>
+<p>boolean tryLock(long time, TimeUnit unit) throws InterruptedException;</p>
+<p>如果锁在给定的等待时间内空闲，并且当前线程未被中断，则获取锁。</p>
+<p>如果锁可用，则此方法将立即返回值  true 。如果锁不可用，出于线程调度目的，将禁用当前线程，并且在发生以下三种情况之一前，该线程将一直处于休眠状态：</p>
+<p>锁由当前线程获得；或者<br>其他某个线程中断当前线程，并且支持对锁获取的中断；或者<br>已超过指定的等待时间<br>如果获得了锁，则返回值  true 。</p>
+<p>如果当前线程：</p>
+<p>在进入此方法时已经设置了该线程的中断状态；或者<br>在获取锁时被中断，并且支持对锁获取的中断，<br>则将抛出  InterruptedException ，并会清除当前线程的已中断状态。<br>如果超过了指定的等待时间，则将返回值  false 。如果 time 小于等于 0，该方法将完全不等待。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">void unlock();</div></pre></td></tr></table></figure>
+<p>释放锁。对应于lock()、tryLock()、tryLock(xx)、lockInterruptibly()等操作，如果成功的话应该对应着一个unlock()，这样可以避免死锁或者资源浪费。</p>
+<p>相对于比较空洞的API，来看一个实际的例子。下面的代码实现了一个类似于AtomicInteger的操作。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div></pre></td><td class="code"><pre><div class="line">package com.ellis.study.concurrency.lock;</div><div class="line"></div><div class="line">import java.util.concurrent.locks.Lock;</div><div class="line">import java.util.concurrent.locks.ReentrantLock;</div><div class="line"></div><div class="line">public class AtomicIntegerWithLock &#123;</div><div class="line"></div><div class="line">    private int value;</div><div class="line">    private Lock lock = new ReentrantLock();</div><div class="line">	</div><div class="line">    public AtomicIntegerWithLock() &#123;</div><div class="line">        super();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public AtomicIntegerWithLock(int value) &#123;</div><div class="line">        this.value = value;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int get() &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            return value;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final void set(int newValue) &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            value = newValue;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int getAndSet(int newValue) &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            int ret = value;</div><div class="line">            value = newValue;</div><div class="line">            return ret;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final boolean compareAndSet(int expect, int update) &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            if (value == expect) &#123;</div><div class="line">                value = update;</div><div class="line">                return true;</div><div class="line">            &#125;</div><div class="line">            return false;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int getAndIncrement() &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            return value++;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int getAndDecrement() &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            return value--;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int incrementAndGet() &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            return ++value;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int decrementAndGet() &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            return --value;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public String toString() &#123;</div><div class="line">        return Integer.toString(get());</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>类AtomicIntegerWithLock 是线程安全的，此结构中大量使用了Lock对象的lock/unlock方法对。同样可以看到的是对于自增和自减操作使用了++/–。之所以能够保证线程安全，是因为Lock对象的lock()方法保证了只有一个线程能够只有此锁。需要说明的是对于任何一个lock()方法，都需要一个unlock()方法与之对于，通常情况下为了保证unlock方法总是能够得到执行，unlock方法被置于finally块中。另外这里使用了java.util.concurrent.locks.ReentrantLock.ReentrantLock 对象，下一个小节中会具体描述此类作为Lock的唯一实现是如何设计和实现的。</p>
+<p>尽管synchronized实现Lock的相同语义，并且在语法上比Lock要简单多，但是前者却比后者的开销要大得多。做一个简单的测试。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div></pre></td><td class="code"><pre><div class="line">public static void main(String[] args) throws Exception&#123;</div><div class="line">     final int max = 10;</div><div class="line">     final int loopCount = 100000;</div><div class="line">     long costTime = 0;</div><div class="line">     for (int m = 0; m &lt; max; m++) &#123;</div><div class="line">         long start1 = System.nanoTime();</div><div class="line">         final AtomicIntegerWithLock value1 = new AtomicIntegerWithLock(0);</div><div class="line">         Thread[] ts = new Thread[max];</div><div class="line">         for(int i=0;i&lt;max;i++) &#123;</div><div class="line">             ts[i] = new Thread() &#123;</div><div class="line">                 public void run() &#123;</div><div class="line">                     for (int i = 0; i &lt; loopCount; i++) &#123;</div><div class="line">                         value1.incrementAndGet();</div><div class="line">                     &#125;</div><div class="line">                 &#125;</div><div class="line">             &#125;;</div><div class="line">         &#125;</div><div class="line">         for(Thread t:ts) &#123;</div><div class="line">             t.start();</div><div class="line">         &#125;</div><div class="line">         for(Thread t:ts) &#123;</div><div class="line">             t.join();</div><div class="line">         &#125;</div><div class="line">         long end1 = System.nanoTime();</div><div class="line">         costTime += (end1-start1);</div><div class="line">     &#125;</div><div class="line">     System.out.println(&quot;cost1: &quot; + (costTime));</div><div class="line">     //</div><div class="line">     System.out.println();</div><div class="line">     costTime = 0;</div><div class="line">     //</div><div class="line">     final Object lock = new Object();</div><div class="line">     for (int m = 0; m &lt; max; m++) &#123;</div><div class="line">         staticValue=0;</div><div class="line">         long start1 = System.nanoTime();</div><div class="line">         Thread[] ts = new Thread[max];</div><div class="line">         for(int i=0;i&lt;max;i++) &#123;</div><div class="line">             ts[i] = new Thread() &#123;</div><div class="line">                 public void run() &#123;</div><div class="line">                     for (int i = 0; i &lt; loopCount; i++) &#123;</div><div class="line">                         synchronized(lock) &#123;</div><div class="line">                             ++staticValue;</div><div class="line">                         &#125;</div><div class="line">                     &#125;</div><div class="line">                 &#125;</div><div class="line">             &#125;;</div><div class="line">         &#125;</div><div class="line">         for(Thread t:ts) &#123;</div><div class="line">             t.start();</div><div class="line">         &#125;</div><div class="line">         for(Thread t:ts) &#123;</div><div class="line">             t.join();</div><div class="line">         &#125;</div><div class="line">         long end1 = System.nanoTime();</div><div class="line">         costTime += (end1-start1);</div><div class="line">     &#125;</div><div class="line">     //</div><div class="line">     System.out.println(&quot;cost2: &quot; + (costTime));</div><div class="line">&#125;</div><div class="line"></div><div class="line">static int staticValue = 0;</div></pre></td></tr></table></figure>
+<p>在这个例子中每次启动10个线程，每个线程计算100000次自增操作，重复测试10次，下面是某此测试的结果：</p>
+<p>cost1: 624071136</p>
+<p>cost2: 2057847833</p>
+<p>尽管上面的例子不是非常正式的测试案例，但上面的例子在于说明，Lock的性能比synchronized的要好得多。如果可以的话总是使用Lock替代synchronized是一个明智的选择。</p>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[Shell--Expect]]></title>
       <url>https://fudawei.github.io/2017/01/24/Shell%E5%AD%A6%E4%B9%A0%E4%B9%8BExpect/</url>
       <content type="html"><![CDATA[<h3 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h3><p>   我们通过Shell可以实现简单的控制流功能，如：循环、判断等。但是对于需要交互的场合则必须通过人工来干预，有时候我们可能会需要实现和交互程序如telnet服务器等进行交互的功能。而expect就使用来实现这种功能的工具。</p>
@@ -899,24 +982,6 @@
     </entry>
     
     <entry>
-      <title><![CDATA[Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系]]></title>
-      <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/</url>
-      <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
-<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
-<p>Spring的总体架构</p>
-<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
-<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
-<p>Spring的设计理念</p>
-<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
-<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
-<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
-<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
-<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
-<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[Spring架构详解：Bean详解和Context组件详解]]></title>
       <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ABean%E8%AF%A6%E8%A7%A3%E5%92%8CContext%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3/</url>
       <content type="html"><![CDATA[<h1 id="Bean详解"><a href="#Bean详解" class="headerlink" title="Bean详解"></a>Bean详解</h1><p>前面已经说明了Bean组件对Spring的重要性，下面看看Bean这个组件式怎么设计的。Bean组件在Spring的org.springframework.beans包下。这个包下的所有类主要解决了三件事：Bean的定义、Bean 的创建以及对Bean的解析。对Spring的使用者来说唯一需要关心的就是Bean的创建，其他两个由Spring在内部帮你完成了，对你来说是透明的。</p>
@@ -933,6 +998,24 @@
 <p>再往下分就是按照构建Context的文件类型，接着就是访问Context的方式。这样一级一级构成了完整的Context等级层次。</p>
 <p>总体来说ApplicationContext必须要完成以下几件事：</p>
 <p>标识一个应用环境<br>利用BeanFactory创建Bean对象<br>保存对象关系表<br>能够捕获各种事件<br>Context作为Spring的Ioc容器，基本上整合了Spring的大部分功能，或者说是大部分功能的基础。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系]]></title>
+      <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/</url>
+      <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
+<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
+<p>Spring的总体架构</p>
+<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
+<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
+<p>Spring的设计理念</p>
+<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
+<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
+<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
+<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
+<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
+<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
 ]]></content>
     </entry>
     
@@ -1028,6 +1111,13 @@
     </entry>
     
     <entry>
+      <title><![CDATA[[Spark源码四]图解作业生命周期]]></title>
+      <url>https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
+      <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[[Spark源码三】作业运行过程]]></title>
       <url>https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E4%B8%89%5D%E4%BD%9C%E4%B8%9A%E8%BF%90%E8%A1%8C%E8%BF%87%E7%A8%8B/</url>
       <content type="html"><![CDATA[<p>官方给的例子里面，一执行collect方法就能出结果，那我们就从collect开始看吧，进入RDD，找到collect方法。</p>
@@ -1046,13 +1136,6 @@ val waiter = new JobWaiter(this, jobId, partitions.size, resultHandler)
 eventProcessActor ! JobSubmitted(jobId, rdd, func2, partitions.toArray, allowLocal, callSite, waiter, properties)
 </code></pre><p>走到这里，感觉有点儿绕了，为什么到了这里，还不直接运行呢，还要给DAGSchedulerEventProcessLoop发送一个JobSubmitted请求呢，new一个线程和这个区别有多大？</p>
 <p>不管了，搜索一下DAGSchedulerEventProcessLoop吧，结果发现它是一个DAGSchedulerEventProcessLoop，它的定义也在DAGScheduler这个类里面。它的receive方法里面定义了12种事件的处理方法，这里我们只需要看JobSubmitted的就行，它也是调用了自身的handleJobSubmitted方法。但是这里很奇怪，没办法打断点调试，但是它的结果倒是能返回的，因此我们得用另外一种方式，打开test工程，找到scheduler目录下的DAGSchedulerSuite这个类，我们自己写一个test方法，首先我们要在import那里加上import org.apache.spark.SparkContext._  ，然后加上这一段测试代码。</p>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[[Spark源码四]图解作业生命周期]]></title>
-      <url>https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
-      <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
 ]]></content>
     </entry>
     
@@ -1389,6 +1472,48 @@ extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里
     </entry>
     
     <entry>
+      <title><![CDATA[Redis数据结构和对象-(三)跳跃表]]></title>
+      <url>https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E4%B8%89%EF%BC%89%E8%B7%B3%E8%B7%83%E8%A1%A8/</url>
+      <content type="html"><![CDATA[<h2 id="定义"><a href="#定义" class="headerlink" title="定义:"></a>定义:</h2><p>它是一种有序数据结构,通过在每个节点中维持多个 指向其他节点<br>的指针,从而达到快速访问节点的目的。</p>
+<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景:"></a>使用场景:</h2><p>Redis使用跳跃表作为有序集合键的底层实现之一,如果一个有序集合包含的元素数量比较多,又或者有序集合中元素的成(member)是比较长的字符串时,Redis就会使用跳跃表来作为有序集合键的底层实现。<br>另外,在集群节点中跳跃表被用作内部数据结构。除此之外在Redis中在无他用</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现:"></a>实现:</h2><p>跳跃表由zskiplistNode和zskiplist两个结构定义,其中zskiplistNode用<br>于表示跳跃表节点,而zskiplist用于保存跳跃表节点的相关信息。</p>
+<p><img src="/img/skipList-1.png" alt=""></p>
+<p>上图为zskiplist结构,其中</p>
+<ul>
+<li>header指向跳跃表的表头节点。</li>
+<li>tail指向表尾节点。</li>
+<li>level记录层数最大的那个节点的层数(注意:表头节点的层数不计算在内),是1-32之间的一个随机数,越大的数出现的概率越小。</li>
+</ul>
+<p>下图右为zskiplist结构,其中层(level):L1、L2、L3等标记各个节点的层,每个层都有前进指针和跨度,当程序从表头向表尾进行遍历时,访问会沿着层的前进指针进行。</p>
+<p><strong>跨度</strong>:层的跨度(level[i].span属性)用于记录两个节点间的距离,节点间的跨度越大,它们相聚的就越远,指向NULL的所有前进指针的跨度都为0,因为它们没有连向任何节点。跨度跟遍历操作无关,是用来计算排位的(可根据排位获取元素节点),如下图,查找分值为3.0、对象为o3的节点时,只经过了一个层,并且层的跨度为3,所以该节点在跳跃表中的排位为3。</p>
+<p><img src="/img/skipList-2.png" alt=""></p>
+<ul>
+<li><strong>后退(backward)指针</strong>:BW标记节点的后退指针,它指向位于当前节点的前一个节点,后退指针在程序从表尾向表头遍历时使用,与前进指针不同,后退针每次只能后退至前一个节点,因为每个节点只有一个后退指针。</li>
+<li><strong>分值</strong>(score):1.0、2.0和3.0是节点所保存的分值,分值是一个double类型的浮点数,可重复,用于节点排序(分值相同则按在字典中大小排)。</li>
+<li><strong>成员对象</strong>(obj):o1、o2和o3是节点所保存的成员对象,成员对象是一个指针,它指向一个字符串对象,而字符串对象则保存着一个SDS值,并且是唯一的。<br><em>注意:表头节点跟其他节点一样,也有后退指针、分值、成员对象等属性,但都不会被用到,故在图中没有画出。</em></li>
+</ul>
+<h2 id="跳跃表API"><a href="#跳跃表API" class="headerlink" title="跳跃表API"></a>跳跃表API</h2><p><img src="/img/skipList-3.png" alt=""></p>
+<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><p>a.跳表具有如下性质:</p>
+<ol>
+<li>由很多层结构组成</li>
+<li>每一层都是一个有序的链表</li>
+<li>最底层(Level 1)的链表包含所有元素</li>
+<li>如果一个元素出现在 Level i 的链表中,则它在 Level i 之下的链表也都会出现。</li>
+<li>每个节点包含两个指针,一个指向同一链表中的下一个元素,一个指向下面一层的元素。</li>
+</ol>
+<p>b.插入</p>
+<p>先确定该元素要占据的层数 K(采用丢硬币的方式,这完全是随机的)<br>然后在 Level 1 … Level K 各个层的链表都插入元素。<br>例子:插入 119, K = 2<br><img src="/img/skipList-4.png" alt=""></p>
+<p>如果 K 大于链表的层数,则要添加新的层。<br>例子:插入 119, K = 4<br><img src="/img/skipList-5.png" alt=""></p>
+<p>c.删除<br>三个步骤:</p>
+<ol>
+<li>在跳跃表中查找到这个元素的位置(如果未找到,则退出)</li>
+<li>将该元素所在整列从表中删除</li>
+<li>将多余的“空链”删除<br><img src="/img/skipList-6.png" alt=""></li>
+</ol>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[Redis数据结构和对象-(四)整数集合]]></title>
       <url>https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E5%9B%9B%EF%BC%89%E6%95%B4%E6%95%B0%E9%9B%86%E5%90%88/</url>
       <content type="html"><![CDATA[<h1 id="整数集合"><a href="#整数集合" class="headerlink" title="整数集合"></a>整数集合</h1><p>整数集合（intset）是集合键的底层实现之一： 当一个集合只包含整数值元素， 并且这个集合的元素数量不多时， Redis 就会使用整数集合作为集合键的底层实现。</p>
@@ -1461,48 +1586,6 @@ extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里
 <h2 id="降级"><a href="#降级" class="headerlink" title="降级"></a>降级</h2><p>整数集合不支持降级操作， 一旦对数组进行了升级， 编码就会一直保持升级后的状态。</p>
 <p>举个例子， 对于图 6-11 所示的整数集合来说， 即使我们将集合里唯一一个真正需要使用 int64_t 类型来保存的元素 4294967295 删除了， 整数集合的编码仍然会维持 INTSET_ENC_INT64 ， 底层数组也仍然会是 int64_t 类型的， 如图 6-12 所示。</p>
 <p><img src="/img/intlist-11.png" alt=""><br><img src="/img/intlist-12.png" alt=""></p>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[Redis数据结构和对象-(三)跳跃表]]></title>
-      <url>https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E4%B8%89%EF%BC%89%E8%B7%B3%E8%B7%83%E8%A1%A8/</url>
-      <content type="html"><![CDATA[<h2 id="定义"><a href="#定义" class="headerlink" title="定义:"></a>定义:</h2><p>它是一种有序数据结构,通过在每个节点中维持多个 指向其他节点<br>的指针,从而达到快速访问节点的目的。</p>
-<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景:"></a>使用场景:</h2><p>Redis使用跳跃表作为有序集合键的底层实现之一,如果一个有序集合包含的元素数量比较多,又或者有序集合中元素的成(member)是比较长的字符串时,Redis就会使用跳跃表来作为有序集合键的底层实现。<br>另外,在集群节点中跳跃表被用作内部数据结构。除此之外在Redis中在无他用</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现:"></a>实现:</h2><p>跳跃表由zskiplistNode和zskiplist两个结构定义,其中zskiplistNode用<br>于表示跳跃表节点,而zskiplist用于保存跳跃表节点的相关信息。</p>
-<p><img src="/img/skipList-1.png" alt=""></p>
-<p>上图为zskiplist结构,其中</p>
-<ul>
-<li>header指向跳跃表的表头节点。</li>
-<li>tail指向表尾节点。</li>
-<li>level记录层数最大的那个节点的层数(注意:表头节点的层数不计算在内),是1-32之间的一个随机数,越大的数出现的概率越小。</li>
-</ul>
-<p>下图右为zskiplist结构,其中层(level):L1、L2、L3等标记各个节点的层,每个层都有前进指针和跨度,当程序从表头向表尾进行遍历时,访问会沿着层的前进指针进行。</p>
-<p><strong>跨度</strong>:层的跨度(level[i].span属性)用于记录两个节点间的距离,节点间的跨度越大,它们相聚的就越远,指向NULL的所有前进指针的跨度都为0,因为它们没有连向任何节点。跨度跟遍历操作无关,是用来计算排位的(可根据排位获取元素节点),如下图,查找分值为3.0、对象为o3的节点时,只经过了一个层,并且层的跨度为3,所以该节点在跳跃表中的排位为3。</p>
-<p><img src="/img/skipList-2.png" alt=""></p>
-<ul>
-<li><strong>后退(backward)指针</strong>:BW标记节点的后退指针,它指向位于当前节点的前一个节点,后退指针在程序从表尾向表头遍历时使用,与前进指针不同,后退针每次只能后退至前一个节点,因为每个节点只有一个后退指针。</li>
-<li><strong>分值</strong>(score):1.0、2.0和3.0是节点所保存的分值,分值是一个double类型的浮点数,可重复,用于节点排序(分值相同则按在字典中大小排)。</li>
-<li><strong>成员对象</strong>(obj):o1、o2和o3是节点所保存的成员对象,成员对象是一个指针,它指向一个字符串对象,而字符串对象则保存着一个SDS值,并且是唯一的。<br><em>注意:表头节点跟其他节点一样,也有后退指针、分值、成员对象等属性,但都不会被用到,故在图中没有画出。</em></li>
-</ul>
-<h2 id="跳跃表API"><a href="#跳跃表API" class="headerlink" title="跳跃表API"></a>跳跃表API</h2><p><img src="/img/skipList-3.png" alt=""></p>
-<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><p>a.跳表具有如下性质:</p>
-<ol>
-<li>由很多层结构组成</li>
-<li>每一层都是一个有序的链表</li>
-<li>最底层(Level 1)的链表包含所有元素</li>
-<li>如果一个元素出现在 Level i 的链表中,则它在 Level i 之下的链表也都会出现。</li>
-<li>每个节点包含两个指针,一个指向同一链表中的下一个元素,一个指向下面一层的元素。</li>
-</ol>
-<p>b.插入</p>
-<p>先确定该元素要占据的层数 K(采用丢硬币的方式,这完全是随机的)<br>然后在 Level 1 … Level K 各个层的链表都插入元素。<br>例子:插入 119, K = 2<br><img src="/img/skipList-4.png" alt=""></p>
-<p>如果 K 大于链表的层数,则要添加新的层。<br>例子:插入 119, K = 4<br><img src="/img/skipList-5.png" alt=""></p>
-<p>c.删除<br>三个步骤:</p>
-<ol>
-<li>在跳跃表中查找到这个元素的位置(如果未找到,则退出)</li>
-<li>将该元素所在整列从表中删除</li>
-<li>将多余的“空链”删除<br><img src="/img/skipList-6.png" alt=""></li>
-</ol>
 ]]></content>
     </entry>
     
@@ -2738,6 +2821,28 @@ return numbers
     </entry>
     
     <entry>
+      <title><![CDATA[排序算法的稳定性]]></title>
+      <url>https://fudawei.github.io/2016/04/16/%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95%E7%9A%84%E7%A8%B3%E5%AE%9A%E6%80%A7/</url>
+      <content type="html"><![CDATA[<p>稳定排序和不稳定排序</p>
+<blockquote>
+<p>这几天笔试了好几次了，连续碰到一个关于常见排序算法稳定性判别的问题，往往还是多选，对于我以及和我一样拿不准的同学可不是一个能轻易下结论的题目，当然如果你笔试之前已经记住了数据结构书上哪些是稳定的，哪些不是稳定的，做起来应该可以轻松搞定。本文是针对老是记不住这个或者想真正明白到底为什么是稳定或者不稳定的人准备的。<br>首先，排序算法的稳定性大家应该都知道，通俗地讲就是能保证排序前2个相等的数其在序列的前后位置顺序和排序后它们两个的前后位置顺序相同。在简单形式化一下，如果Ai = Aj，Ai原来在位置前，排序后Ai还是要在Aj位置前。<br>其次，说一下稳定性的好处。排序算法如果是稳定的，那么从一个键上排序，然后再从另一个键上排序，第一个键排序的结果可以为第二个键排序所用。基数排序就是这样，先按低位排序，逐次按高位排序，低位相同的元素其顺序再高位也相同时是不会改变的。另外，如果排序算法稳定，对基于比较的排序算法而言，元素交换的次数可能会少一些（个人感觉，没有证实）。</p>
+</blockquote>
+<p>回到主题，现在分析一下常见的排序算法的稳定性，每个都给出简单的理由。</p>
+<p>(1)冒泡排序</p>
+<p>冒泡排序就是把小的元素往前调或者把大的元素往后调。比较是相邻的两个元素比较，交换也发生在这两个元素之间。所以，如果两个元素相等，我想你是不会再无聊地把他们俩交换一下的；如果两个相等的元素没有相邻，那么即使通过前面的两两交换把两个相邻起来，这时候也不会交换，所以相同元素的前后顺序并没有改变，所以冒泡排序是一种稳定排序算法。</p>
+<p>(2)选择排序</p>
+<p>选择排序是给每个位置选择当前元素最小的，比如给第一个位置选择最小的，在剩余元素里面给第二个元素选择第二小的，依次类推，直到第n - 1个元素，第n个元素不用选择了，因为只剩下它一个最大的元素了。那么，在一趟选择，如果当前元素比一个元素小，而该小的元素又出现在一个和当前元素相等的元素后面，那么交换后稳定性就被破坏了。比较拗口，举个例子，序列5 8 5 2 9，我们知道第一遍选择第1个元素5会和2交换，那么原序列中2个5的相对前后顺序就被破坏了，所以选择排序不是一个稳定的排序算法。</p>
+<p>(3)插入排序<br>插入排序是在一个已经有序的小序列的基础上，一次插入一个元素。当然，刚开始这个有序的小序列只有1个元素，就是第一个元素。比较是从有序序列的末尾开始，也就是想要插入的元素和已经有序的最大者开始比起，如果比它大则直接插入在其后面，否则一直往前找直到找到它该插入的位置。如果碰见一个和插入元素相等的，那么插入元素把想插入的元素放在相等元素的后面。所以，相等元素的前后顺序没有改变，从原无序序列出去的顺序就是排好序后的顺序，所以插入排序是稳定的。</p>
+<p>(4)快速排序<br>快速排序有两个方向，左边的i下标一直往右走，当a[i] &lt;= a[center_index]，其中center_index是中枢元素的数组下标，一般取为数组第0个元素。而右边的j下标一直往左走，当a[j] &gt; a[center_index]。如果i和j都走不动了，i &lt;= j，交换a[i]和a[j],重复上面的过程，直到i &gt; j。 交换a[j]和a[center_index]，完成一趟快速排序。在中枢元素和a[j]交换的时候，很有可能把前面的元素的稳定性打乱，比如序列为5 3 3 4 3 8 9 10 11，现在中枢元素5和3（第5个元素，下标从1开始计）交换就会把元素3的稳定性打乱，所以快速排序是一个不稳定的排序算法，不稳定发生在中枢元素和a[j] 交换的时刻。</p>
+<p>(5)归并排序<br>归并排序是把序列递归地分成短序列，递归出口是短序列只有1个元素（认为直接有序）或者2个序列（1次比较和交换），然后把各个有序的段序列合并成一个有序的长序列，不断合并直到原序列全部排好序。可以发现，在1个或2个元素时，1个元素不会交换，2个元素如果大小相等也没有人故意交换，这不会破坏稳定性。那么，在短的有序序列合并的过程中，稳定是是否受到破坏？没有，合并过程中我们可以保证如果两个当前元素相等时，我们把处在前面的序列的元素保存在结果序列的前面，这样就保证了稳定性。所以，归并排序也是稳定的排序算法。</p>
+<p>(6)基数排序<br>基数排序是按照低位先排序，然后收集；再按照高位排序，然后再收集；依次类推，直到最高位。有时候有些属性是有优先级顺序的，先按低优先级排序，再按高优先级排序，最后的次序就是高优先级高的在前，高优先级相同的低优先级高的在前。基数排序基于分别排序，分别收集，所以其是稳定的排序算法。</p>
+<p>(7)希尔排序(shell)<br>希尔排序是按照不同步长对元素进行插入排序，当刚开始元素很无序的时候，步长最大，所以插入排序的元素个数很少，速度很快；当元素基本有序了，步长很小， 插入排序对于有序的序列效率很高。所以，希尔排序的时间复杂度会比O(n^2)好一些。由于多次插入排序，我们知道一次插入排序是稳定的，不会改变相同元素的相对顺序，但在不同的插入排序过程中，相同的元素可能在各自的插入排序中移动，最后其稳定性就会被打乱，所以shell排序是不稳定的。</p>
+<p>(8)堆排序<br>我们知道堆的结构是节点i的孩子为2 <em> i和2 </em> i + 1节点，大顶堆要求父节点大于等于其2个子节点，小顶堆要求父节点小于等于其2个子节点。在一个长为n 的序列，堆排序的过程是从第n / 2开始和其子节点共3个值选择最大（大顶堆）或者最小（小顶堆），这3个元素之间的选择当然不会破坏稳定性。但当为n / 2 - 1， n / 2 - 2， … 1这些个父节点选择元素时，就会破坏稳定性。有可能第n / 2个父节点交换把后面一个元素交换过去了，而第n / 2 - 1个父节点把后面一个相同的元素没 有交换，那么这2个相同的元素之间的稳定性就被破坏了。所以，堆排序不是稳定的排序算法。</p>
+<p>综上，得出结论: 选择排序、快速排序、希尔排序、堆排序不是稳定的排序算法，而冒泡排序、插入排序、归并排序和基数排序是稳定的排序算法<br>PS: 快[快速排序]些[希尔排序]选[选择排序]一堆[堆排序]不稳定排序</p>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[六大原则]]></title>
       <url>https://fudawei.github.io/2016/04/16/%E5%85%AD%E5%A4%A7%E5%8E%9F%E5%88%99/</url>
       <content type="html"><![CDATA[<h3 id="单一职责原则"><a href="#单一职责原则" class="headerlink" title="单一职责原则"></a>单一职责原则</h3><p>高内聚，低耦合。每一个类应该只有一个职责，对外只能提供一种功能，而引起类变化的原因应该只有一个。将不同的职责分别进行封装，不要将其组合在一个勒种，要使这个类只有一个可能会以前它变化的原因。</p>
@@ -2761,28 +2866,6 @@ return numbers
 <blockquote>
 <p>抽象类可以有构造方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">public abstract class AMan &#123;</div><div class="line">	protected IPrettyGirl prettyGirl;</div><div class="line">	public AMan(IPrettyGirl prettyGirl)&#123;</div><div class="line">		this.prettyGirl = prettyGirl;</div><div class="line">	&#125;</div><div class="line">	public abstract void findGirl();</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
 </blockquote>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[排序算法的稳定性]]></title>
-      <url>https://fudawei.github.io/2016/04/16/%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95%E7%9A%84%E7%A8%B3%E5%AE%9A%E6%80%A7/</url>
-      <content type="html"><![CDATA[<p>稳定排序和不稳定排序</p>
-<blockquote>
-<p>这几天笔试了好几次了，连续碰到一个关于常见排序算法稳定性判别的问题，往往还是多选，对于我以及和我一样拿不准的同学可不是一个能轻易下结论的题目，当然如果你笔试之前已经记住了数据结构书上哪些是稳定的，哪些不是稳定的，做起来应该可以轻松搞定。本文是针对老是记不住这个或者想真正明白到底为什么是稳定或者不稳定的人准备的。<br>首先，排序算法的稳定性大家应该都知道，通俗地讲就是能保证排序前2个相等的数其在序列的前后位置顺序和排序后它们两个的前后位置顺序相同。在简单形式化一下，如果Ai = Aj，Ai原来在位置前，排序后Ai还是要在Aj位置前。<br>其次，说一下稳定性的好处。排序算法如果是稳定的，那么从一个键上排序，然后再从另一个键上排序，第一个键排序的结果可以为第二个键排序所用。基数排序就是这样，先按低位排序，逐次按高位排序，低位相同的元素其顺序再高位也相同时是不会改变的。另外，如果排序算法稳定，对基于比较的排序算法而言，元素交换的次数可能会少一些（个人感觉，没有证实）。</p>
-</blockquote>
-<p>回到主题，现在分析一下常见的排序算法的稳定性，每个都给出简单的理由。</p>
-<p>(1)冒泡排序</p>
-<p>冒泡排序就是把小的元素往前调或者把大的元素往后调。比较是相邻的两个元素比较，交换也发生在这两个元素之间。所以，如果两个元素相等，我想你是不会再无聊地把他们俩交换一下的；如果两个相等的元素没有相邻，那么即使通过前面的两两交换把两个相邻起来，这时候也不会交换，所以相同元素的前后顺序并没有改变，所以冒泡排序是一种稳定排序算法。</p>
-<p>(2)选择排序</p>
-<p>选择排序是给每个位置选择当前元素最小的，比如给第一个位置选择最小的，在剩余元素里面给第二个元素选择第二小的，依次类推，直到第n - 1个元素，第n个元素不用选择了，因为只剩下它一个最大的元素了。那么，在一趟选择，如果当前元素比一个元素小，而该小的元素又出现在一个和当前元素相等的元素后面，那么交换后稳定性就被破坏了。比较拗口，举个例子，序列5 8 5 2 9，我们知道第一遍选择第1个元素5会和2交换，那么原序列中2个5的相对前后顺序就被破坏了，所以选择排序不是一个稳定的排序算法。</p>
-<p>(3)插入排序<br>插入排序是在一个已经有序的小序列的基础上，一次插入一个元素。当然，刚开始这个有序的小序列只有1个元素，就是第一个元素。比较是从有序序列的末尾开始，也就是想要插入的元素和已经有序的最大者开始比起，如果比它大则直接插入在其后面，否则一直往前找直到找到它该插入的位置。如果碰见一个和插入元素相等的，那么插入元素把想插入的元素放在相等元素的后面。所以，相等元素的前后顺序没有改变，从原无序序列出去的顺序就是排好序后的顺序，所以插入排序是稳定的。</p>
-<p>(4)快速排序<br>快速排序有两个方向，左边的i下标一直往右走，当a[i] &lt;= a[center_index]，其中center_index是中枢元素的数组下标，一般取为数组第0个元素。而右边的j下标一直往左走，当a[j] &gt; a[center_index]。如果i和j都走不动了，i &lt;= j，交换a[i]和a[j],重复上面的过程，直到i &gt; j。 交换a[j]和a[center_index]，完成一趟快速排序。在中枢元素和a[j]交换的时候，很有可能把前面的元素的稳定性打乱，比如序列为5 3 3 4 3 8 9 10 11，现在中枢元素5和3（第5个元素，下标从1开始计）交换就会把元素3的稳定性打乱，所以快速排序是一个不稳定的排序算法，不稳定发生在中枢元素和a[j] 交换的时刻。</p>
-<p>(5)归并排序<br>归并排序是把序列递归地分成短序列，递归出口是短序列只有1个元素（认为直接有序）或者2个序列（1次比较和交换），然后把各个有序的段序列合并成一个有序的长序列，不断合并直到原序列全部排好序。可以发现，在1个或2个元素时，1个元素不会交换，2个元素如果大小相等也没有人故意交换，这不会破坏稳定性。那么，在短的有序序列合并的过程中，稳定是是否受到破坏？没有，合并过程中我们可以保证如果两个当前元素相等时，我们把处在前面的序列的元素保存在结果序列的前面，这样就保证了稳定性。所以，归并排序也是稳定的排序算法。</p>
-<p>(6)基数排序<br>基数排序是按照低位先排序，然后收集；再按照高位排序，然后再收集；依次类推，直到最高位。有时候有些属性是有优先级顺序的，先按低优先级排序，再按高优先级排序，最后的次序就是高优先级高的在前，高优先级相同的低优先级高的在前。基数排序基于分别排序，分别收集，所以其是稳定的排序算法。</p>
-<p>(7)希尔排序(shell)<br>希尔排序是按照不同步长对元素进行插入排序，当刚开始元素很无序的时候，步长最大，所以插入排序的元素个数很少，速度很快；当元素基本有序了，步长很小， 插入排序对于有序的序列效率很高。所以，希尔排序的时间复杂度会比O(n^2)好一些。由于多次插入排序，我们知道一次插入排序是稳定的，不会改变相同元素的相对顺序，但在不同的插入排序过程中，相同的元素可能在各自的插入排序中移动，最后其稳定性就会被打乱，所以shell排序是不稳定的。</p>
-<p>(8)堆排序<br>我们知道堆的结构是节点i的孩子为2 <em> i和2 </em> i + 1节点，大顶堆要求父节点大于等于其2个子节点，小顶堆要求父节点小于等于其2个子节点。在一个长为n 的序列，堆排序的过程是从第n / 2开始和其子节点共3个值选择最大（大顶堆）或者最小（小顶堆），这3个元素之间的选择当然不会破坏稳定性。但当为n / 2 - 1， n / 2 - 2， … 1这些个父节点选择元素时，就会破坏稳定性。有可能第n / 2个父节点交换把后面一个元素交换过去了，而第n / 2 - 1个父节点把后面一个相同的元素没 有交换，那么这2个相同的元素之间的稳定性就被破坏了。所以，堆排序不是稳定的排序算法。</p>
-<p>综上，得出结论: 选择排序、快速排序、希尔排序、堆排序不是稳定的排序算法，而冒泡排序、插入排序、归并排序和基数排序是稳定的排序算法<br>PS: 快[快速排序]些[希尔排序]选[选择排序]一堆[堆排序]不稳定排序</p>
 ]]></content>
     </entry>
     
@@ -4359,7 +4442,7 @@ return numbers
     
     <entry>
       <title><![CDATA[海量数据处理]]></title>
-      <url>https://fudawei.github.io/2015/09/06/%E6%B5%B7%E9%87%8F%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86/</url>
+      <url>https://fudawei.github.io/2015/09/06/%E5%A4%A7%E6%95%B0%E6%8D%AE%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
       <content type="html"><![CDATA[<p>作者：July、youwang、yanxionglu。<br>出处：<a href="http://blog.csdn.net/v_JULY_v。" target="_blank" rel="external">http://blog.csdn.net/v_JULY_v。</a></p>
 <h2 id="十道海量数据处理面试题"><a href="#十道海量数据处理面试题" class="headerlink" title="十道海量数据处理面试题"></a>十道海量数据处理面试题</h2><ul>
 <li>提取出某日访问百度次数最多的那个IP。</li>
@@ -4478,7 +4561,7 @@ return numbers
     
     <entry>
       <title><![CDATA[海量数据处理]]></title>
-      <url>https://fudawei.github.io/2015/09/06/%E5%A4%A7%E6%95%B0%E6%8D%AE%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
+      <url>https://fudawei.github.io/2015/09/06/%E6%B5%B7%E9%87%8F%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86/</url>
       <content type="html"><![CDATA[<p>作者：July、youwang、yanxionglu。<br>出处：<a href="http://blog.csdn.net/v_JULY_v。" target="_blank" rel="external">http://blog.csdn.net/v_JULY_v。</a></p>
 <h2 id="十道海量数据处理面试题"><a href="#十道海量数据处理面试题" class="headerlink" title="十道海量数据处理面试题"></a>十道海量数据处理面试题</h2><ul>
 <li>提取出某日访问百度次数最多的那个IP。</li>
@@ -7447,7 +7530,7 @@ return &quot;ProductDetails&quot;;
     
     <entry>
       <title><![CDATA[Java中的阻塞队列]]></title>
-      <url>https://fudawei.github.io/2013/10/23/Java%E5%B9%B6%E5%8F%91%E5%8C%85%E5%AD%A6%E4%B9%A0%E4%B9%9D-Java%E4%B8%AD%E7%9A%84%E9%98%BB%E5%A1%9E%E9%98%9F%E5%88%97/</url>
+      <url>https://fudawei.github.io/2013/10/23/%5BJava%E5%B9%B6%E5%8F%91%E5%8C%85%E5%AD%A6%E4%B9%A0%E4%B9%9D%5D-Java%E4%B8%AD%E7%9A%84%E9%98%BB%E5%A1%9E%E9%98%9F%E5%88%97/</url>
       <content type="html"><![CDATA[<h1 id="什么是阻塞队列"><a href="#什么是阻塞队列" class="headerlink" title="什么是阻塞队列"></a>什么是阻塞队列</h1><p>阻塞队列（BlockingQueue）是一个支持两个附加操作的队列。这两个附加的操作是：在队列为空时，获取元素的线程会等待队列变为非空。当队列满时，存储元素的线程会等待队列可用。阻塞队列常用于生产者和消费者的场景，生产者是往队列里添加元素的线程，消费者是从队列里拿元素的线程。阻塞队列就是生产者存放元素的容器，而消费者也只从容器里拿元素。</p>
 <a id="more"></a>
 <p>阻塞队列提供了四种处理方法:<br><img src="http://7xlune.com1.z0.glb.clouddn.com/images/Java阻塞队列/阻塞队列方法.png" alt="Java中阻塞队列方法"></p>

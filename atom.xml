@@ -248,6 +248,132 @@
   </entry>
   
   <entry>
+    <title>[并发锁(二)]AQS</title>
+    <link href="https://fudawei.github.io/2017/02/04/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%BA%8C)%5DAQS/"/>
+    <id>https://fudawei.github.io/2017/02/04/[并发锁(二)]AQS/</id>
+    <published>2017-02-04T12:07:52.000Z</published>
+    <updated>2017-02-08T09:46:25.176Z</updated>
+    
+    <content type="html"><![CDATA[<p>AQS</p>
+<p>首先从理论知识开始，在了解了相关原理后会针对源码进行一些分析，最后加上一些实战来描述。</p>
+<p><img src="/img/lock/lock-1.png" alt=""></p>
+<p>上面的继承体系中，AbstractQueuedSynchronizer是CountDownLatch/FutureTask/ReentrantLock/RenntrantReadWriteLock/Semaphore的基础，因此AbstractQueuedSynchronizer是Lock/Executor实现的前提。公平锁、不公平锁、Condition、CountDownLatch、Semaphore等放到后面的篇幅中说明。</p>
+<p>完整的设计原理可以参考Doug Lea的论文  <a href="http://gee.cs.oswego.edu/dl/papers/aqs.pdf" target="_blank" rel="external">The java .util .concurrent Synchronizer Framework</a>   ，这里做一些简要的分析。</p>
+<p>基本的思想是表现为一个同步器，支持下面两个操作：</p>
+<p>获取锁：首先判断当前状态是否允许获取锁，如果是就获取锁，否则就阻塞操作或者获取失败，也就是说如果是独占锁就可能阻塞，如果是共享锁就可能失败。另外如果是阻塞线程，那么线程就需要进入阻塞队列。当状态位允许获取锁时就修改状态，并且如果进了队列就从队列中移除。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">while(synchronization state does not allow acquire)&#123;</div><div class="line">    enqueue current thread if not already queued;</div><div class="line">    possibly block current thread;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>dequeue current thread if it was queued;</p>
+<p>释放锁:这个过程就是修改状态位，如果有线程因为状态位阻塞的话就唤醒队列中的一个或者更多线程。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">update synchronization state;</div><div class="line"></div><div class="line">if(state may permit a blocked thread to acquire)</div><div class="line"></div><div class="line">    unlock one or more queued threads;</div></pre></td></tr></table></figure></p>
+<p>要支持上面两个操作就必须有下面的条件：</p>
+<p>原子性操作同步器的状态位<br>阻塞和唤醒线程<br>一个有序的队列<br>目标明确，要解决的问题也清晰了，那么剩下的就是解决上面三个问题。</p>
+<p>状态位的原子操作</p>
+<p>这里使用一个32位的整数来描述状态位，前面章节的原子操作的理论知识整好派上用场，在这里依然使用CAS操作来解决这个问题。事实上这里还有一个64位版本的同步器（AbstractQueuedLongSynchronizer），这里暂且不谈。</p>
+<p>阻塞和唤醒线程</p>
+<p>标准的Java API里面是无法挂起（阻塞）一个线程，然后在将来某个时刻再唤醒它的。JDK 1.0的API里面有Thread.suspend和Thread.resume，并且一直延续了下来。但是这些都是过时的API，而且也是不推荐的做法。</p>
+<p>在JDK 5.0以后利用JNI在LockSupport类中实现了此特性。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">LockSupport.park()</div><div class="line">LockSupport.park(Object)</div><div class="line">LockSupport.parkNanos(Object, long)</div><div class="line">LockSupport.parkNanos(long)</div><div class="line">LockSupport.parkUntil(Object, long)</div><div class="line">LockSupport.parkUntil(long)</div><div class="line">LockSupport.unpark(Thread)</div></pre></td></tr></table></figure>
+<p>上面的API中park()是在当前线程中调用，导致线程阻塞，带参数的Object是挂起的对象，这样监视的时候就能够知道此线程是因为什么资源而阻塞的。由于park()立即返回，所以通常情况下需要在循环中去检测竞争资源来决定是否进行下一次阻塞。park()返回的原因有三：</p>
+<p>其他某个线程调用将当前线程作为目标调用  unpark ；<br>其他某个线程中断 当前线程；<br>该调用不合逻辑地（即毫无理由地）返回。<br>其实第三条就决定了需要循环检测了，类似于通常写的while(checkCondition()){Thread.sleep(time);}类似的功能。</p>
+<p>有序队列</p>
+<p>在AQS中采用CHL列表来解决有序的队列的问题。</p>
+<p>  <img src="/img/lock/lock-2.png" alt=""></p>
+<p>AQS采用的CHL模型采用下面的算法完成FIFO的入队列和出队列过程。</p>
+<p>对于入队列(enqueue)： 采用CAS操作，每次比较尾结点是否一致，然后插入的到尾结点中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">do &#123;</div><div class="line">   pred = tail;</div><div class="line">&#125; while ( !compareAndSet(pred,tail,node) );</div></pre></td></tr></table></figure>
+<p>对于出队列(dequeue ):由于每一个节点也缓存了一个状态，决定是否出队列，因此当不满足条件时就需要自旋等待，一旦满足条件就将头结点设置为下一个节点。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">while (pred.status != RELEASED) ;</div><div class="line"></div><div class="line">head  = node;</div></pre></td></tr></table></figure>
+<p>实际上这里自旋等待也是使用LockSupport.park()来实现的。</p>
+<p>AQS里面有三个核心字段：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">private volatile int state;</div><div class="line"></div><div class="line">private transient volatile Node head;</div><div class="line"></div><div class="line">private transient volatile Node tail;</div></pre></td></tr></table></figure>
+<p>其中state描述的有多少个线程取得了锁，对于互斥锁来说state&lt;=1。head/tail加上CAS操作就构成了一个CHL的FIFO队列。下面是Node节点的属性。</p>
+<p>volatile int waitStatus;   节点的等待状态，一个节点可能位于以下几种状态：</p>
+<p>CANCELLED = 1： 节点操作因为超时或者对应的线程被interrupt。节点不应该不留在此状态，一旦达到此状态将从CHL队列中踢出。<br>SIGNAL = -1： 节点的继任节点是（或者将要成为）BLOCKED状态（例如通过LockSupport.park()操作），因此一个节点一旦被释放（解锁）或者取消就需要唤醒（LockSupport.unpack()）它的继任节点。<br>CONDITION = -2：表明节点对应的线程因为不满足一个条件（Condition）而被阻塞。<br>0： 正常状态，新生的非CONDITION节点都是此状态。<br>非负值标识节点不需要被通知（唤醒）。<br>volatile Node prev; 此节点的前一个节点。节点的waitStatus依赖于前一个节点的状态。</p>
+<p>volatile Node next; 此节点的后一个节点。后一个节点是否被唤醒（uppark()）依赖于当前节点是否被释放。</p>
+<p>volatile Thread thread; 节点绑定的线程。</p>
+<p>Node nextWaiter; 下一个等待条件（Condition）的节点，由于Condition是独占模式，因此这里有一个简单的队列来描述Condition上的线程节点。</p>
+<p>AQS 在J.U.C里面是一个非常核心的工具，而且也非常复杂，里面考虑到了非常多的逻辑实现，所以在后面的章节中总是不断的尝试介绍AQS的特性和实现。</p>
+<p>这一个小节主要介绍了一些理论背景和相关的数据结构，在下一个小节中将根据以上知识来了解Lock.lock/unlock是如何实现的。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;AQS&lt;/p&gt;
+&lt;p&gt;首先从理论知识开始，在了解了相关原理后会针对源码进行一些分析，最后加上一些实战来描述。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/img/lock/lock-1.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+&lt;p&gt;上面的继承体系中，AbstractQueuedSynch
+    
+    </summary>
+    
+      <category term="Java" scheme="https://fudawei.github.io/categories/Java/"/>
+    
+      <category term="并发库" scheme="https://fudawei.github.io/categories/Java/%E5%B9%B6%E5%8F%91%E5%BA%93/"/>
+    
+    
+      <category term="Java" scheme="https://fudawei.github.io/tags/Java/"/>
+    
+      <category term="并发库" scheme="https://fudawei.github.io/tags/%E5%B9%B6%E5%8F%91%E5%BA%93/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>[并发锁(一)]Lock与ReentrantLock</title>
+    <link href="https://fudawei.github.io/2017/02/03/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%B8%80)%5DLock%E4%B8%8EReentrantLock/"/>
+    <id>https://fudawei.github.io/2017/02/03/[并发锁(一)]Lock与ReentrantLock/</id>
+    <published>2017-02-03T15:07:52.000Z</published>
+    <updated>2017-02-08T09:23:43.288Z</updated>
+    
+    <content type="html"><![CDATA[<p>JDK 5中的锁是接口Java.util.concurrent.locks.Lock 。另外java.util.concurrent.locks.ReadWriteLock 提供了一对可供读写并发的锁。根据前面的规则，我们从java.util.concurrent.locks.Lock 的API开始。</p>
+<p>void lock();</p>
+<p>获取锁。</p>
+<p>如果锁不可用，出于线程调度目的，将禁用当前线程，并且在获得锁之前，该线程将一直处于休眠状态。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">void lockInterruptibly() throws InterruptedException;</div></pre></td></tr></table></figure>
+<p>如果当前线程未被中断，则获取锁。</p>
+<p>如果锁可用，则获取锁，并立即返回。</p>
+<p>如果锁不可用，出于线程调度目的，将禁用当前线程，并且在发生以下两种情况之一以前，该线程将一直处于休眠状态：</p>
+<p>锁由当前线程获得；或者<br>其他某个线程中断 当前线程，并且支持对锁获取的中断。<br>如果当前线程：</p>
+<p>在进入此方法时已经设置了该线程的中断状态；或者<br>在获取锁时被中断 ，并且支持对锁获取的中断，<br>则将抛出  InterruptedException ，并清除当前线程的已中断状态。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Condition newCondition();</div></pre></td></tr></table></figure></p>
+<p>返回绑定到此  Lock   实例的新  Condition   实例。下一小节中会重点谈Condition，此处不做过多的介绍。</p>
+<p>boolean tryLock();<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"></div></pre></td></tr></table></figure></p>
+<p>仅在调用时锁为空闲状态才获取该锁。</p>
+<p>如果锁可用，则获取锁，并立即返回值  true 。如果锁不可用，则此方法将立即返回值  false 。</p>
+<p>通常对于那些不是必须获取锁的操作可能有用。</p>
+<p>boolean tryLock(long time, TimeUnit unit) throws InterruptedException;</p>
+<p>如果锁在给定的等待时间内空闲，并且当前线程未被中断，则获取锁。</p>
+<p>如果锁可用，则此方法将立即返回值  true 。如果锁不可用，出于线程调度目的，将禁用当前线程，并且在发生以下三种情况之一前，该线程将一直处于休眠状态：</p>
+<p>锁由当前线程获得；或者<br>其他某个线程中断当前线程，并且支持对锁获取的中断；或者<br>已超过指定的等待时间<br>如果获得了锁，则返回值  true 。</p>
+<p>如果当前线程：</p>
+<p>在进入此方法时已经设置了该线程的中断状态；或者<br>在获取锁时被中断，并且支持对锁获取的中断，<br>则将抛出  InterruptedException ，并会清除当前线程的已中断状态。<br>如果超过了指定的等待时间，则将返回值  false 。如果 time 小于等于 0，该方法将完全不等待。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">void unlock();</div></pre></td></tr></table></figure>
+<p>释放锁。对应于lock()、tryLock()、tryLock(xx)、lockInterruptibly()等操作，如果成功的话应该对应着一个unlock()，这样可以避免死锁或者资源浪费。</p>
+<p>相对于比较空洞的API，来看一个实际的例子。下面的代码实现了一个类似于AtomicInteger的操作。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div></pre></td><td class="code"><pre><div class="line">package com.ellis.study.concurrency.lock;</div><div class="line"></div><div class="line">import java.util.concurrent.locks.Lock;</div><div class="line">import java.util.concurrent.locks.ReentrantLock;</div><div class="line"></div><div class="line">public class AtomicIntegerWithLock &#123;</div><div class="line"></div><div class="line">    private int value;</div><div class="line">    private Lock lock = new ReentrantLock();</div><div class="line">	</div><div class="line">    public AtomicIntegerWithLock() &#123;</div><div class="line">        super();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public AtomicIntegerWithLock(int value) &#123;</div><div class="line">        this.value = value;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int get() &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            return value;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final void set(int newValue) &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            value = newValue;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int getAndSet(int newValue) &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            int ret = value;</div><div class="line">            value = newValue;</div><div class="line">            return ret;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final boolean compareAndSet(int expect, int update) &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            if (value == expect) &#123;</div><div class="line">                value = update;</div><div class="line">                return true;</div><div class="line">            &#125;</div><div class="line">            return false;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int getAndIncrement() &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            return value++;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int getAndDecrement() &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            return value--;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int incrementAndGet() &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            return ++value;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public final int decrementAndGet() &#123;</div><div class="line">        lock.lock();</div><div class="line">        try &#123;</div><div class="line">            return --value;</div><div class="line">        &#125; finally &#123;</div><div class="line">            lock.unlock();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public String toString() &#123;</div><div class="line">        return Integer.toString(get());</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>类AtomicIntegerWithLock 是线程安全的，此结构中大量使用了Lock对象的lock/unlock方法对。同样可以看到的是对于自增和自减操作使用了++/–。之所以能够保证线程安全，是因为Lock对象的lock()方法保证了只有一个线程能够只有此锁。需要说明的是对于任何一个lock()方法，都需要一个unlock()方法与之对于，通常情况下为了保证unlock方法总是能够得到执行，unlock方法被置于finally块中。另外这里使用了java.util.concurrent.locks.ReentrantLock.ReentrantLock 对象，下一个小节中会具体描述此类作为Lock的唯一实现是如何设计和实现的。</p>
+<p>尽管synchronized实现Lock的相同语义，并且在语法上比Lock要简单多，但是前者却比后者的开销要大得多。做一个简单的测试。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div></pre></td><td class="code"><pre><div class="line">public static void main(String[] args) throws Exception&#123;</div><div class="line">     final int max = 10;</div><div class="line">     final int loopCount = 100000;</div><div class="line">     long costTime = 0;</div><div class="line">     for (int m = 0; m &lt; max; m++) &#123;</div><div class="line">         long start1 = System.nanoTime();</div><div class="line">         final AtomicIntegerWithLock value1 = new AtomicIntegerWithLock(0);</div><div class="line">         Thread[] ts = new Thread[max];</div><div class="line">         for(int i=0;i&lt;max;i++) &#123;</div><div class="line">             ts[i] = new Thread() &#123;</div><div class="line">                 public void run() &#123;</div><div class="line">                     for (int i = 0; i &lt; loopCount; i++) &#123;</div><div class="line">                         value1.incrementAndGet();</div><div class="line">                     &#125;</div><div class="line">                 &#125;</div><div class="line">             &#125;;</div><div class="line">         &#125;</div><div class="line">         for(Thread t:ts) &#123;</div><div class="line">             t.start();</div><div class="line">         &#125;</div><div class="line">         for(Thread t:ts) &#123;</div><div class="line">             t.join();</div><div class="line">         &#125;</div><div class="line">         long end1 = System.nanoTime();</div><div class="line">         costTime += (end1-start1);</div><div class="line">     &#125;</div><div class="line">     System.out.println(&quot;cost1: &quot; + (costTime));</div><div class="line">     //</div><div class="line">     System.out.println();</div><div class="line">     costTime = 0;</div><div class="line">     //</div><div class="line">     final Object lock = new Object();</div><div class="line">     for (int m = 0; m &lt; max; m++) &#123;</div><div class="line">         staticValue=0;</div><div class="line">         long start1 = System.nanoTime();</div><div class="line">         Thread[] ts = new Thread[max];</div><div class="line">         for(int i=0;i&lt;max;i++) &#123;</div><div class="line">             ts[i] = new Thread() &#123;</div><div class="line">                 public void run() &#123;</div><div class="line">                     for (int i = 0; i &lt; loopCount; i++) &#123;</div><div class="line">                         synchronized(lock) &#123;</div><div class="line">                             ++staticValue;</div><div class="line">                         &#125;</div><div class="line">                     &#125;</div><div class="line">                 &#125;</div><div class="line">             &#125;;</div><div class="line">         &#125;</div><div class="line">         for(Thread t:ts) &#123;</div><div class="line">             t.start();</div><div class="line">         &#125;</div><div class="line">         for(Thread t:ts) &#123;</div><div class="line">             t.join();</div><div class="line">         &#125;</div><div class="line">         long end1 = System.nanoTime();</div><div class="line">         costTime += (end1-start1);</div><div class="line">     &#125;</div><div class="line">     //</div><div class="line">     System.out.println(&quot;cost2: &quot; + (costTime));</div><div class="line">&#125;</div><div class="line"></div><div class="line">static int staticValue = 0;</div></pre></td></tr></table></figure>
+<p>在这个例子中每次启动10个线程，每个线程计算100000次自增操作，重复测试10次，下面是某此测试的结果：</p>
+<p>cost1: 624071136</p>
+<p>cost2: 2057847833</p>
+<p>尽管上面的例子不是非常正式的测试案例，但上面的例子在于说明，Lock的性能比synchronized的要好得多。如果可以的话总是使用Lock替代synchronized是一个明智的选择。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;JDK 5中的锁是接口Java.util.concurrent.locks.Lock 。另外java.util.concurrent.locks.ReadWriteLock 提供了一对可供读写并发的锁。根据前面的规则，我们从java.util.concurrent.lock
+    
+    </summary>
+    
+      <category term="Java" scheme="https://fudawei.github.io/categories/Java/"/>
+    
+      <category term="并发库" scheme="https://fudawei.github.io/categories/Java/%E5%B9%B6%E5%8F%91%E5%BA%93/"/>
+    
+    
+      <category term="Java" scheme="https://fudawei.github.io/tags/Java/"/>
+    
+      <category term="并发库" scheme="https://fudawei.github.io/tags/%E5%B9%B6%E5%8F%91%E5%BA%93/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Shell--Expect</title>
     <link href="https://fudawei.github.io/2017/01/24/Shell%E5%AD%A6%E4%B9%A0%E4%B9%8BExpect/"/>
     <id>https://fudawei.github.io/2017/01/24/Shell学习之Expect/</id>
@@ -1081,41 +1207,6 @@
   </entry>
   
   <entry>
-    <title>Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系</title>
-    <link href="https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/"/>
-    <id>https://fudawei.github.io/2016/12/15/Spring架构详解：Spring总体架构与设计理念和内部组件的作用和关系/</id>
-    <published>2016-12-15T04:53:14.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
-    
-    <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
-<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
-<p>Spring的总体架构</p>
-<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
-<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
-<p>Spring的设计理念</p>
-<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
-<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
-<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
-<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
-<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
-<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;Spring总体架构与设计理念&lt;br&gt;概述：&lt;/p&gt;
-&lt;p&gt;Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成
-    
-    </summary>
-    
-      <category term="JavaEE框架" scheme="https://fudawei.github.io/categories/JavaEE%E6%A1%86%E6%9E%B6/"/>
-    
-    
-      <category term="Spring" scheme="https://fudawei.github.io/tags/Spring/"/>
-    
-  </entry>
-  
-  <entry>
     <title>Spring架构详解：Bean详解和Context组件详解</title>
     <link href="https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ABean%E8%AF%A6%E8%A7%A3%E5%92%8CContext%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3/"/>
     <id>https://fudawei.github.io/2016/12/15/Spring架构详解：Bean详解和Context组件详解/</id>
@@ -1141,6 +1232,41 @@
     <summary type="html">
     
       &lt;h1 id=&quot;Bean详解&quot;&gt;&lt;a href=&quot;#Bean详解&quot; class=&quot;headerlink&quot; title=&quot;Bean详解&quot;&gt;&lt;/a&gt;Bean详解&lt;/h1&gt;&lt;p&gt;前面已经说明了Bean组件对Spring的重要性，下面看看Bean这个组件式怎么设计的。Bean组件在Spr
+    
+    </summary>
+    
+      <category term="JavaEE框架" scheme="https://fudawei.github.io/categories/JavaEE%E6%A1%86%E6%9E%B6/"/>
+    
+    
+      <category term="Spring" scheme="https://fudawei.github.io/tags/Spring/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系</title>
+    <link href="https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/"/>
+    <id>https://fudawei.github.io/2016/12/15/Spring架构详解：Spring总体架构与设计理念和内部组件的作用和关系/</id>
+    <published>2016-12-15T04:53:14.000Z</published>
+    <updated>2017-02-08T03:39:19.513Z</updated>
+    
+    <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
+<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
+<p>Spring的总体架构</p>
+<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
+<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
+<p>Spring的设计理念</p>
+<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
+<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
+<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
+<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
+<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
+<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Spring总体架构与设计理念&lt;br&gt;概述：&lt;/p&gt;
+&lt;p&gt;Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成
     
     </summary>
     
@@ -1263,6 +1389,34 @@
   </entry>
   
   <entry>
+    <title>[Spark源码四]图解作业生命周期</title>
+    <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"/>
+    <id>https://fudawei.github.io/2016/10/25/[Spark源码四]图解作业生命周期/</id>
+    <published>2016-10-25T14:42:01.000Z</published>
+    <updated>2017-02-08T03:39:19.517Z</updated>
+    
+    <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！&lt;br&gt;&lt;img src=&quot;/img/spark4.1.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+
+    
+    </summary>
+    
+      <category term="大数据" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
+    
+      <category term="Spark" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Spark/"/>
+    
+    
+      <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
+    
+      <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
+    
+  </entry>
+  
+  <entry>
     <title>[Spark源码三】作业运行过程</title>
     <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E4%B8%89%5D%E4%BD%9C%E4%B8%9A%E8%BF%90%E8%A1%8C%E8%BF%87%E7%A8%8B/"/>
     <id>https://fudawei.github.io/2016/10/25/[Spark源码三]作业运行过程/</id>
@@ -1291,34 +1445,6 @@ eventProcessActor ! JobSubmitted(jobId, rdd, func2, partitions.toArray, allowLoc
     
       &lt;p&gt;官方给的例子里面，一执行collect方法就能出结果，那我们就从collect开始看吧，进入RDD，找到collect方法。&lt;/p&gt;
 &lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;di
-    
-    </summary>
-    
-      <category term="大数据" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
-    
-      <category term="Spark" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Spark/"/>
-    
-    
-      <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
-    
-      <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>[Spark源码四]图解作业生命周期</title>
-    <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"/>
-    <id>https://fudawei.github.io/2016/10/25/[Spark源码四]图解作业生命周期/</id>
-    <published>2016-10-25T14:42:01.000Z</published>
-    <updated>2017-02-08T03:39:19.517Z</updated>
-    
-    <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！&lt;br&gt;&lt;img src=&quot;/img/spark4.1.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
-
     
     </summary>
     
@@ -1686,180 +1812,6 @@ extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里
       <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
     
       <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis数据结构和对象-(一)简单动态字符串</title>
-    <link href="https://fudawei.github.io/2016/09/25/Redis%20%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E4%B8%80%EF%BC%89%E7%AE%80%E5%8D%95%E5%8A%A8%E6%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2/"/>
-    <id>https://fudawei.github.io/2016/09/25/Redis 数据结构和对象--（一）简单动态字符串/</id>
-    <published>2016-09-25T06:32:02.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="简单动态字符串"><a href="#简单动态字符串" class="headerlink" title="简单动态字符串"></a>简单动态字符串</h1><p>Redis 没有直接使用 C 语言传统的字符串表示（以空字符结尾的字符数组，以下简称 C 字符串）， 而是自己构建了一种名为简单动态字符串（simple dynamic string，SDS）的抽象类型， 并将 SDS 用作 Redis 的默认字符串表示。</p>
-<p>在 Redis 里面， C 字符串只会作为字符串字面量（string literal）， 用在一些无须对字符串值进行修改的地方， 比如打印日志：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&gt; redisLog(REDIS_WARNING,&quot;Redis is now ready to exit, bye bye...&quot;);</div></pre></td></tr></table></figure>
-<p>当 Redis 需要的不仅仅是一个字符串字面量， 而是一个可以被修改的字符串值时， Redis 就会使用 SDS 来表示字符串值： 比如在 Redis 的数据库里面， 包含字符串值的键值对在底层都是由 SDS 实现的。</p>
-<p>举个例子， 如果客户端执行命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">redis&gt; SET msg &quot;hello world&quot;</div><div class="line">OK</div></pre></td></tr></table></figure>
-<p>那么 Redis 将在数据库中创建了一个新的键值对， 其中：</p>
-<p>键值对的键是一个字符串对象， 对象的底层实现是一个保存着字符串 “msg” 的 SDS 。<br>键值对的值也是一个字符串对象， 对象的底层实现是一个保存着字符串 “hello world” 的 SDS 。<br>又比如说， 如果客户端执行命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">redis&gt; RPUSH fruits &quot;apple&quot; &quot;banana&quot; &quot;cherry&quot;</div><div class="line">(integer) 3</div></pre></td></tr></table></figure>
-<p>那么 Redis 将在数据库中创建一个新的键值对， 其中：</p>
-<p>键值对的键是一个字符串对象， 对象的底层实现是一个保存了字符串 “fruits” 的 SDS 。<br>键值对的值是一个列表对象， 列表对象包含了三个字符串对象， 这三个字符串对象分别由三个 SDS 实现： 第一个 SDS 保存着字符串 “apple” ， 第二个 SDS 保存着字符串 “banana” ， 第三个 SDS 保存着字符串 “cherry” 。<br>除了用来保存数据库中的字符串值之外， SDS 还被用作缓冲区（buffer）： AOF 模块中的 AOF 缓冲区， 以及客户端状态中的输入缓冲区， 都是由 SDS 实现的， 在之后介绍 AOF 持久化和客户端状态的时候， 我们会看到 SDS 在这两个模块中的应用。</p>
-<h2 id="SDS-的定义"><a href="#SDS-的定义" class="headerlink" title="SDS 的定义"></a>SDS 的定义</h2><p>每个 sds.h/sdshdr 结构表示一个 SDS 值：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">struct sdshdr &#123;</div><div class="line"></div><div class="line">    // 记录 buf 数组中已使用字节的数量</div><div class="line">    // 等于 SDS 所保存字符串的长度</div><div class="line">    int len;</div><div class="line"></div><div class="line">    // 记录 buf 数组中未使用字节的数量</div><div class="line">    int free;</div><div class="line"></div><div class="line">    // 字节数组，用于保存字符串</div><div class="line">    char buf[];</div><div class="line"></div><div class="line">&#125;;</div></pre></td></tr></table></figure></p>
-<p>图 2-1 展示了一个 SDS 示例：</p>
-<ul>
-<li>free 属性的值为 0 ， 表示这个 SDS 没有分配任何未使用空间。</li>
-<li>len 属性的值为 5 ， 表示这个 SDS 保存了一个五字节长的字符串。</li>
-<li>buf 属性是一个 char 类型的数组， 数组的前五个字节分别保存了 ‘R’ 、 ‘e’ 、 ‘d’ 、 ‘i’ 、 ‘s’ 五个字符， 而最后一个字节则保存了空字符 ‘\0’ 。</li>
-</ul>
-<p><img src="/img/sds1.png" alt=""></p>
-<p>SDS 遵循 C 字符串以空字符结尾的惯例， 保存空字符的 1 字节空间不计算在 SDS 的 len 属性里面， 并且为空字符分配额外的 1 字节空间， 以及添加空字符到字符串末尾等操作都是由 SDS 函数自动完成的， 所以这个空字符对于 SDS 的使用者来说是完全透明的。</p>
-<p>遵循空字符结尾这一惯例的好处是， SDS 可以直接重用一部分 C 字符串函数库里面的函数。</p>
-<p>举个例子， 如果我们有一个指向图 2-1 所示 SDS 的指针 s ， 那么我们可以直接使用 stdio.h/printf 函数， 通过执行以下语句：</p>
-<p>printf(“%s”, s-&gt;buf);<br>来打印出 SDS 保存的字符串值 “Redis” ， 而无须为 SDS 编写专门的打印函数。</p>
-<p>图 2-2 展示了另一个 SDS 示例:</p>
-<ul>
-<li>这个 SDS 和之前展示的 SDS 一样， 都保存了字符串值 “Redis” 。</li>
-<li>这个 SDS 和之前展示的 SDS 的区别在于， 这个 SDS 为 buf 数组分配了五字节未使用空间， 所以它的 free 属性的值为 5 （图中使用五个空格来表示五字节的未使用空间）。</li>
-</ul>
-<p><img src="/img/sds-2.png" alt=""></p>
-<p>接下来的详细地说明未使用空间在 SDS 中的作用。</p>
-<h2 id="SDS-与-C-字符串的区别"><a href="#SDS-与-C-字符串的区别" class="headerlink" title="SDS 与 C 字符串的区别"></a>SDS 与 C 字符串的区别</h2><p>根据传统， C 语言使用长度为 N+1 的字符数组来表示长度为 N 的字符串， 并且字符数组的最后一个元素总是空字符 ‘\0’ 。</p>
-<p>比如说， 图 2-3 就展示了一个值为 “Redis” 的 C 字符串：<br><img src="/img/sds-2.png" alt=""></p>
-<p>C 语言使用的这种简单的字符串表示方式， 并不能满足 Redis 对字符串在安全性、效率、以及功能方面的要求， 本节接下来的内容将详细对比 C 字符串和 SDS 之间的区别， 并说明 SDS 比 C 字符串更适用于 Redis 的原因。</p>
-<p><em>常数复杂度获取字符串长度</em></p>
-<p>因为 C 字符串并不记录自身的长度信息， 所以为了获取一个 C 字符串的长度， 程序必须遍历整个字符串， 对遇到的每个字符进行计数， 直到遇到代表字符串结尾的空字符为止， 这个操作的复杂度为 O(N) 。</p>
-<p>举个例子， 图 2-4 展示了程序计算一个 C 字符串长度的过程。</p>
-<p><img src="/img/sds-c-1.png" alt=""><br><img src="/img/sds-c-2.png" alt=""><br><img src="/img/sds-c-3.png" alt=""><br><img src="/img/sds-c-4.png" alt=""><br><img src="/img/sds-c-5.png" alt=""><br><img src="/img/sds-c-6.png" alt=""></p>
-<p>和 C 字符串不同， 因为 SDS 在 len 属性中记录了 SDS 本身的长度， 所以获取一个 SDS 长度的复杂度仅为 O(1) 。</p>
-<p>举个例子， 对于图 2-5 所示的 SDS 来说， 程序只要访问 SDS 的 len 属性， 就可以立即知道 SDS 的长度为 5 字节：<br><img src="/img/sds-c-7.png" alt=""></p>
-<p>又比如说， 对于图 2-6 展示的 SDS 来说， 程序只要访问 SDS 的 len 属性， 就可以立即知道 SDS 的长度为 11 字节。![]<img src="/img/sds-c-8.png" alt=""></p>
-<p>置和更新 SDS 长度的工作是由 SDS 的 API 在执行时自动完成的， 使用 SDS 无须进行任何手动修改长度的工作。</p>
-<p>通过使用 SDS 而不是 C 字符串， Redis 将获取字符串长度所需的复杂度从 O(N) 降低到了 O(1) ， 这确保了获取字符串长度的工作不会成为 Redis 的性能瓶颈。</p>
-<p>比如说， 因为字符串键在底层使用 SDS 来实现， 所以即使我们对一个非常长的字符串键反复执行 STRLEN 命令， 也不会对系统性能造成任何影响， 因为 STRLEN 命令的复杂度仅为 O(1) 。</p>
-<p><em>杜绝缓冲区溢出</em></p>
-<p>除了获取字符串长度的复杂度高之外， C 字符串不记录自身长度带来的另一个问题是容易造成缓冲区溢出（buffer overflow）。</p>
-<p>举个例子， <string.h>/strcat 函数可以将 src 字符串中的内容拼接到 dest 字符串的末尾：</string.h></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">char *strcat(char *dest, const char *src);</div><div class="line"></div><div class="line">```因为 C 字符串不记录自身的长度， 所以 strcat 假定用户在执行这个函数时， 已经为 dest 分配了足够多的内存， 可以容纳 src 字符串中的所有内容， 而一旦这个假定不成立时， 就会产生缓冲区溢出。</div><div class="line"></div><div class="line">举个例子， 假设程序里有两个在内存中紧邻着的 C 字符串 s1 和 s2 ， 其中 s1 保存了字符串 &quot;Redis&quot; ， 而 s2 则保存了字符串 &quot;MongoDB&quot;， 如图 2-7 所示。</div><div class="line">![](/img/sds-c-9.png)</div><div class="line"></div><div class="line">如果一个程序员决定通过执行：</div></pre></td></tr></table></figure>
-<p>strcat(s1, “ Cluster”);<br>```<br>将 s1 的内容修改为 “Redis Cluster” ， 但粗心的他却忘了在执行 strcat 之前为 s1 分配足够的空间， 那么在 strcat 函数执行之后， s1 的数据将溢出到 s2 所在的空间中， 导致 s2 保存的内容被意外地修改， 如图 2-8 所示。<br><img src="/img/sds-c-9.png" alt=""></p>
-<p>与 C 字符串不同， SDS 的空间分配策略完全杜绝了发生缓冲区溢出的可能性： 当 SDS API 需要对 SDS 进行修改时， API 会先检查 SDS 的空间是否满足修改所需的要求， 如果不满足的话， API 会自动将 SDS 的空间扩展至执行修改所需的大小， 然后才执行实际的修改操作， 所以使用 SDS 既不需要手动修改 SDS 的空间大小， 也不会出现前面所说的缓冲区溢出问题。</p>
-<p>举个例子， SDS 的 API 里面也有一个用于执行拼接操作的 sdscat 函数， 它可以将一个 C 字符串拼接到给定 SDS 所保存的字符串的后面， 但是在执行拼接操作之前， sdscat 会先检查给定 SDS 的空间是否足够， 如果不够的话， sdscat 就会先扩展 SDS 的空间， 然后才执行拼接操作。</p>
-<p>比如说， 如果我们执行：</p>
-<p>sdscat(s, “ Cluster”);<br>其中 SDS 值 s 如图 2-9 所示， 那么 sdscat 将在执行拼接操作之前检查 s 的长度是否足够， 在发现 s 目前的空间不足以拼接 “ Cluster”之后， sdscat 就会先扩展 s 的空间， 然后才执行拼接 “ Cluster” 的操作， 拼接操作完成之后的 SDS 如图 2-10 所示。</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;简单动态字符串&quot;&gt;&lt;a href=&quot;#简单动态字符串&quot; class=&quot;headerlink&quot; title=&quot;简单动态字符串&quot;&gt;&lt;/a&gt;简单动态字符串&lt;/h1&gt;&lt;p&gt;Redis 没有直接使用 C 语言传统的字符串表示（以空字符结尾的字符数组，以下简称 C 字符串），
-    
-    </summary>
-    
-      <category term="缓存" scheme="https://fudawei.github.io/categories/%E7%BC%93%E5%AD%98/"/>
-    
-      <category term="Redis" scheme="https://fudawei.github.io/categories/%E7%BC%93%E5%AD%98/Redis/"/>
-    
-    
-      <category term="缓存" scheme="https://fudawei.github.io/tags/%E7%BC%93%E5%AD%98/"/>
-    
-      <category term="Redis" scheme="https://fudawei.github.io/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis数据结构和对象-(四)整数集合</title>
-    <link href="https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E5%9B%9B%EF%BC%89%E6%95%B4%E6%95%B0%E9%9B%86%E5%90%88/"/>
-    <id>https://fudawei.github.io/2016/09/24/Redis数据结构和对象--（四）整数集合/</id>
-    <published>2016-09-24T06:32:02.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="整数集合"><a href="#整数集合" class="headerlink" title="整数集合"></a>整数集合</h1><p>整数集合（intset）是集合键的底层实现之一： 当一个集合只包含整数值元素， 并且这个集合的元素数量不多时， Redis 就会使用整数集合作为集合键的底层实现。</p>
-<p>举个例子， 如果我们创建一个只包含五个元素的集合键， 并且集合中的所有元素都是整数值， 那么这个集合键的底层实现就会是整数集合：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">redis&gt; SADD numbers 1 3 5 7 9</div><div class="line">(integer) 5</div><div class="line"></div><div class="line">redis&gt; OBJECT ENCODING numbers</div><div class="line">&quot;intset&quot;</div></pre></td></tr></table></figure>
-<p>下面将对整数集合及其相关操作的实现原理进行介绍。</p>
-<h2 id="整数集合的实现"><a href="#整数集合的实现" class="headerlink" title="整数集合的实现"></a>整数集合的实现</h2><p>整数集合（intset）是 Redis 用于保存整数值的集合抽象数据结构， 它可以保存类型为 int16_t 、 int32_t 或者 int64_t 的整数值， 并且保证集合中不会出现重复元素。</p>
-<p>每个 intset.h/intset 结构表示一个整数集合：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">typedef struct intset &#123;</div><div class="line"></div><div class="line">    // 编码方式</div><div class="line">    uint32_t encoding;</div><div class="line"></div><div class="line">    // 集合包含的元素数量</div><div class="line">    uint32_t length;</div><div class="line"></div><div class="line">    // 保存元素的数组</div><div class="line">    int8_t contents[];</div><div class="line"></div><div class="line">&#125; intset;</div></pre></td></tr></table></figure></p>
-<p>contents 数组是整数集合的底层实现： 整数集合的每个元素都是 contents 数组的一个数组项（item）， 各个项在数组中按值的大小从小到大有序地排列， 并且数组中不包含任何重复项。</p>
-<p>length 属性记录了整数集合包含的元素数量， 也即是 contents 数组的长度。</p>
-<p>虽然 intset 结构将 contents 属性声明为 int8_t 类型的数组， 但实际上 contents 数组并不保存任何 int8_t 类型的值 —— contents 数组的真正类型取决于 encoding 属性的值：</p>
-<ul>
-<li>如果 encoding 属性的值为 INTSET_ENC_INT16 ， 那么 contents 就是一个 int16_t 类型的数组， 数组里的每个项都是 一个 int16_t 类型的整数值 （最小值为 -32,768 ，最大值为 32,767 ）。</li>
-<li>如果 encoding 属性的值为 INTSET_ENC_INT32 ， 那么 contents 就是一个 int32_t 类型的数组， 数组里的每个项都是 一个 int32_t 类型的整数值 （最小值为 -2,147,483,648 ，最大值为 2,147,483,647 ）。</li>
-<li>如果 encoding 属性的值为 INTSET_ENC_INT64 ， 那么 contents 就是一个 int64_t 类型的数组， 数组里的每个项都是一个 int64_t 类型的整数值 （最小值为 -9,223,372,036,854,775,808 ，最大值为 9,223,372,036,854,775,807 ）。</li>
-</ul>
-<p>图 6-1 展示了一个整数集合示例：</p>
-<ul>
-<li>encoding 属性的值为 INTSET_ENC_INT16 ， 表示整数集合的底层实现为 int16_t 类型的数组， 而集合保存的都是 int16_t 类型的整数值。</li>
-<li>length 属性的值为 5 ， 表示整数集合包含五个元素。</li>
-<li>contents 数组按从小到大的顺序保存着集合中的五个元素。<br>因为每个集合元素都是 int16_t 类型的整数值， 所以 contents 数组的大小等于 sizeof(int16_t) <em> 5 = 16 </em> 5 = 80 位。<br><img src="/img/intlist-1.png" alt=""></li>
-</ul>
-<p>图 6-2 展示了另一个整数集合示例：</p>
-<ul>
-<li>encoding 属性的值为 INTSET_ENC_INT64 ， 表示整数集合的底层实现为 int64_t 类型的数组， 而数组中保存的都是 int64_t 类型的整数值。</li>
-<li>length 属性的值为 4 ， 表示整数集合包含四个元素。</li>
-<li>contents 数组按从小到大的顺序保存着集合中的四个元素。<br>因为每个集合元素都是 int64_t 类型的整数值， 所以 contents 数组的大小为 sizeof(int64_t) <em> 4 = 64 </em> 4 = 256 位。<br><img src="/img/intlist-2.png" alt=""></li>
-</ul>
-<p>虽然 contents 数组保存的四个整数值中， 只有 -2675256175807981027 是真正需要用 int64_t 类型来保存的， 而其他的 1 、 3 、 5 三个值都可以用 int16_t 类型来保存， 不过根据整数集合的升级规则， 当向一个底层为 int16_t 数组的整数集合添加一个 int64_t 类型的整数值时， 整数集合已有的所有元素都会被转换成 int64_t 类型， 所以 contents 数组保存的四个整数值都是 int64_t 类型的， 不仅仅是-2675256175807981027 。</p>
-<h2 id="升级"><a href="#升级" class="headerlink" title="升级"></a>升级</h2><p>每当我们要将一个新元素添加到整数集合里面， 并且新元素的类型比整数集合现有所有元素的类型都要长时， 整数集合需要先进行升级（upgrade）， 然后才能将新元素添加到整数集合里面。</p>
-<p>升级整数集合并添加新元素共分为三步进行：</p>
-<ul>
-<li>根据新元素的类型， 扩展整数集合底层数组的空间大小， 并为新元素分配空间。</li>
-<li>将底层数组现有的所有元素都转换成与新元素相同的类型， 并将类型转换后的元素放置到正确的位上， 而且在放置元素的过程中， 需要继续维持底层数组的有序性质不变。</li>
-<li>将新元素添加到底层数组里面。</li>
-</ul>
-<p>举个例子， 假设现在有一个 INTSET_ENC_INT16 编码的整数集合， 集合中包含三个 int16_t 类型的元素， 如图 6-3 所示<br><img src="/img/intlist-3.png" alt=""></p>
-<p>因为每个元素都占用 16 位空间， 所以整数集合底层数组的大小为 3 * 16 = 48 位， 图 6-4 展示了整数集合的三个元素在这 48 位里的位置。<br><img src="/img/intlist-4.png" alt=""></p>
-<p>现在， 假设我们要将类型为 int32_t 的整数值 65535 添加到整数集合里面， 因为 65535 的类型 int32_t 比整数集合当前所有元素的类型都要长， 所以在将 65535 添加到整数集合之前， 程序需要先对整数集合进行升级。</p>
-<p>升级首先要做的是， 根据新类型的长度， 以及集合元素的数量（包括要添加的新元素在内）， 对底层数组进行空间重分配。</p>
-<p>整数集合目前有三个元素， 再加上新元素 65535 ， 整数集合需要分配四个元素的空间， 因为每个 int32_t 整数值需要占用 32 位空间， 所以在空间重分配之后， 底层数组的大小将是 32 * 4 = 128 位， 如图 6-5 所示。<br><img src="/img/intlist-5.png" alt=""></p>
-<p>然程序对底层数组进行了空间重分配， 但数组原有的三个元素 1 、 2 、 3 仍然是 int16_t 类型， 这些元素还保存在数组的前 48 位里面， 所以程序接下来要做的就是将这三个元素转换成 int32_t 类型， 并将转换后的元素放置到正确的位上面， 而且在放置元素的过程中， 需要维持底层数组的有序性质不变。</p>
-<p>首先， 因为元素 3 在 1 、 2 、 3 、 65535 四个元素中排名第三， 所以它将被移动到 contents 数组的索引 2 位置上， 也即是数组 64 位至 95 位的空间内， 如图 6-6 所示。</p>
-<p><img src="/img/intlist-6.png" alt=""></p>
-<p>接着， 因为元素 2 在 1 、 2 、 3 、 65535 四个元素中排名第二， 所以它将被移动到 contents 数组的索引 1 位置上， 也即是数组的 32位至 63 位的空间内， 如图 6-7 所示。</p>
-<p><img src="/img/intlist-7.png" alt=""></p>
-<p>之后， 因为元素 1 在 1 、 2 、 3 、 65535 四个元素中排名第一， 所以它将被移动到 contents 数组的索引 0 位置上， 也即是数组的 0 位至 31 位的空间内， 如图 6-8 所示。</p>
-<p><img src="/img/intlist-8.png" alt=""></p>
-<p>然后， 因为元素 65535 在 1 、 2 、 3 、 65535 四个元素中排名第四， 所以它将被添加到 contents 数组的索引 3 位置上， 也即是数组的96 位至 127 位的空间内， 如图 6-9 所示。</p>
-<p><img src="/img/intlist-9.png" alt=""></p>
-<p>最后， 程序将整数集合 encoding 属性的值从 INTSET_ENC_INT16 改为 INTSET_ENC_INT32 ， 并将 length 属性的值从 3 改为 4 ， 设置完成之后的整数集合如图 6-10 所示。</p>
-<p><img src="/img/intlist-10.png" alt=""></p>
-<p>因为每次向整数集合添加新元素都可能会引起升级， 而每次升级都需要对底层数组中已有的所有元素进行类型转换， 所以向整数集合添加新元素的时间复杂度为 O(N) 。</p>
-<p>其他类型的升级操作， 比如从 INTSET_ENC_INT16 编码升级为 INTSET_ENC_INT64 编码， 或者从 INTSET_ENC_INT32 编码升级为 INTSET_ENC_INT64 编码， 升级的过程都和上面展示的升级过程类似。</p>
-<p>升级之后新元素的摆放位置</p>
-<p>因为引发升级的新元素的长度总是比整数集合现有所有元素的长度都大， 所以这个新元素的值要么就大于所有现有元素， 要么就小于所有现有元素：</p>
-<ul>
-<li>在新元素小于所有现有元素的情况下， 新元素会被放置在底层数组的最开头（索引 0 ）；</li>
-<li>在新元素大于所有现有元素的情况下， 新元素会被放置在底层数组的最末尾（索引 length-1 ）。</li>
-</ul>
-<h2 id="升级的好处"><a href="#升级的好处" class="headerlink" title="升级的好处"></a>升级的好处</h2><p>整数集合的升级策略有两个好处， 一个是提升整数集合的灵活性， 另一个是尽可能地节约内存。</p>
-<p><strong>提升灵活性</strong></p>
-<p>因为 C 语言是静态类型语言， 为了避免类型错误， 我们通常不会将两种不同类型的值放在同一个数据结构里面。</p>
-<p>比如说， 我们一般只使用 int16_t 类型的数组来保存 int16_t 类型的值， 只使用 int32_t 类型的数组来保存 int32_t 类型的值， 诸如此类。</p>
-<p>但是， 因为整数集合可以通过自动升级底层数组来适应新元素， 所以我们可以随意地将 int16_t 、 int32_t 或者 int64_t 类型的整数添加到集合中， 而不必担心出现类型错误， 这种做法非常灵活。</p>
-<p><strong>节约内存</strong></p>
-<p>当然， 要让一个数组可以同时保存 int16_t 、 int32_t 、 int64_t 三种类型的值， 最简单的做法就是直接使用 int64_t 类型的数组作为整数集合的底层实现。 不过这样一来， 即使添加到整数集合里面的都是 int16_t 类型或者 int32_t 类型的值， 数组都需要使用 int64_t 类型的空间去保存它们， 从而出现浪费内存的情况。</p>
-<p>而整数集合现在的做法既可以让集合能同时保存三种不同类型的值， 又可以确保升级操作只会在有需要的时候进行， 这可以尽量节省内存。</p>
-<p>比如说， 如果我们一直只向整数集合添加 int16_t 类型的值， 那么整数集合的底层实现就会一直是 int16_t 类型的数组， 只有在我们要将int32_t 类型或者 int64_t 类型的值添加到集合时， 程序才会对数组进行升级。</p>
-<h2 id="降级"><a href="#降级" class="headerlink" title="降级"></a>降级</h2><p>整数集合不支持降级操作， 一旦对数组进行了升级， 编码就会一直保持升级后的状态。</p>
-<p>举个例子， 对于图 6-11 所示的整数集合来说， 即使我们将集合里唯一一个真正需要使用 int64_t 类型来保存的元素 4294967295 删除了， 整数集合的编码仍然会维持 INTSET_ENC_INT64 ， 底层数组也仍然会是 int64_t 类型的， 如图 6-12 所示。</p>
-<p><img src="/img/intlist-11.png" alt=""><br><img src="/img/intlist-12.png" alt=""></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;整数集合&quot;&gt;&lt;a href=&quot;#整数集合&quot; class=&quot;headerlink&quot; title=&quot;整数集合&quot;&gt;&lt;/a&gt;整数集合&lt;/h1&gt;&lt;p&gt;整数集合（intset）是集合键的底层实现之一： 当一个集合只包含整数值元素， 并且这个集合的元素数量不多时， Redis 
-    
-    </summary>
-    
-      <category term="缓存" scheme="https://fudawei.github.io/categories/%E7%BC%93%E5%AD%98/"/>
-    
-      <category term="Redis" scheme="https://fudawei.github.io/categories/%E7%BC%93%E5%AD%98/Redis/"/>
-    
-    
-      <category term="缓存" scheme="https://fudawei.github.io/tags/%E7%BC%93%E5%AD%98/"/>
-    
-      <category term="Redis" scheme="https://fudawei.github.io/tags/Redis/"/>
     
   </entry>
   
