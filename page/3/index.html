@@ -3398,8 +3398,8 @@
           
           
             
-              <a class="post-title-link" href="/2016/09/24/Redis数据结构和对象--（四）整数集合/" itemprop="url">
-                Redis数据结构和对象-(四)整数集合
+              <a class="post-title-link" href="/2016/09/24/Redis数据结构和对象--（三）跳跃表/" itemprop="url">
+                Redis数据结构和对象-(三)跳跃表
               </a>
             
           
@@ -3448,11 +3448,11 @@
             <span class="post-comments-count">
               &nbsp; | &nbsp;
               <!--
-              <a href="/2016/09/24/Redis数据结构和对象--（四）整数集合/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2016/09/24/Redis数据结构和对象--（四）整数集合/" itemprop="commentsCount"></span>
+              <a href="/2016/09/24/Redis数据结构和对象--（三）跳跃表/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2016/09/24/Redis数据结构和对象--（三）跳跃表/" itemprop="commentsCount"></span>
               </a>
               -->
-              <a href="/2016/09/24/Redis数据结构和对象--（四）整数集合/#comments" itemprop="discussionUrl">
+              <a href="/2016/09/24/Redis数据结构和对象--（三）跳跃表/#comments" itemprop="discussionUrl">
                 <span>评论</span>
               </a>
             </span>
@@ -3463,7 +3463,7 @@
 
 
 &nbsp; | &nbsp;
-<span id="/2016/09/24/Redis数据结构和对象--（四）整数集合/"class="leancloud_visitors" data-flag-title="Redis数据结构和对象-(四)整数集合">
+<span id="/2016/09/24/Redis数据结构和对象--（三）跳跃表/"class="leancloud_visitors" data-flag-title="Redis数据结构和对象-(三)跳跃表">
          &nbsp;阅读次数
         </span>
 
@@ -3481,12 +3481,12 @@
         
           <span itemprop="articleBody">
             
-            整数集合整数集合（intset）是集合键的底层实现之一： 当一个集合只包含整数值元素， 并且这个集合的元素数量不多时， Redis 就会使用整数集合作为集合键的底层实现。
-举个例子， 如果我们创建一个只包含五个元素的集合键， 并且集合中的所有元素都是整数值， 那么这个集合键的底层实现就会是整数集合：
+            定义:它是一种有序数据结构,通过在每个节点中维持多个 指向其他节点的指针,从而达到快速访问节点的目的。
+使用场景:Redis使用跳跃表作为有序集合键的底层实现之一,如果一个有序集合包含的元素数量比较多,又或者有序集合中元素的成(member)是比较长的字符串时,Redis就会使用跳跃表来作为有序集合
             ...
           </span>
           <div class="post-more-link text-center">
-            <a class="btn" href="/2016/09/24/Redis数据结构和对象--（四）整数集合/#more" rel="contents">
+            <a class="btn" href="/2016/09/24/Redis数据结构和对象--（三）跳跃表/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -3939,7 +3939,7 @@
           
             <div class="post-gallery-row">
               <a class="post-gallery-img fancybox"
-                 href="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%996.jpg" rel="gallery_ciywpl60000ar40a0vi34eood"
+                 href="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%996.jpg" rel="gallery_ciywpo9g300av8da0or8giow7"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%996.jpg" itemprop="contentUrl"/>
               </a>
@@ -3947,7 +3947,7 @@
           
             
               <a class="post-gallery-img fancybox"
-                 href="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%991.jpg" rel="gallery_ciywpl60000ar40a0vi34eood"
+                 href="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%991.jpg" rel="gallery_ciywpo9g300av8da0or8giow7"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%991.jpg" itemprop="contentUrl"/>
               </a>
