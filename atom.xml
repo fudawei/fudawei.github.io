@@ -164,7 +164,7 @@
     <link href="https://fudawei.github.io/2017/01/24/Shell%E5%AD%A6%E4%B9%A0%E4%B9%8BExpect/"/>
     <id>https://fudawei.github.io/2017/01/24/Shell学习之Expect/</id>
     <published>2017-01-24T02:30:02.000Z</published>
-    <updated>2017-02-08T07:10:52.685Z</updated>
+    <updated>2017-02-08T07:16:52.987Z</updated>
     
     <content type="html"><![CDATA[<h3 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h3><p>   我们通过Shell可以实现简单的控制流功能，如：循环、判断等。但是对于需要交互的场合则必须通过人工来干预，有时候我们可能会需要实现和交互程序如telnet服务器等进行交互的功能。而expect就使用来实现这种功能的工具。</p>
 <p>   expect是一个免费的编程工具语言，用来实现自动和交互式任务进行通信，而无需人的干预。expect是不断发展的，随着时间的流逝，其功能越来越强大，已经成为系统管理员的的一个强大助手。expect需要Tcl编程语言的支持，要在系统上运行expect必须首先安装Tcl。</p>
@@ -217,12 +217,12 @@
     
     </summary>
     
-      <category term="linux" scheme="https://fudawei.github.io/categories/linux/"/>
+      <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
     
-      <category term="shell" scheme="https://fudawei.github.io/categories/linux/shell/"/>
+      <category term="shell" scheme="https://fudawei.github.io/categories/Linux/shell/"/>
     
     
-      <category term="linux" scheme="https://fudawei.github.io/tags/linux/"/>
+      <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
     
       <category term="shell" scheme="https://fudawei.github.io/tags/shell/"/>
     
@@ -233,7 +233,7 @@
     <link href="https://fudawei.github.io/2017/01/23/Shell%E5%AD%A6%E4%B9%A0%E4%B9%8BSed/"/>
     <id>https://fudawei.github.io/2017/01/23/Shell学习之Sed/</id>
     <published>2017-01-23T08:07:02.000Z</published>
-    <updated>2017-02-08T07:10:26.761Z</updated>
+    <updated>2017-02-08T07:16:39.395Z</updated>
     
     <content type="html"><![CDATA[<h2 id="一、什么是sed？"><a href="#一、什么是sed？" class="headerlink" title="一、什么是sed？"></a>一、什么是sed？</h2><pre><code>sed 是一种在线编辑器，它一次处理一行内容。sed是非交互式的编辑器。它不会修改文件，除非使用shell重定向来保存结果。默认情况下，所有的输出行都被打印到屏幕上。
 </code></pre><h2 id="二、sed的处理过程"><a href="#二、sed的处理过程" class="headerlink" title="二、sed的处理过程"></a>二、sed的处理过程</h2><p>   sed编辑器逐行处理文件（或输入），并将结果发送到屏幕。具体过程如下：首先sed把当前正在处理的行保存在一个临时缓存区中（也称为模式空间），然后处理临时缓冲区中的行，完成后把该行发送到屏幕上。sed每处理完一行就将其从临时缓冲区删除，然后将下一行读入，进行处理和显示。处理完输入文件的最后一行后，sed便结束运行。</p>
@@ -559,12 +559,12 @@
     
     </summary>
     
-      <category term="linux" scheme="https://fudawei.github.io/categories/linux/"/>
+      <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
     
-      <category term="shell" scheme="https://fudawei.github.io/categories/linux/shell/"/>
+      <category term="shell" scheme="https://fudawei.github.io/categories/Linux/shell/"/>
     
     
-      <category term="linux" scheme="https://fudawei.github.io/tags/linux/"/>
+      <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
     
       <category term="shell" scheme="https://fudawei.github.io/tags/shell/"/>
     
@@ -575,7 +575,7 @@
     <link href="https://fudawei.github.io/2017/01/22/Shell%E5%AD%A6%E4%B9%A0%E4%B9%8BAwk/"/>
     <id>https://fudawei.github.io/2017/01/22/Shell学习之Awk/</id>
     <published>2017-01-22T02:30:02.000Z</published>
-    <updated>2017-02-08T07:09:58.580Z</updated>
+    <updated>2017-02-08T07:16:25.006Z</updated>
     
     <content type="html"><![CDATA[<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>awk是一种很棒的语言。awk 适合于文本处理和报表生成，它还有许多精心设计的特性，允许进行需要特殊技巧程序设计。与某些语言不同，awk 的语法较为常见。它借鉴了某些语言的一些精华部分，如 C 语言、Python 和 bash（虽然在技术上，awk 比 python 和 bash 早创建）。awk 是那种一旦学会了就会成为您战略编码库的主要部分的语言。</p>
 <h3 id="一-第一个-awk"><a href="#一-第一个-awk" class="headerlink" title="一. 第一个 awk"></a>一. 第一个 awk</h3><p>让我们继续，开始使用 awk，以了解其工作原理。在命令行中输入以下命令：</p>
@@ -821,12 +821,12 @@
     
     </summary>
     
-      <category term="linux" scheme="https://fudawei.github.io/categories/linux/"/>
+      <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
     
-      <category term="shell" scheme="https://fudawei.github.io/categories/linux/shell/"/>
+      <category term="shell" scheme="https://fudawei.github.io/categories/Linux/shell/"/>
     
     
-      <category term="linux" scheme="https://fudawei.github.io/tags/linux/"/>
+      <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
     
       <category term="shell" scheme="https://fudawei.github.io/tags/shell/"/>
     
@@ -993,6 +993,41 @@
   </entry>
   
   <entry>
+    <title>Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系</title>
+    <link href="https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/"/>
+    <id>https://fudawei.github.io/2016/12/15/Spring架构详解：Spring总体架构与设计理念和内部组件的作用和关系/</id>
+    <published>2016-12-15T04:53:14.000Z</published>
+    <updated>2017-02-08T03:39:19.513Z</updated>
+    
+    <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
+<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
+<p>Spring的总体架构</p>
+<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
+<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
+<p>Spring的设计理念</p>
+<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
+<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
+<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
+<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
+<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
+<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Spring总体架构与设计理念&lt;br&gt;概述：&lt;/p&gt;
+&lt;p&gt;Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成
+    
+    </summary>
+    
+      <category term="JavaEE框架" scheme="https://fudawei.github.io/categories/JavaEE%E6%A1%86%E6%9E%B6/"/>
+    
+    
+      <category term="Spring" scheme="https://fudawei.github.io/tags/Spring/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Spring架构详解：Bean详解和Context组件详解</title>
     <link href="https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ABean%E8%AF%A6%E8%A7%A3%E5%92%8CContext%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3/"/>
     <id>https://fudawei.github.io/2016/12/15/Spring架构详解：Bean详解和Context组件详解/</id>
@@ -1018,41 +1053,6 @@
     <summary type="html">
     
       &lt;h1 id=&quot;Bean详解&quot;&gt;&lt;a href=&quot;#Bean详解&quot; class=&quot;headerlink&quot; title=&quot;Bean详解&quot;&gt;&lt;/a&gt;Bean详解&lt;/h1&gt;&lt;p&gt;前面已经说明了Bean组件对Spring的重要性，下面看看Bean这个组件式怎么设计的。Bean组件在Spr
-    
-    </summary>
-    
-      <category term="JavaEE框架" scheme="https://fudawei.github.io/categories/JavaEE%E6%A1%86%E6%9E%B6/"/>
-    
-    
-      <category term="Spring" scheme="https://fudawei.github.io/tags/Spring/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系</title>
-    <link href="https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/"/>
-    <id>https://fudawei.github.io/2016/12/15/Spring架构详解：Spring总体架构与设计理念和内部组件的作用和关系/</id>
-    <published>2016-12-15T04:53:14.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
-    
-    <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
-<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
-<p>Spring的总体架构</p>
-<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
-<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
-<p>Spring的设计理念</p>
-<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
-<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
-<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
-<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
-<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
-<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;Spring总体架构与设计理念&lt;br&gt;概述：&lt;/p&gt;
-&lt;p&gt;Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成
     
     </summary>
     
