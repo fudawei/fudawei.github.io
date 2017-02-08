@@ -164,7 +164,7 @@
     <link href="https://fudawei.github.io/2017/01/24/Shell%E5%AD%A6%E4%B9%A0%E4%B9%8BExpect/"/>
     <id>https://fudawei.github.io/2017/01/24/Shell学习之Expect/</id>
     <published>2017-01-24T02:30:02.000Z</published>
-    <updated>2017-02-08T07:16:52.987Z</updated>
+    <updated>2017-02-08T07:32:09.246Z</updated>
     
     <content type="html"><![CDATA[<h3 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h3><p>   我们通过Shell可以实现简单的控制流功能，如：循环、判断等。但是对于需要交互的场合则必须通过人工来干预，有时候我们可能会需要实现和交互程序如telnet服务器等进行交互的功能。而expect就使用来实现这种功能的工具。</p>
 <p>   expect是一个免费的编程工具语言，用来实现自动和交互式任务进行通信，而无需人的干预。expect是不断发展的，随着时间的流逝，其功能越来越强大，已经成为系统管理员的的一个强大助手。expect需要Tcl编程语言的支持，要在系统上运行expect必须首先安装Tcl。</p>
@@ -219,12 +219,12 @@
     
       <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
     
-      <category term="shell" scheme="https://fudawei.github.io/categories/Linux/shell/"/>
+      <category term="Shell" scheme="https://fudawei.github.io/categories/Linux/Shell/"/>
     
     
       <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
     
-      <category term="shell" scheme="https://fudawei.github.io/tags/shell/"/>
+      <category term="Shell" scheme="https://fudawei.github.io/tags/Shell/"/>
     
   </entry>
   
@@ -233,7 +233,7 @@
     <link href="https://fudawei.github.io/2017/01/23/Shell%E5%AD%A6%E4%B9%A0%E4%B9%8BSed/"/>
     <id>https://fudawei.github.io/2017/01/23/Shell学习之Sed/</id>
     <published>2017-01-23T08:07:02.000Z</published>
-    <updated>2017-02-08T07:16:39.395Z</updated>
+    <updated>2017-02-08T07:31:56.441Z</updated>
     
     <content type="html"><![CDATA[<h2 id="一、什么是sed？"><a href="#一、什么是sed？" class="headerlink" title="一、什么是sed？"></a>一、什么是sed？</h2><pre><code>sed 是一种在线编辑器，它一次处理一行内容。sed是非交互式的编辑器。它不会修改文件，除非使用shell重定向来保存结果。默认情况下，所有的输出行都被打印到屏幕上。
 </code></pre><h2 id="二、sed的处理过程"><a href="#二、sed的处理过程" class="headerlink" title="二、sed的处理过程"></a>二、sed的处理过程</h2><p>   sed编辑器逐行处理文件（或输入），并将结果发送到屏幕。具体过程如下：首先sed把当前正在处理的行保存在一个临时缓存区中（也称为模式空间），然后处理临时缓冲区中的行，完成后把该行发送到屏幕上。sed每处理完一行就将其从临时缓冲区删除，然后将下一行读入，进行处理和显示。处理完输入文件的最后一行后，sed便结束运行。</p>
@@ -561,12 +561,12 @@
     
       <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
     
-      <category term="shell" scheme="https://fudawei.github.io/categories/Linux/shell/"/>
+      <category term="Shell" scheme="https://fudawei.github.io/categories/Linux/Shell/"/>
     
     
       <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
     
-      <category term="shell" scheme="https://fudawei.github.io/tags/shell/"/>
+      <category term="Shell" scheme="https://fudawei.github.io/tags/Shell/"/>
     
   </entry>
   
@@ -575,7 +575,7 @@
     <link href="https://fudawei.github.io/2017/01/22/Shell%E5%AD%A6%E4%B9%A0%E4%B9%8BAwk/"/>
     <id>https://fudawei.github.io/2017/01/22/Shell学习之Awk/</id>
     <published>2017-01-22T02:30:02.000Z</published>
-    <updated>2017-02-08T07:16:25.006Z</updated>
+    <updated>2017-02-08T07:31:42.200Z</updated>
     
     <content type="html"><![CDATA[<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>awk是一种很棒的语言。awk 适合于文本处理和报表生成，它还有许多精心设计的特性，允许进行需要特殊技巧程序设计。与某些语言不同，awk 的语法较为常见。它借鉴了某些语言的一些精华部分，如 C 语言、Python 和 bash（虽然在技术上，awk 比 python 和 bash 早创建）。awk 是那种一旦学会了就会成为您战略编码库的主要部分的语言。</p>
 <h3 id="一-第一个-awk"><a href="#一-第一个-awk" class="headerlink" title="一. 第一个 awk"></a>一. 第一个 awk</h3><p>让我们继续，开始使用 awk，以了解其工作原理。在命令行中输入以下命令：</p>
@@ -823,12 +823,12 @@
     
       <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
     
-      <category term="shell" scheme="https://fudawei.github.io/categories/Linux/shell/"/>
+      <category term="Shell" scheme="https://fudawei.github.io/categories/Linux/Shell/"/>
     
     
       <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
     
-      <category term="shell" scheme="https://fudawei.github.io/tags/shell/"/>
+      <category term="Shell" scheme="https://fudawei.github.io/tags/Shell/"/>
     
   </entry>
   
@@ -1175,6 +1175,34 @@
   </entry>
   
   <entry>
+    <title>[Spark源码四]图解作业生命周期</title>
+    <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"/>
+    <id>https://fudawei.github.io/2016/10/25/[Spark源码四]图解作业生命周期/</id>
+    <published>2016-10-25T14:42:01.000Z</published>
+    <updated>2017-02-08T03:39:19.517Z</updated>
+    
+    <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！&lt;br&gt;&lt;img src=&quot;/img/spark4.1.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+
+    
+    </summary>
+    
+      <category term="大数据" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
+    
+      <category term="Spark" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Spark/"/>
+    
+    
+      <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
+    
+      <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
+    
+  </entry>
+  
+  <entry>
     <title>[Spark源码三】作业运行过程</title>
     <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E4%B8%89%5D%E4%BD%9C%E4%B8%9A%E8%BF%90%E8%A1%8C%E8%BF%87%E7%A8%8B/"/>
     <id>https://fudawei.github.io/2016/10/25/[Spark源码三]作业运行过程/</id>
@@ -1203,34 +1231,6 @@ eventProcessActor ! JobSubmitted(jobId, rdd, func2, partitions.toArray, allowLoc
     
       &lt;p&gt;官方给的例子里面，一执行collect方法就能出结果，那我们就从collect开始看吧，进入RDD，找到collect方法。&lt;/p&gt;
 &lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;di
-    
-    </summary>
-    
-      <category term="大数据" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
-    
-      <category term="Spark" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Spark/"/>
-    
-    
-      <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
-    
-      <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>[Spark源码四]图解作业生命周期</title>
-    <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"/>
-    <id>https://fudawei.github.io/2016/10/25/[Spark源码四]图解作业生命周期/</id>
-    <published>2016-10-25T14:42:01.000Z</published>
-    <updated>2017-02-08T03:39:19.517Z</updated>
-    
-    <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！&lt;br&gt;&lt;img src=&quot;/img/spark4.1.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
-
     
     </summary>
     
