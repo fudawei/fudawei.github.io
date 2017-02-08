@@ -3398,115 +3398,6 @@
           
           
             
-              <a class="post-title-link" href="/2014/04/15/Java里面的设计模式/" itemprop="url">
-                Java里面的设计模式
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2014-04-15T22:08:33+08:00" content="2014-04-15">
-            2014-04-15
-          </time>
-        </span>
-
-        
-          <span class="post-category" >
-            &nbsp; | &nbsp; 分类于
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/设计模式/" itemprop="url" rel="index">
-                  <span itemprop="name">设计模式</span>
-                </a>
-              </span>
-
-              
-              
-
-            
-          </span>
-        
-
-        
-          
-            <span class="post-comments-count">
-              &nbsp; | &nbsp;
-              <!--
-              <a href="/2014/04/15/Java里面的设计模式/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2014/04/15/Java里面的设计模式/" itemprop="commentsCount"></span>
-              </a>
-              -->
-              <a href="/2014/04/15/Java里面的设计模式/#comments" itemprop="discussionUrl">
-                <span>评论</span>
-              </a>
-            </span>
-          
-        
-
-
-
-
-&nbsp; | &nbsp;
-<span id="/2014/04/15/Java里面的设计模式/"class="leancloud_visitors" data-flag-title="Java里面的设计模式">
-         &nbsp;阅读次数
-        </span>
-
-
-	
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            ###Structural（结构模式）
-Adapter:把一个接口或是类变成另外一种。java.util.Arrays#asList()javax.swing.JTable(TableModel)java.io.InputStreamReader(InputStream)java.io.Output
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2014/04/15/Java里面的设计模式/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
               <a class="post-title-link" href="/2014/04/15/Java内存模型/" itemprop="url">
                 Java内存模型
               </a>
@@ -4530,6 +4421,126 @@ ConcurrentHashMap定位一个元素的过程需要进行两次Hash操作，第�
 
 
     
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2013/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/" itemprop="url">
+                [Java并发包学习八]深度剖析ConcurrentHashMap
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2013-09-10T23:07:52+08:00" content="2013-09-10">
+            2013-09-10
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/" itemprop="url" rel="index">
+                  <span itemprop="name">Java</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/并发库/" itemprop="url" rel="index">
+                  <span itemprop="name">并发库</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2013/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2013/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2013/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2013/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/"class="leancloud_visitors" data-flag-title="[Java并发包学习八]深度剖析ConcurrentHashMap">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>还记得大学快毕业的时候要准备找工作了，然后就看各种面试相关的书籍，还记得很多面试书中都说到：</p>
+<blockquote>
+<p>HashMap是非线程安全的，HashTable是线程安全的。</p>
+</blockquote>
+<p>那个时候没怎么写Java代码，所以根本就没有听说过ConcurrentHashMap，只知道面试的时候就记住这句话就行了…至于为什么是线程安全的，内部怎么实现的，通通不了解。<br>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2013/09/10/[Java并发包学习八]深度剖析ConcurrentHashMap/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
   </section>
 
   
@@ -4568,7 +4579,7 @@ ConcurrentHashMap定位一个元素的过程需要进行两次Hash操作，第�
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">138</span>
+              <span class="site-state-item-count">137</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>
