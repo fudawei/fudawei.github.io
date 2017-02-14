@@ -3398,6 +3398,128 @@
           
           
             
+              <a class="post-title-link" href="/2015/09/30/Redis事务介绍/" itemprop="url">
+                Redis事务介绍
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2015-09-30T00:38:48+08:00" content="2015-09-30">
+            2015-09-30
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/缓存/" itemprop="url" rel="index">
+                  <span itemprop="name">缓存</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/缓存/Redis/" itemprop="url" rel="index">
+                  <span itemprop="name">Redis</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2015/09/30/Redis事务介绍/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2015/09/30/Redis事务介绍/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2015/09/30/Redis事务介绍/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2015/09/30/Redis事务介绍/"class="leancloud_visitors" data-flag-title="Redis事务介绍">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>相信学过Mysql等其他数据库的同学对事务这个词都不陌生，事务表示的是一组动作，这组动作要么全部执行，要么全部不执行。为什么会有这样的需求呢？看看下面的场景：</p>
+<blockquote>
+<ul>
+<li>微博是一个弱关系型社交网络，用户之间有关注和被关注两种关系，比如两个用户A和B，如果A关注B，则B的粉丝中就应该有A。关注这个动作需要两个步骤完成：在A的关注者中添加B；在B的粉丝中添加A。 这两个动作要么都执行成功，要么都不执行。否则就可能会出现A关注了B，但是B的粉丝中没有A的不可容忍的情况。</li>
+<li>转账汇款，假设现在有两个账户A和B，现在需要将A中的一万块大洋转到B的账户中，这个动作也需要两个步骤完成：从A的账户中划走一万块；在B的账户中增加一万块。这两个动作要么全部执行成功，要么全部不执行，否则自会有人问候你的！！！</li>
+</ul>
+</blockquote>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2015/09/30/Redis事务介绍/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
               <a class="post-title-link" href="/2015/09/29/Redis五种数据类型介绍/" itemprop="url">
                 Redis五种数据类型介绍
               </a>
@@ -4411,118 +4533,6 @@
 
 
     
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2015/09/06/海量数据处理/" itemprop="url">
-                海量数据处理
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2015-09-06T22:49:06+08:00" content="2015-09-06">
-            2015-09-06
-          </time>
-        </span>
-
-        
-          <span class="post-category" >
-            &nbsp; | &nbsp; 分类于
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/大数据/" itemprop="url" rel="index">
-                  <span itemprop="name">大数据</span>
-                </a>
-              </span>
-
-              
-              
-
-            
-          </span>
-        
-
-        
-          
-            <span class="post-comments-count">
-              &nbsp; | &nbsp;
-              <!--
-              <a href="/2015/09/06/海量数据处理/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2015/09/06/海量数据处理/" itemprop="commentsCount"></span>
-              </a>
-              -->
-              <a href="/2015/09/06/海量数据处理/#comments" itemprop="discussionUrl">
-                <span>评论</span>
-              </a>
-            </span>
-          
-        
-
-
-
-
-&nbsp; | &nbsp;
-<span id="/2015/09/06/海量数据处理/"class="leancloud_visitors" data-flag-title="海量数据处理">
-         &nbsp;阅读次数
-        </span>
-
-
-	
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            作者：July、youwang、yanxionglu。出处：http://blog.csdn.net/v_JULY_v。
-十道海量数据处理面试题
-提取出某日访问百度次数最多的那个IP。
-
-首先是这一天，并且是访问百度的日志中的IP取出来，逐个写入到一个大文件中。注意到IP是32位的，最多有个2^32
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2015/09/06/海量数据处理/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4561,7 +4571,7 @@
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">139</span>
+              <span class="site-state-item-count">140</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>

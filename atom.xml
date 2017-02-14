@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://fudawei.github.io/"/>
-  <updated>2017-02-08T08:46:14.906Z</updated>
+  <updated>2017-02-14T07:04:58.219Z</updated>
   <id>https://fudawei.github.io/</id>
   
   <author>
@@ -16,11 +16,99 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>[并发锁(三)]枷锁原理</title>
+    <link href="https://fudawei.github.io/2017/02/13/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%B8%89)%5D%E5%8A%A0%E9%94%81%E5%8E%9F%E7%90%86/"/>
+    <id>https://fudawei.github.io/2017/02/13/[并发锁(三)]加锁原理/</id>
+    <published>2017-02-13T12:07:52.000Z</published>
+    <updated>2017-02-14T07:04:58.219Z</updated>
+    
+    <content type="html"><![CDATA[<p>接上篇，这篇从Lock.lock/unlock开始。特别说明在没有特殊情况下所有程序、API、文档都是基于JDK 6.0的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">public void Java.util.concurrent.locks.ReentrantLock.lock()</div><div class="line"></div><div class="line">		获取锁。</div><div class="line">	    如果该锁没有被另一个线程保持，则获取该锁并立即返回，将锁的保持计数设置为 1。</div><div class="line">	    如果当前线程已经保持该锁，则将保持计数加 1，并且该方法立即返回。</div><div class="line">	    如果该锁被另一个线程保持，则出于线程调度的目的，禁用当前线程，并且在获得锁之前，该线程将一直处于休眠状态，此时锁保持计数被设置为 1。</div></pre></td></tr></table></figure>
+<p>从上面的文档可以看出ReentrantLock是可重入锁的实现。而内部是委托java.util.concurrent.locks.ReentrantLock.Sync.lock()实现的。java.util.concurrent.locks.ReentrantLock.Sync是抽象类，有java.util.concurrent.locks.ReentrantLock.FairSync和java.util.concurrent.locks.ReentrantLock.NonfairSync两个实现，也就是常说的公平锁和不公平锁。</p>
+<blockquote>
+<p> 公平锁和非公平锁</p>
+<p> 如果获取一个锁是按照请求的顺序得到的，那么就是公平锁，否则就是非公平锁。</p>
+</blockquote>
+<p>在没有深入了解内部机制及实现之前，先了解下为什么会存在公平锁和非公平锁。公平锁保证一个阻塞的线程最终能够获得锁，因为是有序的，所以总是可以按照请求的顺序获得锁。不公平锁意味着后请求锁的线程可能在其前面排列的休眠线程恢复前拿到锁，这样就有可能提高并发的性能。这是因为通常情况下挂起的线程重新开始与它真正开始运行，二者之间会产生严重的延时。因此非公平锁就可以利用这段时间完成操作。这是非公平锁在某些时候比公平锁性能要好的原因之一。</p>
+<h3 id="公平锁"><a href="#公平锁" class="headerlink" title="公平锁"></a>公平锁</h3><p>我们先从公平锁（FairSync）开始。</p>
+<p>前面说过java.util.concurrent.locks.AbstractQueuedSynchronizer （AQS) 是Lock的基础，对于一个FairSync而言，lock()就直接调用AQS的acquire(int arg);<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">public final void acquire(int arg)</div></pre></td></tr></table></figure></p>
+<p>acquire方法<br>以独占模式获取对象，忽略中断。通过至少调用一次tryAcquire(int) 来实现此方法，并在成功时返回。<br>否则在成功之前，一直调用 tryAcquire(int)   将线程加入队列，线程可能重复被阻塞或不被阻塞。</p>
+<p>在介绍实现之前先要补充上一节的知识，对于一个AQS的实现而言，通常情况下需要实现以下方法来描述如何锁定线程。</p>
+<ul>
+<li>tryAcquire(int)   试图在独占模式下获取对象状态。此方法应该查询是否允许它在独占模式下获取对象状态，如果允许，则获取它。<br>此方法总是由执行 acquire 的线程来调用。如果此方法报告失败，则 acquire 方法可以将线程加入队列（如果还没有将它加入队列），直到获得其他某个线程释放了该线程的信号。也就是说此方法是一种尝试性* 方法，如果成功获取锁那最好，如果没有成功也没有关系，直接返回false。</li>
+<li>tryRelease(int)   试图设置状态来反映独占模式下的一个释放。 此方法总是由正在执行释放的线程调用。释放锁可能失败或者抛出异常，这个在后面会具体分析。</li>
+<li>tryAcquireShared(int)   试图在共享模式下获取对象状态。</li>
+<li>tryReleaseShared(int)   试图设置状态来反映共享模式下的一个释放。</li>
+<li>isHeldExclusively()   如果对于当前（正调用的）线程，同步是以独占方式进行的，则返回  true 。</li>
+</ul>
+<p>除了tryAcquire(int)外，其它方法会在后面具体介绍。首先对于ReentrantLock而言，不管是公平锁还是非公平锁，都是独占锁，也就是说同时能够有一个线程持有锁。因此对于acquire(int arg)而言，arg==1。在AQS中acquire的实现如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">public final void acquire(int arg) &#123;</div><div class="line">    if (!tryAcquire(arg) &amp;&amp;</div><div class="line">        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))</div><div class="line">        selfInterrupt();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这个看起来比较复杂，我们分解以下4个步骤。</p>
+<ul>
+<li>如果tryAcquire(arg)成功，那就没有问题，已经拿到锁，整个lock()过程就结束了。如果失败进行操作2。</li>
+<li>创建一个独占节点（Node）并且此节点加入CHL队列末尾。进行操作3。</li>
+<li>自旋尝试获取锁，失败根据前一个节点来决定是否挂起（park()），直到成功获取到锁。进行操作4。</li>
+<li>如果当前线程已经中断过，那么就中断当前线程（清除中断位）。</li>
+</ul>
+<p>这是一个比较复杂的过程，我们按部就班一个一个分析。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">tryAcquire(acquires)</div></pre></td></tr></table></figure>
+<p>对于公平锁而言，它的实现方式如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">protected final boolean tryAcquire(int acquires) &#123;</div><div class="line">        final Thread current = Thread.currentThread();</div><div class="line">        int c = getState();</div><div class="line">        if (c == 0) &#123;</div><div class="line">            if (isFirst(current) &amp;&amp;</div><div class="line">                compareAndSetState(0, acquires)) &#123;</div><div class="line">                setExclusiveOwnerThread(current);</div><div class="line">                return true;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        else if (current == getExclusiveOwnerThread()) &#123;</div><div class="line">            int nextc = c + acquires;</div><div class="line">            if (nextc &lt; 0)</div><div class="line">                throw new Error(&quot;Maximum lock count exceeded&quot;);</div><div class="line">            setState(nextc);</div><div class="line">            return true;</div><div class="line">        &#125;</div><div class="line">        return false;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>   在这段代码中，前面说明对于AQS存在一个state来描述当前有多少线程持有锁。<br>   由于AQS支持共享锁（例如读写锁，后面会继续讲），所以这里state&gt;=0，但是由于ReentrantLock是独占锁，所以这里不妨理解为0&lt;=state，acquires=1。isFirst(current)是一个很复杂的逻辑，包括踢出无用的节点等复杂过程，这里暂且不提，大体上的意思是说判断AQS是否为空或者当前线程是否在队列头（为了区分公平与非公平锁）。</p>
+<ol>
+<li><p>如果当前锁有其它线程持有，c!=0，进行操作2。否则，如果当前线程在AQS队列头部，则尝试将AQS状态state设为acquires（等于1），成功后将AQS独占线程设为当前线程返回true，否则进行2。这里可以看到compareAndSetState就是使用了CAS操作。</p>
+</li>
+<li><p>判断当前线程与AQS的独占线程是否相同，如果相同，那么就将当前状态位加1（这里+1后结果为负数后面会讲，这里暂且不理它），修改状态位，返回true，否则进行3。这里之所以不是将当前状态位设置为1，而是修改为旧值+1呢？这是因为ReentrantLock是可重入锁，同一个线程每持有一次就+1。</p>
+</li>
+<li><p>返回false。</p>
+</li>
+</ol>
+<h3 id="非公平锁"><a href="#非公平锁" class="headerlink" title="非公平锁"></a>非公平锁</h3><p>比较非公平锁的tryAcquire实现java.util.concurrent.locks.ReentrantLock.Sync.nonfairTryAcquire(int)，公平锁多了一个判断当前节点是否在队列头，这个就保证了是否按照请求锁的顺序来决定获取锁的顺序（同一个线程的多次获取锁除外）。</p>
+<p>现在再回头看公平锁和非公平锁的lock()方法。公平锁只有一句acquire(1)；而非公平锁的调用如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">final void lock() &#123;</div><div class="line">    if (compareAndSetState(0, 1))</div><div class="line">        setExclusiveOwnerThread(Thread.currentThread());</div><div class="line">    else</div><div class="line">        acquire(1);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>很显然，非公平锁在第一次获取锁，或者其它线程释放锁后（可能等待），优先采用compareAndSetState(0,1)然后设置AQS独占线程而持有锁，这样有时候比acquire(1)顺序检查锁持有而要高效。即使在重入锁上，也就是compareAndSetState(0,1)失败，但是是当前线程持有锁上，非公平锁也没有问题</p>
+<h3 id="addWaiter-mode"><a href="#addWaiter-mode" class="headerlink" title="addWaiter(mode)"></a>addWaiter(mode)</h3><p>tryAcquire失败就意味着入队列了。此时AQS的队列中节点Node就开始发挥作用了。一般情况下AQS支持独占锁和共享锁，而独占锁在Node中就意味着条件（Condition）队列为空（上一篇中介绍过相关概念）。在java.util.concurrent.locks.AbstractQueuedSynchronizer.Node中有两个常量，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">static final Node EXCLUSIVE = null; //独占节点模式</div><div class="line">static final Node SHARED = new Node(); //共享节点模式</div><div class="line"></div><div class="line">addWaiter(mode)中的mode就是节点模式，也就是共享锁还是独占锁模式</div></pre></td></tr></table></figure>
+<p>前面一再强调ReentrantLock是独占锁模式。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">private Node addWaiter(Node mode) &#123;</div><div class="line">     Node node = new Node(Thread.currentThread(), mode);</div><div class="line">     // Try the fast path of enq; backup to full enq on failure</div><div class="line">     Node pred = tail;</div><div class="line">     if (pred != null) &#123;</div><div class="line">         node.prev = pred;</div><div class="line">         if (compareAndSetTail(pred, node)) &#123;</div><div class="line">             pred.next = node;</div><div class="line">             return node;</div><div class="line">         &#125;</div><div class="line">     &#125;</div><div class="line">     enq(node);</div><div class="line">     return node;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>上面是节点如队列的一部分。当前仅当队列不为空并且将新节点插入尾部成功后直接返回新节点。否则进入enq(Node)进行操作。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">private Node enq(final Node node) &#123;</div><div class="line">    for (;;) &#123;</div><div class="line">        Node t = tail;</div><div class="line">        if (t == null) &#123; // Must initialize</div><div class="line">            Node h = new Node(); // Dummy header</div><div class="line">            h.next = node;</div><div class="line">            node.prev = h;</div><div class="line">            if (compareAndSetHead(h)) &#123;</div><div class="line">                tail = node;</div><div class="line">                return h;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        else &#123;</div><div class="line">            node.prev = t;</div><div class="line">            if (compareAndSetTail(t, node)) &#123;</div><div class="line">                t.next = node;</div><div class="line">                return t;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>enq(Node)去队列操作实现了CHL队列的算法，如果为空就创建头结点，然后同时比较节点尾部是否是改变来决定CAS操作是否成功，当且仅当成功后才将为不节点的下一个节点指向为新节点。可以看到这里仍然是CAS操作。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">acquireQueued(node,arg)</div></pre></td></tr></table></figure>
+<p>自旋请求锁，如果可能的话挂起线程，直到得到锁，返回当前线程是否中断过（如果park()过并且中断过的话有一个interrupted中断位）。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">final boolean acquireQueued(final Node node, int arg) &#123;</div><div class="line">    try &#123;</div><div class="line">        boolean interrupted = false;</div><div class="line">        for (;;) &#123;</div><div class="line">            final Node p = node.predecessor();</div><div class="line">            if (p == head &amp;&amp; tryAcquire(arg)) &#123;</div><div class="line">                setHead(node);</div><div class="line">                p.next = null; // help GC</div><div class="line">                return interrupted;</div><div class="line">            &#125;</div><div class="line">            if (shouldParkAfterFailedAcquire(p, node) &amp;&amp;</div><div class="line">                parkAndCheckInterrupt())</div><div class="line">                interrupted = true;</div><div class="line">        &#125;</div><div class="line">    &#125; catch (RuntimeException ex) &#123;</div><div class="line">        cancelAcquire(node);</div><div class="line">        throw ex;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>下面的分析就需要用到上节节点的状态描述了。acquireQueued过程是这样的：</p>
+<p>如果当前节点是AQS队列的头结点（如果第一个节点是DUMP节点也就是傀儡节点，那么第二个节点实际上就是头结点了），就尝试在此获取锁tryAcquire(arg)。如果成功就将头结点设置为当前节点（不管第一个结点是否是DUMP节点），返回中断位。否则进行2。<br>检测当前节点是否应该park()，如果应该park()就挂起当前线程并且返回当前线程中断位。进行操作1。<br>一个节点是否该park()是关键，这是由方法java.util.concurrent.locks.AbstractQueuedSynchronizer.shouldParkAfterFailedAcquire(Node, Node)实现的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) &#123;</div><div class="line">    int s = pred.waitStatus;</div><div class="line">    if (s &lt; 0) return true;</div><div class="line">    if (s &gt; 0) &#123;</div><div class="line">        do &#123;</div><div class="line">            node.prev = pred = pred.prev;</div><div class="line">        &#125; while (pred.waitStatus &gt; 0);</div><div class="line">        pred.next = node;</div><div class="line">    &#125; else compareAndSetWaitStatus(pred, 0, Node.SIGNAL);</div><div class="line">    return false;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>如果前一个节点的等待状态waitStatus<0，也就是前面的节点还没有获得到锁，那么返回true，表示当前节点（线程）就应该park()了。否则进行2。 如果前一个节点的等待状态waitstatus="">0，也就是前一个节点被CANCELLED了，那么就将前一个节点去掉，递归此操作直到所有前一个节点的waitStatus&lt;=0，进行4。否则进行3。<br>前一个节点等待状态waitStatus=0，修改前一个节点状态位为SINGAL，表示后面有节点等待你处理，需要根据它的等待状态来决定是否该park()。进行4。<br>返回false，表示线程不应该park()。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">selfInterrupt()</div><div class="line"></div><div class="line">private static void selfInterrupt() &#123;</div><div class="line">    Thread.currentThread().interrupt();</div><div class="line">&#125;</div></pre></td></tr></table></figure></0，也就是前面的节点还没有获得到锁，那么返回true，表示当前节点（线程）就应该park()了。否则进行2。></p>
+<p>如果线程曾经中断过（或者阻塞过）（比如手动interrupt()或者超时等等，那么就再中断一次，中断两次的意思就是清除中断位）。</p>
+<p>大体上整个Lock.lock()就这样一个流程。除了lock()方法外，还有lockInterruptibly()/tryLock()/unlock()/newCondition()等，在接下来的章节中会一一介绍</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;接上篇，这篇从Lock.lock/unlock开始。特别说明在没有特殊情况下所有程序、API、文档都是基于JDK 6.0的。&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;di
+    
+    </summary>
+    
+      <category term="Java" scheme="https://fudawei.github.io/categories/Java/"/>
+    
+      <category term="并发库" scheme="https://fudawei.github.io/categories/Java/%E5%B9%B6%E5%8F%91%E5%BA%93/"/>
+    
+    
+      <category term="Java" scheme="https://fudawei.github.io/tags/Java/"/>
+    
+      <category term="并发库" scheme="https://fudawei.github.io/tags/%E5%B9%B6%E5%8F%91%E5%BA%93/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Java 并发编程：volatile的使用及其原理</title>
     <link href="https://fudawei.github.io/2017/02/08/Java%20%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%9Avolatile%E7%9A%84%E4%BD%BF%E7%94%A8%E5%8F%8A%E5%85%B6%E5%8E%9F%E7%90%86/"/>
     <id>https://fudawei.github.io/2017/02/08/Java 并发编程：volatile的使用及其原理/</id>
     <published>2017-02-08T14:14:22.000Z</published>
-    <updated>2017-02-08T08:46:14.906Z</updated>
+    <updated>2017-02-12T01:59:35.980Z</updated>
     
     <content type="html"><![CDATA[<h1 id="一、volatile的作用"><a href="#一、volatile的作用" class="headerlink" title="一、volatile的作用"></a>一、volatile的作用</h1><p>　　在《Java并发编程：核心理论》一文中，我们已经提到过可见性、有序性及原子性问题，通常情况下我们可以通过Synchronized关键字来解决这些个问题，不过如果对Synchronized原理有了解的话，应该知道Synchronized是一个比较重量级的操作，对系统的性能有比较大的影响，所以，如果有其他解决方案，我们通常都避免使用Synchronized来解决问题。而volatile关键字就是Java中提供的另一种解决可见性和有序性问题的方案。对于原子性，需要强调一点，也是大家容易误解的一点：对volatile变量的单次读/写操作可以保证原子性的，如long和double类型变量，但是并不能保证i++这种操作的原子性，因为本质上i++是读、写两次操作。</p>
 <h1 id="二、volatile的使用"><a href="#二、volatile的使用" class="headerlink" title="二、volatile的使用"></a>二、volatile的使用</h1><p>　　关于volatile的使用，我们可以通过几个例子来说明其使用方式和场景。</p>
@@ -108,7 +196,7 @@
     <link href="https://fudawei.github.io/2017/02/07/Java%20%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%9ASynchronized%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%E4%BB%A5%E5%8F%8A%E5%BA%95%E5%B1%82%E4%BC%98%E5%8C%96/"/>
     <id>https://fudawei.github.io/2017/02/07/Java 并发编程：Synchronized实现原理以及底层优化/</id>
     <published>2017-02-07T02:30:02.000Z</published>
-    <updated>2017-02-08T07:43:21.196Z</updated>
+    <updated>2017-02-12T01:59:35.964Z</updated>
     
     <content type="html"><![CDATA[<h2 id="Synchronized的基本使用和原理"><a href="#Synchronized的基本使用和原理" class="headerlink" title="Synchronized的基本使用和原理"></a>Synchronized的基本使用和原理</h2><h3 id="一、synchronized的使用"><a href="#一、synchronized的使用" class="headerlink" title="一、synchronized的使用"></a>一、synchronized的使用</h3><ol>
 <li>修饰一个代码块，被修饰的代码块称为同步语句块，其作用的范围是大括号{}括起来的代码，作用的对象是调用这个代码块的对象；</li>
@@ -212,7 +300,7 @@
     <link href="https://fudawei.github.io/2017/02/05/Java%20%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%9A%E6%A0%B8%E5%BF%83%E7%90%86%E8%AE%BA/"/>
     <id>https://fudawei.github.io/2017/02/05/Java 并发编程：核心理论/</id>
     <published>2017-02-05T07:14:22.000Z</published>
-    <updated>2017-02-08T06:35:40.045Z</updated>
+    <updated>2017-02-12T01:59:35.960Z</updated>
     
     <content type="html"><![CDATA[<h3 id="一、共享性"><a href="#一、共享性" class="headerlink" title="一、共享性"></a>一、共享性</h3><p>　　数据共享性是线程安全的主要原因之一。如果所有的数据只是在线程内有效，那就不存在线程安全性问题，这也是我们在编程的时候经常不需要考虑线程安全的主要原因之一。但是，在多线程编程中，数据共享是不可避免的。最典型的场景是数据库中的数据，为了保证数据的一致性，我们通常需要共享同一个数据库中数据，即使是在主从的情况下，访问的也同一份数据，主从只是为了访问的效率和数据安全，而对同一份数据做的副本。我们现在，通过一个简单的示例来演示多线程下共享数据导致的问题：</p>
 <p>代码段一：</p>
@@ -252,7 +340,7 @@
     <link href="https://fudawei.github.io/2017/02/04/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%BA%8C)%5DAQS/"/>
     <id>https://fudawei.github.io/2017/02/04/[并发锁(二)]AQS/</id>
     <published>2017-02-04T12:07:52.000Z</published>
-    <updated>2017-02-08T09:46:25.176Z</updated>
+    <updated>2017-02-12T01:59:37.004Z</updated>
     
     <content type="html"><![CDATA[<p>AQS</p>
 <p>首先从理论知识开始，在了解了相关原理后会针对源码进行一些分析，最后加上一些实战来描述。</p>
@@ -320,7 +408,7 @@
     <link href="https://fudawei.github.io/2017/02/03/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%B8%80)%5DLock%E4%B8%8EReentrantLock/"/>
     <id>https://fudawei.github.io/2017/02/03/[并发锁(一)]Lock与ReentrantLock/</id>
     <published>2017-02-03T15:07:52.000Z</published>
-    <updated>2017-02-08T09:23:43.288Z</updated>
+    <updated>2017-02-12T01:59:37.000Z</updated>
     
     <content type="html"><![CDATA[<p>JDK 5中的锁是接口Java.util.concurrent.locks.Lock 。另外java.util.concurrent.locks.ReadWriteLock 提供了一对可供读写并发的锁。根据前面的规则，我们从java.util.concurrent.locks.Lock 的API开始。</p>
 <p>void lock();</p>
@@ -378,7 +466,7 @@
     <link href="https://fudawei.github.io/2017/01/24/Shell%E5%AD%A6%E4%B9%A0%E4%B9%8BExpect/"/>
     <id>https://fudawei.github.io/2017/01/24/Shell学习之Expect/</id>
     <published>2017-01-24T02:30:02.000Z</published>
-    <updated>2017-02-08T07:32:09.246Z</updated>
+    <updated>2017-02-12T01:59:36.352Z</updated>
     
     <content type="html"><![CDATA[<h3 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h3><p>   我们通过Shell可以实现简单的控制流功能，如：循环、判断等。但是对于需要交互的场合则必须通过人工来干预，有时候我们可能会需要实现和交互程序如telnet服务器等进行交互的功能。而expect就使用来实现这种功能的工具。</p>
 <p>   expect是一个免费的编程工具语言，用来实现自动和交互式任务进行通信，而无需人的干预。expect是不断发展的，随着时间的流逝，其功能越来越强大，已经成为系统管理员的的一个强大助手。expect需要Tcl编程语言的支持，要在系统上运行expect必须首先安装Tcl。</p>
@@ -447,7 +535,7 @@
     <link href="https://fudawei.github.io/2017/01/23/Shell%E5%AD%A6%E4%B9%A0%E4%B9%8BSed/"/>
     <id>https://fudawei.github.io/2017/01/23/Shell学习之Sed/</id>
     <published>2017-01-23T08:07:02.000Z</published>
-    <updated>2017-02-08T07:31:56.441Z</updated>
+    <updated>2017-02-12T01:59:36.356Z</updated>
     
     <content type="html"><![CDATA[<h2 id="一、什么是sed？"><a href="#一、什么是sed？" class="headerlink" title="一、什么是sed？"></a>一、什么是sed？</h2><pre><code>sed 是一种在线编辑器，它一次处理一行内容。sed是非交互式的编辑器。它不会修改文件，除非使用shell重定向来保存结果。默认情况下，所有的输出行都被打印到屏幕上。
 </code></pre><h2 id="二、sed的处理过程"><a href="#二、sed的处理过程" class="headerlink" title="二、sed的处理过程"></a>二、sed的处理过程</h2><p>   sed编辑器逐行处理文件（或输入），并将结果发送到屏幕。具体过程如下：首先sed把当前正在处理的行保存在一个临时缓存区中（也称为模式空间），然后处理临时缓冲区中的行，完成后把该行发送到屏幕上。sed每处理完一行就将其从临时缓冲区删除，然后将下一行读入，进行处理和显示。处理完输入文件的最后一行后，sed便结束运行。</p>
@@ -789,7 +877,7 @@
     <link href="https://fudawei.github.io/2017/01/22/Shell%E5%AD%A6%E4%B9%A0%E4%B9%8BAwk/"/>
     <id>https://fudawei.github.io/2017/01/22/Shell学习之Awk/</id>
     <published>2017-01-22T02:30:02.000Z</published>
-    <updated>2017-02-08T07:31:42.200Z</updated>
+    <updated>2017-02-12T01:59:36.348Z</updated>
     
     <content type="html"><![CDATA[<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>awk是一种很棒的语言。awk 适合于文本处理和报表生成，它还有许多精心设计的特性，允许进行需要特殊技巧程序设计。与某些语言不同，awk 的语法较为常见。它借鉴了某些语言的一些精华部分，如 C 语言、Python 和 bash（虽然在技术上，awk 比 python 和 bash 早创建）。awk 是那种一旦学会了就会成为您战略编码库的主要部分的语言。</p>
 <h3 id="一-第一个-awk"><a href="#一-第一个-awk" class="headerlink" title="一. 第一个 awk"></a>一. 第一个 awk</h3><p>让我们继续，开始使用 awk，以了解其工作原理。在命令行中输入以下命令：</p>
@@ -1051,7 +1139,7 @@
     <link href="https://fudawei.github.io/2016/12/29/Spring%E6%BA%90%E7%A0%81%EF%BC%9A%E6%A0%B8%E5%BF%83%E5%AE%B9%E5%99%A8/"/>
     <id>https://fudawei.github.io/2016/12/29/Spring源码：核心容器/</id>
     <published>2016-12-29T12:53:14.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
+    <updated>2017-02-12T01:59:36.408Z</updated>
     
     <content type="html"><![CDATA[<h3 id="容器概述"><a href="#容器概述" class="headerlink" title="容器概述"></a>容器概述</h3><pre><code>IoC也被称作依赖注入(DI)。它是一个处理对象依赖项的过程，也就是将他们一起工作的其他的对象，只有通过构造参数、工厂方法参数或者（属性注入）通过构造参数实例化或通过工厂方法返回对象后再设置属性。当创建bean后，IoC容器再将这些依赖项注入进去。这个过程基本上是反转的，因此得名控制反转（IoC）。
 </code></pre><p>下图是 IoC 的高级别视图<br><img src="/img/spring/container_1.png" alt=""></p>
@@ -1114,7 +1202,7 @@
     <link href="https://fudawei.github.io/2016/12/27/%E4%B8%80%E8%87%B4%E6%80%A7Hash/"/>
     <id>https://fudawei.github.io/2016/12/27/一致性Hash/</id>
     <published>2016-12-27T04:53:14.000Z</published>
-    <updated>2017-02-08T03:39:19.517Z</updated>
+    <updated>2017-02-12T01:59:36.728Z</updated>
     
     <content type="html"><![CDATA[<p>   一致性哈希算法在1997年由麻省理工学院提出的一种分布式哈希（DHT）实现算法，设计目标是为了解决因特网中的热点(Hot spot)问题，初衷和CARP十分类似。一致性哈希修正了CARP使用的简 单哈希算法带来的问题，使得分布式哈希（DHT）可以在P2P环境中真正得到应用。</p>
 <p> <strong>   一致性hash算法提出了在动态变化的Cache环境中，判定哈希算法好坏的四个定义：</strong></p>
@@ -1170,7 +1258,7 @@
     <link href="https://fudawei.github.io/2016/12/16/%E5%A6%82%E4%BD%95%E5%87%8F%E5%B0%91%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%93%8D%E5%BA%94%E6%97%B6%E9%97%B4/"/>
     <id>https://fudawei.github.io/2016/12/16/如何减少接口的响应时间/</id>
     <published>2016-12-16T13:26:33.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
+    <updated>2017-02-12T01:59:36.640Z</updated>
     
     <content type="html"><![CDATA[<p>Premature optimization is the root of all evil.</p>
 <p>　 — Donald Knuth</p>
@@ -1207,11 +1295,46 @@
   </entry>
   
   <entry>
+    <title>Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系</title>
+    <link href="https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/"/>
+    <id>https://fudawei.github.io/2016/12/15/Spring架构详解：Spring总体架构与设计理念和内部组件的作用和关系/</id>
+    <published>2016-12-15T04:53:14.000Z</published>
+    <updated>2017-02-12T01:59:36.404Z</updated>
+    
+    <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
+<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
+<p>Spring的总体架构</p>
+<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
+<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
+<p>Spring的设计理念</p>
+<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
+<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
+<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
+<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
+<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
+<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Spring总体架构与设计理念&lt;br&gt;概述：&lt;/p&gt;
+&lt;p&gt;Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成
+    
+    </summary>
+    
+      <category term="JavaEE框架" scheme="https://fudawei.github.io/categories/JavaEE%E6%A1%86%E6%9E%B6/"/>
+    
+    
+      <category term="Spring" scheme="https://fudawei.github.io/tags/Spring/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Spring架构详解：Bean详解和Context组件详解</title>
     <link href="https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ABean%E8%AF%A6%E8%A7%A3%E5%92%8CContext%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3/"/>
     <id>https://fudawei.github.io/2016/12/15/Spring架构详解：Bean详解和Context组件详解/</id>
     <published>2016-12-15T04:53:14.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
+    <updated>2017-02-12T01:59:36.392Z</updated>
     
     <content type="html"><![CDATA[<h1 id="Bean详解"><a href="#Bean详解" class="headerlink" title="Bean详解"></a>Bean详解</h1><p>前面已经说明了Bean组件对Spring的重要性，下面看看Bean这个组件式怎么设计的。Bean组件在Spring的org.springframework.beans包下。这个包下的所有类主要解决了三件事：Bean的定义、Bean 的创建以及对Bean的解析。对Spring的使用者来说唯一需要关心的就是Bean的创建，其他两个由Spring在内部帮你完成了，对你来说是透明的。</p>
 <p>SpringBean的创建时典型的工厂模式，他的顶级接口是BeanFactory，下图是这个工厂的继承层次关系：</p>
@@ -1243,46 +1366,11 @@
   </entry>
   
   <entry>
-    <title>Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系</title>
-    <link href="https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/"/>
-    <id>https://fudawei.github.io/2016/12/15/Spring架构详解：Spring总体架构与设计理念和内部组件的作用和关系/</id>
-    <published>2016-12-15T04:53:14.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
-    
-    <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
-<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
-<p>Spring的总体架构</p>
-<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
-<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
-<p>Spring的设计理念</p>
-<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
-<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
-<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
-<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
-<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
-<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;Spring总体架构与设计理念&lt;br&gt;概述：&lt;/p&gt;
-&lt;p&gt;Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成
-    
-    </summary>
-    
-      <category term="JavaEE框架" scheme="https://fudawei.github.io/categories/JavaEE%E6%A1%86%E6%9E%B6/"/>
-    
-    
-      <category term="Spring" scheme="https://fudawei.github.io/tags/Spring/"/>
-    
-  </entry>
-  
-  <entry>
     <title>Java多线程编程之Promise模式</title>
     <link href="https://fudawei.github.io/2016/11/24/Java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%BC%96%E7%A8%8B%E4%B9%8BPromise%E6%A8%A1%E5%BC%8F/"/>
     <id>https://fudawei.github.io/2016/11/24/Java多线程编程之Promise模式/</id>
     <published>2016-11-24T14:42:01.000Z</published>
-    <updated>2017-02-08T06:29:22.865Z</updated>
+    <updated>2017-02-12T01:59:36.068Z</updated>
     
     <content type="html"><![CDATA[<h3 id="Promise模式简介"><a href="#Promise模式简介" class="headerlink" title="Promise模式简介"></a>Promise模式简介</h3><p>Promise模式是一种异步编程模式 。它使得我们可以先开始一个任务的执行，并得到一个用于获取该任务执行结果的凭据对象，而不必等待该任务执行完毕就可以继续执行其他操作。等到我们需要该任务的执行结果时，再调用凭据对象的相关方法来获取。这样就避免了不必要的等待，增加了系统的并发性。这好比我们去小吃店，同时点了鸭血粉丝汤和生煎包。当我们点餐付完款后，我们拿到手的其实只是一张可借以换取相应食品的收银小票（凭据对象）而已，而不是对应的实物。由于鸭血粉丝汤可以较快制作好，故我们可以凭收银小票即刻兑换到。而生煎包的制作则比较耗时，因此我们可以先吃拿到手的鸭血粉丝汤，而不必饿着肚子等生煎包出炉再一起吃。等到我们把鸭血粉丝汤吃得差不多的时候，生煎包可能也出炉了，这时我们再凭收银小票去换取生煎包，如图所示。</p>
 <p><img src="/img/concurrent-1.png" alt=""></p>
@@ -1393,7 +1481,7 @@
     <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"/>
     <id>https://fudawei.github.io/2016/10/25/[Spark源码四]图解作业生命周期/</id>
     <published>2016-10-25T14:42:01.000Z</published>
-    <updated>2017-02-08T03:39:19.517Z</updated>
+    <updated>2017-02-12T01:59:36.960Z</updated>
     
     <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
 ]]></content>
@@ -1421,7 +1509,7 @@
     <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E4%B8%89%5D%E4%BD%9C%E4%B8%9A%E8%BF%90%E8%A1%8C%E8%BF%87%E7%A8%8B/"/>
     <id>https://fudawei.github.io/2016/10/25/[Spark源码三]作业运行过程/</id>
     <published>2016-10-25T14:42:01.000Z</published>
-    <updated>2017-02-08T03:39:19.517Z</updated>
+    <updated>2017-02-12T01:59:36.960Z</updated>
     
     <content type="html"><![CDATA[<p>官方给的例子里面，一执行collect方法就能出结果，那我们就从collect开始看吧，进入RDD，找到collect方法。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">def collect(): Array[T] = &#123;</div><div class="line">    val results = sc.runJob(this, (iter: Iterator[T]) =&gt; iter.toArray)</div><div class="line">    Array.concat(results: _*)</div><div class="line">  &#125;</div></pre></td></tr></table></figure>
@@ -1460,11 +1548,63 @@ eventProcessActor ! JobSubmitted(jobId, rdd, func2, partitions.toArray, allowLoc
   </entry>
   
   <entry>
+    <title>ubuntu下恢复rm删除的数据</title>
+    <link href="https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/"/>
+    <id>https://fudawei.github.io/2016/10/19/ubuntu下恢复rm删除的数据/</id>
+    <published>2016-10-19T08:12:41.000Z</published>
+    <updated>2017-02-12T01:59:36.440Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
+<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
+<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
+<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
+<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
+<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
+<li>安装extundelete</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
+<pre><code>umount /dev/sdb2 
+mount -o remount,ro /dev/sdb2
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
+extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
+</code></pre><p>```</p>
+<ul>
+<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
+</ul>
+<ul>
+<li><p>总结经验</p>
+<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
+</li>
+</ul>
+<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;1-论“备份”的重要性&quot;&gt;&lt;a href=&quot;#1-论“备份”的重要性&quot; class=&quot;headerlink&quot; title=&quot;1. 论“备份”的重要性&quot;&gt;&lt;/a&gt;1. 论“备份”的重要性&lt;/h1&gt;&lt;p&gt;今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。&lt;/p&gt;
+&lt;p&gt;被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。&lt;/p&gt;
+&lt;p&gt;我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
+    
+    
+      <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
+    
+      <category term="Ubuntu" scheme="https://fudawei.github.io/tags/Ubuntu/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Btree</title>
     <link href="https://fudawei.github.io/2016/10/19/Btree/"/>
     <id>https://fudawei.github.io/2016/10/19/Btree/</id>
     <published>2016-10-19T08:12:41.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
+    <updated>2017-02-12T01:59:35.988Z</updated>
     
     <content type="html"><![CDATA[<h1 id="1-前言："><a href="#1-前言：" class="headerlink" title="1.前言："></a>1.前言：</h1><p>动态查找树主要有：二叉查找树（Binary Search Tree），平衡二叉查找树（Balanced Binary Search Tree），红黑树 (Red-Black Tree )，B-tree/B+-tree/ B*-tree (B~Tree)。前三者是典型的二叉查找树结构，其查找的时间复杂度O(log2N)与树的深度相关，那么降低树的深度自然对查找效率是有所提高的；还有一个实际问题：就是大规模数据存储中，实现索引查询这样一个实际背景下，树节点存储的元素数量是有限的（如果元素数量非常多的话，查找就退化成节点内部的线性查找了），这样导致二叉查找树结构由于树的深度过大而造成磁盘I/O读写过于频繁，进而导致查询效率低下（为什么会出现这种情况，待会在外部存储器-磁盘中有所解释），那么如何减少树的深度（当然是不能减少查询的数据量），一个基本的想法就是：采用多叉树结构（由于树节点元素数量是有限的，自然该节点的子树数量也就是有限的）。</p>
 <p>这样我们就提出了一个新的查找树结构——多路查找树。根据平衡二叉树的启发，自然就想到平衡多路查找树结构，也就是这篇文章所要阐述的主题B~tree(B树结构)，B-tree这棵神奇的树是在Rudolf Bayer, Edward M. McCreight(1970)写的一篇论文《Organization and Maintenance of Large Ordered Indices》中首次提出。具体介绍可以参考wikipedia中的介绍：<a href="http://en.wikipedia.org/wiki/B-tree，其中还阐述了B-tree名字来源以及相关的开源地址。" target="_blank" rel="external">http://en.wikipedia.org/wiki/B-tree，其中还阐述了B-tree名字来源以及相关的开源地址。</a></p>
@@ -1616,63 +1756,11 @@ c)   关键字的个数n必须满足： ceil(m / 2)-1 &lt;= n &lt;= m-1。
   </entry>
   
   <entry>
-    <title>ubuntu下恢复rm删除的数据</title>
-    <link href="https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/"/>
-    <id>https://fudawei.github.io/2016/10/19/ubuntu下恢复rm删除的数据/</id>
-    <published>2016-10-19T08:12:41.000Z</published>
-    <updated>2017-02-08T03:39:19.513Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
-<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
-<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
-<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
-<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
-<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
-<li>安装extundelete</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
-<pre><code>umount /dev/sdb2 
-mount -o remount,ro /dev/sdb2
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
-extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
-</code></pre><p>```</p>
-<ul>
-<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
-</ul>
-<ul>
-<li><p>总结经验</p>
-<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
-</li>
-</ul>
-<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;1-论“备份”的重要性&quot;&gt;&lt;a href=&quot;#1-论“备份”的重要性&quot; class=&quot;headerlink&quot; title=&quot;1. 论“备份”的重要性&quot;&gt;&lt;/a&gt;1. 论“备份”的重要性&lt;/h1&gt;&lt;p&gt;今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。&lt;/p&gt;
-&lt;p&gt;被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。&lt;/p&gt;
-&lt;p&gt;我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。&lt;br&gt;
-    
-    </summary>
-    
-      <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
-    
-    
-      <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
-    
-      <category term="Ubuntu" scheme="https://fudawei.github.io/tags/Ubuntu/"/>
-    
-  </entry>
-  
-  <entry>
     <title>[Spark源码二】RDD讲解</title>
     <link href="https://fudawei.github.io/2016/10/10/%5BSpark%E6%BA%90%E7%A0%81%E4%BA%8C%5DRDD%E8%AE%B2%E8%A7%A3/"/>
     <id>https://fudawei.github.io/2016/10/10/[Spark源码二]RDD讲解/</id>
     <published>2016-10-10T14:42:01.000Z</published>
-    <updated>2017-02-08T03:39:19.517Z</updated>
+    <updated>2017-02-12T01:59:36.948Z</updated>
     
     <content type="html"><![CDATA[<p>1、什么是RDD？</p>
 <p> RDD的全名是Resilient Distributed Dataset，意思是容错的分布式数据集，每一个RDD都会有5个特征：</p>
@@ -1736,71 +1824,6 @@ extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里
       &lt;p&gt;1、什么是RDD？&lt;/p&gt;
 &lt;p&gt; RDD的全名是Resilient Distributed Dataset，意思是容错的分布式数据集，每一个RDD都会有5个特征：&lt;/p&gt;
 &lt;p&gt;1、有一个分片列表。就是能被切分，和hadoop一样的，能够切分的数据才能并行计算。&lt;br&gt;2
-    
-    </summary>
-    
-      <category term="大数据" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
-    
-      <category term="Spark" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Spark/"/>
-    
-    
-      <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
-    
-      <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>[Spark源码一】spark-submit提交作业过程</title>
-    <link href="https://fudawei.github.io/2016/09/27/%5BSpark%E6%BA%90%E7%A0%81%E4%B8%80%5Dspark-submit%E6%8F%90%E4%BA%A4%E4%BD%9C%E4%B8%9A/"/>
-    <id>https://fudawei.github.io/2016/09/27/[Spark源码一]spark-submit提交作业/</id>
-    <published>2016-09-27T14:42:01.000Z</published>
-    <updated>2017-02-08T03:39:19.517Z</updated>
-    
-    <content type="html"><![CDATA[<p>使用spark已经有一段时间了，今天开始读spark源码。<br>首先从spark提交作业开始。下图为spark的架构，以及Spark的APP运行图。它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Program的过程。</p>
-<p><img src="/img/spark_architecture.png" alt=""><br>这个是Spark的App运行图，它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Program的过程。</p>
-<h1 id="作业提交"><a href="#作业提交" class="headerlink" title="作业提交"></a>作业提交</h1><p>作业提交方法以及参数<br>我们先看一下用Spark Submit提交的方法吧，下面是从官方上面摘抄的内容。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"> Run on a Spark standalone cluster</div><div class="line">./bin/spark-submit \</div><div class="line">  --class org.apache.spark.examples.SparkPi \</div><div class="line">  --master spark://207.184.161.138:7077 \</div><div class="line">  --executor-memory 20G \</div><div class="line">  --total-executor-cores 100 \</div><div class="line">  /path/to/examples.jar \</div><div class="line">  1000</div></pre></td></tr></table></figure>
-<p>这个是提交到standalone集群的方式，打开spark-submit这文件，我们会发现它最后是调用了org.apache.spark.deploy.SparkSubmit这个类。</p>
-<p>直接打开这个类，找到main入口，发现代码很简单<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">def main(args: Array[String]): Unit = &#123;</div><div class="line">   val appArgs = new SparkSubmitArguments(args)</div><div class="line">   if (appArgs.verbose) &#123;</div><div class="line">     // scalastyle:off println</div><div class="line">     printStream.println(appArgs)</div><div class="line">     // scalastyle:on println</div><div class="line">   &#125;</div><div class="line">   appArgs.action match &#123;</div><div class="line">     case SparkSubmitAction.SUBMIT =&gt; submit(appArgs)</div><div class="line">     case SparkSubmitAction.KILL =&gt; kill(appArgs)</div><div class="line">     case SparkSubmitAction.REQUEST_STATUS =&gt; requestStatus(appArgs)</div><div class="line">   &#125;</div><div class="line"> &#125;</div></pre></td></tr></table></figure></p>
-<p>该方法做两件事：<br>1、这里SparkSubmitArguments类初始化过程将会加载spark默认配置文件的配置信息、运行环境信息，另外会将提交的参数覆盖默认配置（并且校验参数的合法性）<br>2、通过反射调用class主方法</p>
-<p>有兴趣可以看一下SparkSubmitArguments，一下为默认环境配置信息的代码（loadEnvironmentArguments()方法内部）<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div></pre></td><td class="code"><pre><div class="line">master = Option(master)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.master&quot;))</div><div class="line">      .orElse(env.get(&quot;MASTER&quot;))</div><div class="line">      .orNull</div><div class="line">    driverExtraClassPath = Option(driverExtraClassPath)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.driver.extraClassPath&quot;))</div><div class="line">      .orNull</div><div class="line">    driverExtraJavaOptions = Option(driverExtraJavaOptions)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.driver.extraJavaOptions&quot;))</div><div class="line">      .orNull</div><div class="line">    driverExtraLibraryPath = Option(driverExtraLibraryPath)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.driver.extraLibraryPath&quot;))</div><div class="line">      .orNull</div><div class="line">    driverMemory = Option(driverMemory)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.driver.memory&quot;))</div><div class="line">      .orElse(env.get(&quot;SPARK_DRIVER_MEMORY&quot;))</div><div class="line">      .orNull</div><div class="line">    driverCores = Option(driverCores)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.driver.cores&quot;))</div><div class="line">      .orNull</div><div class="line">    executorMemory = Option(executorMemory)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.executor.memory&quot;))</div><div class="line">      .orElse(env.get(&quot;SPARK_EXECUTOR_MEMORY&quot;))</div><div class="line">      .orNull</div><div class="line">    executorCores = Option(executorCores)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.executor.cores&quot;))</div><div class="line">      .orElse(env.get(&quot;SPARK_EXECUTOR_CORES&quot;))</div><div class="line">      .orNull</div><div class="line">    totalExecutorCores = Option(totalExecutorCores)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.cores.max&quot;))</div><div class="line">      .orNull</div><div class="line">    name = Option(name).orElse(sparkProperties.get(&quot;spark.app.name&quot;)).orNull</div><div class="line">    jars = Option(jars).orElse(sparkProperties.get(&quot;spark.jars&quot;)).orNull</div><div class="line">    ivyRepoPath = sparkProperties.get(&quot;spark.jars.ivy&quot;).orNull</div><div class="line">    packages = Option(packages).orElse(sparkProperties.get(&quot;spark.jars.packages&quot;)).orNull</div><div class="line">    packagesExclusions = Option(packagesExclusions)</div><div class="line">      .orElse(sparkProperties.get(&quot;spark.jars.excludes&quot;)).orNull</div><div class="line">    deployMode = Option(deployMode).orElse(env.get(&quot;DEPLOY_MODE&quot;)).orNull</div><div class="line">    numExecutors = Option(numExecutors)</div><div class="line">      .getOrElse(sparkProperties.get(&quot;spark.executor.instances&quot;).orNull)</div><div class="line">    keytab = Option(keytab).orElse(sparkProperties.get(&quot;spark.yarn.keytab&quot;)).orNull</div><div class="line">    principal = Option(principal).orElse(sparkProperties.get(&quot;spark.yarn.principal&quot;)).orNull</div></pre></td></tr></table></figure></p>
-<p>……</p>
-<h1 id="提交流程"><a href="#提交流程" class="headerlink" title="提交流程"></a>提交流程</h1><p>Driver程序的部署模式有两种，client和cluster，默认是client。client的话默认就是直接在本地运行了Driver程序了，cluster模式还会兜一圈把作业发到集群上面去运行。(指定部署模式需要用参数–deploy-mode来指定，或者在环境变量当中添加DEPLOY_MODE变量来指定。)</p>
-<p>下面讲的是cluster的部署方式，兜一圈的这种情况。</p>
-<p>yarn模式的话mainClass是org.apache.spark.deploy.yarn.Client，standalone的mainClass是org.apache.spark.deploy.Client。<br>这次我们讲org.apache.spark.deploy.Client，yarn的话有时间单独讲，目前超哥还是推荐使用standalone的方式部署spark，具体原因不详，据说是因为资源调度方面的问题。</p>
-<h1 id="Client端"><a href="#Client端" class="headerlink" title="Client端"></a>Client端</h1><p>我们首先看一下Client的实现，首先找到这个类。<br>main函数中主要有一下几行：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">val rpcEnv = RpcEnv.create(&quot;driverClient&quot;, Utils.localHostName(), 0, conf, new  SecurityManager(conf))</div><div class="line">val masterEndpoints = driverArgs.masters.map(RpcAddress.fromSparkURL).</div><div class="line">      map(rpcEnv.setupEndpointRef(_, Master.ENDPOINT_NAME))</div><div class="line">rpcEnv.setupEndpoint(&quot;client&quot;, new ClientEndpoint(rpcEnv, driverArgs, masterEndpoints, conf))</div><div class="line">rpcEnv.awaitTermination()</div></pre></td></tr></table></figure></p>
-<pre><code>这里看到一个rpcEnv，最后还调用了awaitTermination()方法，好像时启动了什么。另外Client继承了RpcEndpoint（ThreadSafeRpcEndpoint），浏览一下RpcEnv和RpcEndpoint的内容，其实就时用做发消息的，之前听说spark用的actor模式，每个进程之间可以看作是一个个独立的实体，他们之间是毫无关联的。但是，他们可以通过消息来通信。所有的任务都是通过消息通信完成。据说spark使用的是akka框架，但RpcEnv和RpcEndpoint没看到akka的实现，只有netty的实现，有可能spark已经讲akka实现移除了。至于actor模型有兴趣大家可自行百度。
-</code></pre><p><strong>为了便于阅读源码我们看一下RpcEndpoint中比较重要的几个函数：</strong><br>onStart()             //rpcEndpoint启动时执行的操作<br>onStop()              //rpcEndpoint停止时执行的操作<br>receive()             //接受并处理RpcEndpointRef.send发送的信息<br>receiveAndReply()     //接受并处理RpcEndpointRef.ask发送的信息</p>
-<p>接下来看一下启动时client做了那些操作</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div></pre></td><td class="code"><pre><div class="line">override def onStart(): Unit = &#123;</div><div class="line">   driverArgs.cmd match &#123;</div><div class="line">     case &quot;launch&quot; =&gt;</div><div class="line">       // TODO: We could add an env variable here and intercept it in `sc.addJar` that would</div><div class="line">       //       truncate filesystem paths similar to what YARN does. For now, we just require</div><div class="line">       //       people call `addJar` assuming the jar is in the same directory.</div><div class="line">       val mainClass = &quot;org.apache.spark.deploy.worker.DriverWrapper&quot;</div><div class="line"></div><div class="line">       val classPathConf = &quot;spark.driver.extraClassPath&quot;</div><div class="line">       val classPathEntries = sys.props.get(classPathConf).toSeq.flatMap &#123; cp =&gt;</div><div class="line">         cp.split(java.io.File.pathSeparator)</div><div class="line">       &#125;</div><div class="line"></div><div class="line">       val libraryPathConf = &quot;spark.driver.extraLibraryPath&quot;</div><div class="line">       val libraryPathEntries = sys.props.get(libraryPathConf).toSeq.flatMap &#123; cp =&gt;</div><div class="line">         cp.split(java.io.File.pathSeparator)</div><div class="line">       &#125;</div><div class="line"></div><div class="line">       val extraJavaOptsConf = &quot;spark.driver.extraJavaOptions&quot;</div><div class="line">       val extraJavaOpts = sys.props.get(extraJavaOptsConf)</div><div class="line">         .map(Utils.splitCommandString).getOrElse(Seq.empty)</div><div class="line">       val sparkJavaOpts = Utils.sparkJavaOpts(conf)</div><div class="line">       val javaOpts = sparkJavaOpts ++ extraJavaOpts</div><div class="line">       val command = new Command(mainClass,</div><div class="line">         Seq(&quot;&#123;&#123;WORKER_URL&#125;&#125;&quot;, &quot;&#123;&#123;USER_JAR&#125;&#125;&quot;, driverArgs.mainClass) ++ driverArgs.driverOptions,</div><div class="line">         sys.env, classPathEntries, libraryPathEntries, javaOpts)</div><div class="line"></div><div class="line">       val driverDescription = new DriverDescription(</div><div class="line">         driverArgs.jarUrl,</div><div class="line">         driverArgs.memory,</div><div class="line">         driverArgs.cores,</div><div class="line">         driverArgs.supervise,</div><div class="line">         command)</div><div class="line">       ayncSendToMasterAndForwardReply[SubmitDriverResponse](</div><div class="line">         RequestSubmitDriver(driverDescription))</div><div class="line"></div><div class="line">     case &quot;kill&quot; =&gt;</div><div class="line">       val driverId = driverArgs.driverId</div><div class="line">       ayncSendToMasterAndForwardReply[KillDriverResponse](RequestKillDriver(driverId))</div><div class="line">   &#125;</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
-<p>从上面的代码看得出来，它需要设置master的连接地址，最后提交了一个RequestSubmitDriver的信息。在receive方法里面，就是等待接受回应了，有两个Response分别对应着这里的launch和kill。这里发送的message信息是RequestSubmitDriver，顺便看一下ayncSendToMasterAndForwardReply实现：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">private def ayncSendToMasterAndForwardReply[T: ClassTag](message: Any): Unit = &#123;</div><div class="line">   for (masterEndpoint &lt;- masterEndpoints) &#123;</div><div class="line">     masterEndpoint.ask[T](message).onComplete &#123;</div><div class="line">       case Success(v) =&gt; self.send(v)</div><div class="line">       case Failure(e) =&gt;</div><div class="line">         logWarning(s&quot;Error sending messages to master $masterEndpoint&quot;, e)</div><div class="line">     &#125;(forwardMessageExecutionContext)</div><div class="line">   &#125;</div><div class="line"> &#125;</div></pre></td></tr></table></figure></p>
-<p>注意：这里调用的是masterEndpoint.ask.</p>
-<p><strong>小结：</strong></p>
-<p>Client通过实现rpc框架实现了请求、接收请求、传递的消息、注册的地址和端口这些功能。</p>
-<h1 id="Master端"><a href="#Master端" class="headerlink" title="Master端"></a>Master端</h1><p>接下来我们继续看Master段的代码</p>
-<p>Master类同样继承了RpcEndpoint。Client端发送消息使用的时ask所以我们看一下receiveAndReply函数，找一下对应的消息接受处理：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = &#123;</div><div class="line"> case RequestSubmitDriver(description) =&gt;</div><div class="line">      if (state != RecoveryState.ALIVE) &#123;</div><div class="line">        val msg = s&quot;$&#123;Utils.BACKUP_STANDALONE_MASTER_PREFIX&#125;: $state. &quot; +</div><div class="line">          &quot;Can only accept driver submissions in ALIVE state.&quot;</div><div class="line">        context.reply(SubmitDriverResponse(self, false, None, msg))</div><div class="line">      &#125; else &#123;</div><div class="line">        logInfo(&quot;Driver submitted &quot; + description.command.mainClass)</div><div class="line">        val driver = createDriver(description)</div><div class="line">        persistenceEngine.addDriver(driver)</div><div class="line">        waitingDrivers += driver</div><div class="line">        drivers.add(driver)</div><div class="line">        //调度</div><div class="line">        schedule()</div><div class="line">        // 告诉client，提交成功了，把driver.id告诉它</div><div class="line">        context.reply(SubmitDriverResponse(self, true, Some(driver.id),</div><div class="line">          s&quot;Driver successfully submitted as $&#123;driver.id&#125;&quot;))</div><div class="line">      &#125;</div></pre></td></tr></table></figure></p>
-<p>接下来看调度方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div></pre></td><td class="code"><pre><div class="line">private def schedule(): Unit = &#123;</div><div class="line">  if (state != RecoveryState.ALIVE) &#123;</div><div class="line">    return</div><div class="line">  &#125;</div><div class="line">  // 首先调度Driver程序，从workers里面随机抽一些出来</div><div class="line">  val shuffledAliveWorkers = Random.shuffle(workers.toSeq.filter(_.state == WorkerState.ALIVE))</div><div class="line">  val numWorkersAlive = shuffledAliveWorkers.size</div><div class="line">  var curPos = 0</div><div class="line">  for (driver &lt;- waitingDrivers.toList) &#123; // iterate over a copy of waitingDrivers</div><div class="line">    // We assign workers to each waiting driver in a round-robin fashion. For each driver, we</div><div class="line">    // start from the last worker that was assigned a driver, and continue onwards until we have</div><div class="line">    // explored all alive workers.</div><div class="line">    var launched = false</div><div class="line">    var numWorkersVisited = 0</div><div class="line">    while (numWorkersVisited &lt; numWorkersAlive &amp;&amp; !launched) &#123;</div><div class="line">      val worker = shuffledAliveWorkers(curPos)</div><div class="line">      numWorkersVisited += 1</div><div class="line">      //判断内存和CPU资源是否足够，</div><div class="line">      if (worker.memoryFree &gt;= driver.desc.mem &amp;&amp; worker.coresFree &gt;= driver.desc.cores) &#123;</div><div class="line">        launchDriver(worker, driver)  //向worker发送信息，worker预留内存</div><div class="line">        waitingDrivers -= driver</div><div class="line">        launched = true</div><div class="line">      &#125;</div><div class="line">      curPos = (curPos + 1) % numWorkersAlive</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">  //在worker上启动executor</div><div class="line">  startExecutorsOnWorkers()</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>这里仔细看一下worker启动executor的方法</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">private def scheduleExecutorsOnWorkers(</div><div class="line">     app: ApplicationInfo,</div><div class="line">     usableWorkers: Array[WorkerInfo],</div><div class="line">     spreadOutApps: Boolean): Array[Int] = &#123;</div><div class="line">   ......</div><div class="line">   ......</div><div class="line">   ......</div><div class="line">   while (freeWorkers.nonEmpty) &#123;</div><div class="line">     freeWorkers.foreach &#123; pos =&gt;</div><div class="line">       var keepScheduling = true</div><div class="line">       while (keepScheduling &amp;&amp; canLaunchExecutor(pos)) &#123;</div><div class="line">         coresToAssign -= minCoresPerExecutor</div><div class="line">         assignedCores(pos) += minCoresPerExecutor</div><div class="line"></div><div class="line">         // If we are launching one executor per worker, then every iteration assigns 1 core</div><div class="line">         // to the executor. Otherwise, every iteration assigns cores to a new executor.</div><div class="line">         if (oneExecutorPerWorker) &#123;</div><div class="line">           assignedExecutors(pos) = 1</div><div class="line">         &#125; else &#123;</div><div class="line">           assignedExecutors(pos) += 1</div><div class="line">         &#125;</div><div class="line"></div><div class="line">         //spreadout 意味着分配executor时会尽可能均匀的分布到所有的worker节点上，否则会想将一个worker的资源分             //配完才会去其他的worker分配executor</div><div class="line">         if (spreadOutApps) &#123;</div><div class="line">           keepScheduling = false</div><div class="line">         &#125;</div><div class="line">       &#125;</div><div class="line">     &#125;</div><div class="line">     freeWorkers = freeWorkers.filter(canLaunchExecutor)</div><div class="line">   &#125;</div><div class="line">   assignedCores</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
-<p>它的调度器是这样的，先调度Driver程序，然后再调度App，调度App的方式是从各个worker的里面和App进行匹配，看需要分配多少个cpu。<br>那我们接下来看两个方法launchDriver和launchExecutor即可。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">private def launchDriver(worker: WorkerInfo, driver: DriverInfo) &#123;</div><div class="line">   logInfo(&quot;Launching     &quot; + driver.id + &quot; on worker &quot; + worker.id)</div><div class="line">   worker.addDriver(driver)</div><div class="line">   driver.worker = Some(worker)</div><div class="line">   worker.endpoint.send(LaunchDriver(driver.id, driver.desc))</div><div class="line">   driver.state = DriverState.RUNNING</div><div class="line"> &#125;</div></pre></td></tr></table></figure></p>
-<p>给worker发送了一个LaunchDriver的消息，下面在看launchExecutor的方法。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">private def launchExecutor(worker: WorkerInfo, exec: ExecutorDesc): Unit = &#123;</div><div class="line">    logInfo(&quot;Launching executor &quot; + exec.fullId + &quot; on worker &quot; + worker.id)</div><div class="line">    worker.addExecutor(exec)</div><div class="line">    worker.endpoint.send(LaunchExecutor(masterUrl,</div><div class="line">      exec.application.id, exec.id, exec.application.desc, exec.cores, exec.memory))</div><div class="line">    exec.application.driver.send(</div><div class="line">      ExecutorAdded(exec.id, worker.id, worker.hostPort, exec.cores, exec.memory))</div><div class="line">  &#125;</div></pre></td></tr></table></figure></p>
-<p>  它要做的事情多一点，除了给worker发送LaunchExecutor指令外，还需要给driver发送ExecutorAdded的消息，说你的任务已经有人干了。</p>
-<p>在继续Worker讲之前，我们先看看它是怎么注册进来的，每个Worker启动之后，会自动去请求Master去注册自己，具体我们可以看receive的方法里面的RegisterWorker这一段，它需要上报自己的内存、Cpu、地址、端口等信息，注册成功之后返回RegisteredWorker信息给它，说已经注册成功了</p>
-<h1 id="Worker执行"><a href="#Worker执行" class="headerlink" title="Worker执行"></a>Worker执行</h1><p>同样的，我们到Worker里面在receive方法找LaunchDriver和LaunchExecutor就可以找到我们要的东西。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">case LaunchDriver(driverId, driverDesc) =&gt;</div><div class="line">      logInfo(s&quot;Asked to launch driver $driverId&quot;)</div><div class="line">      val driver = new DriverRunner(</div><div class="line">        conf,</div><div class="line">        driverId,</div><div class="line">        workDir,</div><div class="line">        sparkHome,</div><div class="line">        driverDesc.copy(command = Worker.maybeUpdateSSLSettings(driverDesc.command, conf)),</div><div class="line">        self,</div><div class="line">        workerUri,</div><div class="line">        securityMgr)</div><div class="line">      drivers(driverId) = driver</div><div class="line">      driver.start()</div><div class="line"></div><div class="line">      coresUsed += driverDesc.cores</div><div class="line">      memoryUsed += driverDesc.mem</div></pre></td></tr></table></figure>
-<p>这里运行LaunchDriver时，只是预分配了内存和CPU资源，接下来看一下start方法吧，start方法里面，其实是new Thread().start()，run方法里面是通过传过来的DriverDescription构造的一个命令，丢给ProcessBuilder去执行命令，结束之后调用。</p>
-<p>worker ！DriverStateChanged通知worker，worker再通过master ! DriverStateChanged通知master，释放掉worker的cpu和内存。</p>
-<p>接下来看一下看一下LaunchExecutor</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div></pre></td><td class="code"><pre><div class="line">case LaunchExecutor(masterUrl, appId, execId, appDesc, cores_, memory_) =&gt;</div><div class="line">     if (masterUrl != activeMasterUrl) &#123;</div><div class="line">       logWarning(&quot;Invalid Master (&quot; + masterUrl + &quot;) attempted to launch executor.&quot;)</div><div class="line">     &#125; else &#123;</div><div class="line">       try &#123;</div><div class="line">         logInfo(&quot;Asked to launch executor %s/%d for %s&quot;.format(appId, execId, appDesc.name))</div><div class="line"></div><div class="line">         // Create the executor&apos;s working directory</div><div class="line">         val executorDir = new File(workDir, appId + &quot;/&quot; + execId)</div><div class="line">         if (!executorDir.mkdirs()) &#123;</div><div class="line">           throw new IOException(&quot;Failed to create directory &quot; + executorDir)</div><div class="line">         &#125;</div><div class="line"></div><div class="line">         // Create local dirs for the executor. These are passed to the executor via the</div><div class="line">         // SPARK_EXECUTOR_DIRS environment variable, and deleted by the Worker when the</div><div class="line">         // application finishes.</div><div class="line">         val appLocalDirs = appDirectories.getOrElse(appId,</div><div class="line">           Utils.getOrCreateLocalRootDirs(conf).map &#123; dir =&gt;</div><div class="line">             val appDir = Utils.createDirectory(dir, namePrefix = &quot;executor&quot;)</div><div class="line">             Utils.chmod700(appDir)</div><div class="line">             appDir.getAbsolutePath()</div><div class="line">           &#125;.toSeq)</div><div class="line">         appDirectories(appId) = appLocalDirs</div><div class="line">         val manager = new ExecutorRunner(</div><div class="line">           appId,</div><div class="line">           execId,</div><div class="line">           appDesc.copy(command = Worker.maybeUpdateSSLSettings(appDesc.command, conf)),</div><div class="line">           cores_,</div><div class="line">           memory_,</div><div class="line">           self,</div><div class="line">           workerId,</div><div class="line">           host,</div><div class="line">           webUi.boundPort,</div><div class="line">           publicAddress,</div><div class="line">           sparkHome,</div><div class="line">           executorDir,</div><div class="line">           workerUri,</div><div class="line">           conf,</div><div class="line">           appLocalDirs, ExecutorState.RUNNING)</div><div class="line">         executors(appId + &quot;/&quot; + execId) = manager</div><div class="line">         manager.start()</div><div class="line">         coresUsed += cores_</div><div class="line">         memoryUsed += memory_</div><div class="line">         sendToMaster(ExecutorStateChanged(appId, execId, manager.state, None, None))</div><div class="line">       &#125; catch &#123;</div><div class="line">         case e: Exception =&gt;</div><div class="line">           logError(s&quot;Failed to launch executor $appId/$execId for $&#123;appDesc.name&#125;.&quot;, e)</div><div class="line">           if (executors.contains(appId + &quot;/&quot; + execId)) &#123;</div><div class="line">             executors(appId + &quot;/&quot; + execId).kill()</div><div class="line">             executors -= appId + &quot;/&quot; + execId</div><div class="line">           &#125;</div><div class="line">           sendToMaster(ExecutorStateChanged(appId, execId, ExecutorState.FAILED,</div><div class="line">             Some(e.toString), None))</div><div class="line">       &#125;</div><div class="line">     &#125;</div></pre></td></tr></table></figure>
-<p>﻿同理，LaunchExecutor执行完毕了，通过worker ! ExecutorStateChanged通知worker，然后worker通过master ! ExecutorStateChanged通知master，释放掉worker的cpu和内存。</p>
-<p>下面我们再梳理一下这个过程，只包括Driver注册，Driver运行之后的过程在之后的文章再说，比较复杂。</p>
-<p>1、Client通过获得Url地址获得RpcEndPointRef（master的actor引用）,然后通过RpcEndPointRef给Master发送注册Driver请求（RequestSubmitDriver）<br>2、Master接收到请求之后就开始调度了，从workers列表里面找出可以用的Worker<br>3、通过Worker的actor引用RpcEndPointRef给可用的Worker发送启动Driver请求（LaunchDriver）<br>4、调度完毕之后，给Client回复注册成功消息(SubmitDriverResponse)<br>5、Worker接收到LaunchDriver请求之后，通过传过来的DriverDescription的信息构造出命令来，通过ProcessBuilder执行<br>6、ProcessBuilder执行完命令之后，通过DriverStateChanged通过Worker<br>7、Worker最后把DriverStateChanged汇报给Master</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;使用spark已经有一段时间了，今天开始读spark源码。&lt;br&gt;首先从spark提交作业开始。下图为spark的架构，以及Spark的APP运行图。它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Program的过程。&lt;/p
     
     </summary>
     

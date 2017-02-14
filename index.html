@@ -3398,6 +3398,127 @@
           
           
             
+              <a class="post-title-link" href="/2017/02/13/[并发锁(三)]加锁原理/" itemprop="url">
+                [并发锁(三)]枷锁原理
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2017-02-13T20:07:52+08:00" content="2017-02-13">
+            2017-02-13
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/" itemprop="url" rel="index">
+                  <span itemprop="name">Java</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/并发库/" itemprop="url" rel="index">
+                  <span itemprop="name">并发库</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2017/02/13/[并发锁(三)]加锁原理/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/13/[并发锁(三)]加锁原理/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2017/02/13/[并发锁(三)]加锁原理/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2017/02/13/[并发锁(三)]加锁原理/"class="leancloud_visitors" data-flag-title="[并发锁(三)]枷锁原理">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            接上篇，这篇从Lock.lock/unlock开始。特别说明在没有特殊情况下所有程序、API、文档都是基于JDK 6.0的。
+123456public void Java.util.concurrent.locks.ReentrantLock.lock()		获取锁。	    如果该锁没有被另一个线
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2017/02/13/[并发锁(三)]加锁原理/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
               <a class="post-title-link" href="/2017/02/08/Java 并发编程：volatile的使用及其原理/" itemprop="url">
                 Java 并发编程：volatile的使用及其原理
               </a>
@@ -4463,127 +4584,6 @@
 
 
     
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/12/27/一致性Hash/" itemprop="url">
-                一致性HASH
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-12-27T12:53:14+08:00" content="2016-12-27">
-            2016-12-27
-          </time>
-        </span>
-
-        
-          <span class="post-category" >
-            &nbsp; | &nbsp; 分类于
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/分布式/" itemprop="url" rel="index">
-                  <span itemprop="name">分布式</span>
-                </a>
-              </span>
-
-              
-              
-                ， 
-              
-
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/分布式/算法/" itemprop="url" rel="index">
-                  <span itemprop="name">算法</span>
-                </a>
-              </span>
-
-              
-              
-
-            
-          </span>
-        
-
-        
-          
-            <span class="post-comments-count">
-              &nbsp; | &nbsp;
-              <!--
-              <a href="/2016/12/27/一致性Hash/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2016/12/27/一致性Hash/" itemprop="commentsCount"></span>
-              </a>
-              -->
-              <a href="/2016/12/27/一致性Hash/#comments" itemprop="discussionUrl">
-                <span>评论</span>
-              </a>
-            </span>
-          
-        
-
-
-
-
-&nbsp; | &nbsp;
-<span id="/2016/12/27/一致性Hash/"class="leancloud_visitors" data-flag-title="一致性HASH">
-         &nbsp;阅读次数
-        </span>
-
-
-	
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-               一致性哈希算法在1997年由麻省理工学院提出的一种分布式哈希（DHT）实现算法，设计目标是为了解决因特网中的热点(Hot spot)问题，初衷和CARP十分类似。一致性哈希修正了CARP使用的简 单哈希算法带来的问题，使得分布式哈希（DHT）可以在P2P环境中真正得到应用。
-    一致性ha
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/12/27/一致性Hash/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4622,7 +4622,7 @@
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">139</span>
+              <span class="site-state-item-count">140</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>

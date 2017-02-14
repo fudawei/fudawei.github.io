@@ -51,7 +51,7 @@ ConcurrentHashMap定位一个元素的过程需要进行两次Hash操作，第�
 ConcurrentHashMap可以做到读取数据不加锁，并且其内部的结构可以让其在进行写操作的时候能够将锁的粒度保持地尽量地小，不用对整个ConcurrentHashMap加锁。
 ConcurrentHashMap定位一个元素的过程需要进行两次Hash操作，第一次Hash定位到Segment，第二次Hash定位到元素所在的链表的头部，因此，这一种结构的带来的副">
 <meta property="og:image" content="http://7xrkr6.com1.z0.glb.clouddn.com/nuEZ0.png">
-<meta property="og:updated_time" content="2017-02-08T03:39:19.513Z">
+<meta property="og:updated_time" content="2017-02-12T01:59:36.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="CocurrentHashMap源码理解">
 <meta name="twitter:description" content="CurrentHashMap 笔记
@@ -667,7 +667,7 @@ ConcurrentHashMap定位一个元素的过程需要进行两次Hash操作，第�
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">139</span>
+              <span class="site-state-item-count">140</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>

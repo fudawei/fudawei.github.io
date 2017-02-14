@@ -3398,6 +3398,127 @@
           
           
             
+              <a class="post-title-link" href="/2016/09/27/[Spark源码一]spark-submit提交作业/" itemprop="url">
+                [Spark源码一】spark-submit提交作业过程
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2016-09-27T22:42:01+08:00" content="2016-09-27">
+            2016-09-27
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/大数据/" itemprop="url" rel="index">
+                  <span itemprop="name">大数据</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/大数据/Spark/" itemprop="url" rel="index">
+                  <span itemprop="name">Spark</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2016/09/27/[Spark源码一]spark-submit提交作业/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2016/09/27/[Spark源码一]spark-submit提交作业/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2016/09/27/[Spark源码一]spark-submit提交作业/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2016/09/27/[Spark源码一]spark-submit提交作业/"class="leancloud_visitors" data-flag-title="[Spark源码一】spark-submit提交作业过程">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            使用spark已经有一段时间了，今天开始读spark源码。首先从spark提交作业开始。下图为spark的架构，以及Spark的APP运行图。它通过一个Driver来和集群通信，集群负责作业的分配。今天我要讲的是如何创建这个Driver Program的过程。
+这个是Spark的App运行图，它通过
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2016/09/27/[Spark源码一]spark-submit提交作业/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
               <a class="post-title-link" href="/2016/09/25/Redis 数据结构和对象--（一）简单动态字符串/" itemprop="url">
                 Redis数据结构和对象-(一)简单动态字符串
               </a>
@@ -4181,7 +4302,7 @@
           
             <div class="post-gallery-row">
               <a class="post-gallery-img fancybox"
-                 href="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%996.jpg" rel="gallery_ciyws34j300b1yta0hj5zamvq"
+                 href="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%996.jpg" rel="gallery_ciz58f82j00b5b57ceysjpxm7"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%996.jpg" itemprop="contentUrl"/>
               </a>
@@ -4189,7 +4310,7 @@
           
             
               <a class="post-gallery-img fancybox"
-                 href="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%991.jpg" rel="gallery_ciyws34j300b1yta0hj5zamvq"
+                 href="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%991.jpg" rel="gallery_ciz58f82j00b5b57ceysjpxm7"
                  itemscope itemtype="http://schema.org/ImageObject" itemprop="url">
                 <img src="http://7xstki.com1.z0.glb.clouddn.com/%E5%B8%AE%E7%A8%8B%E5%BA%8F%E5%91%98%E6%94%BE%E6%9D%BE%E7%9A%84%E5%8D%81%E4%B8%AA%E7%BD%91%E7%AB%991.jpg" itemprop="contentUrl"/>
               </a>
@@ -4647,115 +4768,6 @@
 
 
     
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/06/09/常见的网络攻击原理分析/" itemprop="url">
-                常见的网络攻击原理分析
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-06-09T22:37:18+08:00" content="2016-06-09">
-            2016-06-09
-          </time>
-        </span>
-
-        
-          <span class="post-category" >
-            &nbsp; | &nbsp; 分类于
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/安全/" itemprop="url" rel="index">
-                  <span itemprop="name">安全</span>
-                </a>
-              </span>
-
-              
-              
-
-            
-          </span>
-        
-
-        
-          
-            <span class="post-comments-count">
-              &nbsp; | &nbsp;
-              <!--
-              <a href="/2016/06/09/常见的网络攻击原理分析/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2016/06/09/常见的网络攻击原理分析/" itemprop="commentsCount"></span>
-              </a>
-              -->
-              <a href="/2016/06/09/常见的网络攻击原理分析/#comments" itemprop="discussionUrl">
-                <span>评论</span>
-              </a>
-            </span>
-          
-        
-
-
-
-
-&nbsp; | &nbsp;
-<span id="/2016/06/09/常见的网络攻击原理分析/"class="leancloud_visitors" data-flag-title="常见的网络攻击原理分析">
-         &nbsp;阅读次数
-        </span>
-
-
-	
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            常见网络攻击手段原理分析
-TCP SYN拒绝服务攻击一般情况下，一个TCP连接的建立需要经过三次握手的过程，即：1、 建立发起者向目标计算机发送一个TCP SYN报文；2、 目标计算机收到这个SYN报文后，在内存中创建TCP连接控制块（TCB），然后向发起者回送一个TCP ACK报文，等待发起者的回
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/06/09/常见的网络攻击原理分析/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4794,7 +4806,7 @@ TCP SYN拒绝服务攻击一般情况下，一个TCP连接的建立需要经过�
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">139</span>
+              <span class="site-state-item-count">140</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>
