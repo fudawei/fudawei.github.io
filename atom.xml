@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://fudawei.github.io/"/>
-  <updated>2017-02-14T07:04:58.219Z</updated>
+  <updated>2017-02-15T08:01:21.888Z</updated>
   <id>https://fudawei.github.io/</id>
   
   <author>
@@ -16,11 +16,11 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>[并发锁(三)]枷锁原理</title>
-    <link href="https://fudawei.github.io/2017/02/13/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%B8%89)%5D%E5%8A%A0%E9%94%81%E5%8E%9F%E7%90%86/"/>
-    <id>https://fudawei.github.io/2017/02/13/[并发锁(三)]加锁原理/</id>
-    <published>2017-02-13T12:07:52.000Z</published>
-    <updated>2017-02-14T07:04:58.219Z</updated>
+    <title>[并发锁(四)]枷锁原理</title>
+    <link href="https://fudawei.github.io/2017/02/15/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E5%9B%9B)%5D%E5%8A%A0%E9%94%81%E5%8E%9F%E7%90%86/"/>
+    <id>https://fudawei.github.io/2017/02/15/[并发锁(四)]加锁原理/</id>
+    <published>2017-02-15T10:07:52.000Z</published>
+    <updated>2017-02-15T08:01:21.888Z</updated>
     
     <content type="html"><![CDATA[<p>接上篇，这篇从Lock.lock/unlock开始。特别说明在没有特殊情况下所有程序、API、文档都是基于JDK 6.0的。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">public void Java.util.concurrent.locks.ReentrantLock.lock()</div><div class="line"></div><div class="line">		获取锁。</div><div class="line">	    如果该锁没有被另一个线程保持，则获取该锁并立即返回，将锁的保持计数设置为 1。</div><div class="line">	    如果当前线程已经保持该锁，则将保持计数加 1，并且该方法立即返回。</div><div class="line">	    如果该锁被另一个线程保持，则出于线程调度的目的，禁用当前线程，并且在获得锁之前，该线程将一直处于休眠状态，此时锁保持计数被设置为 1。</div></pre></td></tr></table></figure>
@@ -89,6 +89,88 @@
     
       &lt;p&gt;接上篇，这篇从Lock.lock/unlock开始。特别说明在没有特殊情况下所有程序、API、文档都是基于JDK 6.0的。&lt;/p&gt;
 &lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;di
+    
+    </summary>
+    
+      <category term="Java" scheme="https://fudawei.github.io/categories/Java/"/>
+    
+      <category term="并发库" scheme="https://fudawei.github.io/categories/Java/%E5%B9%B6%E5%8F%91%E5%BA%93/"/>
+    
+    
+      <category term="Java" scheme="https://fudawei.github.io/tags/Java/"/>
+    
+      <category term="并发库" scheme="https://fudawei.github.io/tags/%E5%B9%B6%E5%8F%91%E5%BA%93/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>[并发锁(二)]AQS阻塞队列</title>
+    <link href="https://fudawei.github.io/2017/02/14/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%BA%8C)%5DAQS%E9%98%BB%E5%A1%9E%E9%98%9F%E5%88%97/"/>
+    <id>https://fudawei.github.io/2017/02/14/[并发锁(二)]AQS阻塞队列/</id>
+    <published>2017-02-14T12:07:52.000Z</published>
+    <updated>2017-02-15T07:54:55.536Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="自旋锁"><a href="#自旋锁" class="headerlink" title="自旋锁"></a>自旋锁</h2><p>我们知道一个线程在尝试获取锁失败后将被阻塞并加入等待队列中，它是一个怎样的队列？又是如何管理此队列？这节聊聊CHL Node FIFO队列。<br> 在谈到CHL Node FIFO队列之前，我们先分析这种队列的几个要素。首先要了解的是自旋锁，所谓自旋锁即是某一线程去尝试获取某个锁时，如果该锁已经被其他线程占用的话，此线程将不断循环检查该锁是否被释放，而不是让此线程挂起或睡眠。它属于为了保证共享资源而提出的一种锁机制，与互斥锁类似，保证了公共资源在任意时刻最多只能由一条线程获取使用，不同的是互斥锁在获取锁失败后将进入睡眠或阻塞状态。下面利用代码实现一个简单的自旋锁，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div></pre></td><td class="code"><pre><div class="line">public class SpinLock &#123;</div><div class="line">	private static Unsafe unsafe = null;</div><div class="line">	private static final long valueOffset;</div><div class="line">	private volatile int value = 0;</div><div class="line"></div><div class="line">	static &#123;</div><div class="line">		try &#123;</div><div class="line">			unsafe=getUnsafeInstance();</div><div class="line">			valueOffset = unsafe.objectFieldOffset(SpinLock.class.getDeclaredField(&quot;value&quot;));</div><div class="line">		&#125; catch (Exception ex) &#123;</div><div class="line">			throw new Error(ex);</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	private static Unsafe getUnsafeInstance() throws SecurityException,NoSuchFieldException,IllegalArgumentException,IllegalAccessException &#123;</div><div class="line">		Field theUnsafeInstance = Unsafe.class.getDeclaredField(&quot;theUnsafe&quot;);</div><div class="line">		theUnsafeInstance.setAccessible(true);</div><div class="line">		return (Unsafe) theUnsafeInstance.get(Unsafe.class);</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	public void lock() &#123;</div><div class="line">		for (;;) &#123;</div><div class="line">            int newV = value + 1;</div><div class="line">            if(newV==1)</div><div class="line">                if (unsafe.compareAndSwapInt(this, valueOffset, 0, newV))&#123;</div><div class="line">                	return ;</div><div class="line">                &#125;</div><div class="line">        	&#125;</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">    public void unlock() &#123;</div><div class="line">		unsafe.compareAndSwapInt(this, valueOffset, 1, 0);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这是一个很简单的自旋锁，主要看加粗加红的两个方法lock和unlock，Unsafe仅仅是为操作提供了硬件级别的原子CAS操作，暂时忽略此类，只要知道它的作用即可，我们将在后面的“原子性如何保证”小节中对此进行更加深入的阐述。对于lock方法，假如有若干线程竞争，能成功通过CAS操作修改value值为newV的线程即是成功获取锁的线程，将直接通过，而其他的线程则不断在循环检测value值是否又改回0，而将value改为0的操作就是获取锁的线程执行完后对该锁进行释放，通过unlock方法释放锁，释放后若干线程又对该锁竞争。如此一来，没获取的锁也不会被挂起或阻塞，而是不断循环检查状态。图2-5-9-3可加深自旋锁的理解，五条线程轮询value变量，t1获取成功后将value置为1，此状态时其他线程无法竞争锁，t1使用完锁后将value置为0，剩下的线程继续竞争锁，以此类推。这样就保证了某个区域块的线程安全性。</p>
+<p><img src="/img/sy/sy-1.jpg" alt=""><br>自旋锁</p>
+<blockquote>
+<p>自旋锁缺点<br>自旋锁适用于锁占用时间短，即锁保护临界区很小的情景，同时它需要硬件级别操作，也要保证各缓存数据的一致性，另外，无法保证公平性，不保证先到先获得，可能造成线程饥饿。在多处理器机器上，每个线程对应的处理器都对同一个变量进行读写，而每次读写操作都将要同步每个处理器缓存，导致系统性能严重下降。</p>
+</blockquote>
+<h3 id="自旋锁优化"><a href="#自旋锁优化" class="headerlink" title="自旋锁优化"></a>自旋锁优化</h3><p>看Craig, Landin, and Hagersten发明的CLH锁如何优化同步带来的花销，其核心思想是：通过一定手段将所有线程对某一共享变量轮询竞争转化为一个线程队列且队列中的线程各自轮询自己的本地变量。这个转化过程由两个要点，一是构建怎样的队列&amp;如何构建队列，为了保证公平性，构建的将是一个FIFO队列，构建的时候主要通过移动尾部节点tail实现队列的排队，每个想获取锁的线程创建一个新节点并通过CAS原子操作将新节点赋予tail，然后让当前线程轮询前一节点的某个状态位，如图2-5-9-3，如此就成功构建线程排队队列；二是如何释放队列，执行完线程后只需将当前线程对应的节点状态位置为解锁状态，由于下一节点一直在轮询，可获取到锁</p>
+<p><img src="/img/sy/sy-2.jpg" alt=""></p>
+<p>CLH锁的核心思想貌似是将众多线程长时间对某资源的竞争，通过有序化这些线程转化为只需对本地变量检测。唯一存在竞争的地方就是在入队列之前对尾节点tail的竞争，但竞争的线程的数量已经少了很多，且比起所有线程直接对某资源竞争的轮询次数也减少了很多，节省了很多CPU缓存同步操作，大大提升系统性能，利用空间换取性能。下面提供一个简单的CLH锁实现代码，lock与unlock两方法提供加锁解锁操作，每次加锁解锁必须将一个CLHNode对象作为参数传入，lock方法的for循环是通过CAS操作将新节点插入队列，而while循环则是检测前驱节点的锁状态位，一旦前驱节点锁状态位允许则结束检测让线程往下执行。解锁操作先判断当前节点是否为尾节点，如是则直接将尾节点置为空，此时说名仅仅只有一条线程在执行，否则将当前节点的锁状态位置为解锁状态。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div></pre></td><td class="code"><pre><div class="line">public class CLHLock &#123;</div><div class="line"></div><div class="line">	private static Unsafe unsafe = null;</div><div class="line">	private static final long valueOffset;</div><div class="line">	private volatile CLHNode tail;</div><div class="line">	public class CLHNode &#123;</div><div class="line">		private boolean isLocked = true;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	static &#123;</div><div class="line">		try &#123;</div><div class="line">			unsafe = getUnsafeInstance();</div><div class="line">     		valueOffset = unsafe.objectFieldOffset(CLHLock.class.getDeclaredField(&quot;tail&quot;));</div><div class="line">		&#125; catch (Exception ex) &#123;</div><div class="line">			throw new Error(ex);</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	public void lock(CLHNode currentThreadNode) &#123;</div><div class="line">		CLHNode preNode = null;</div><div class="line">		for (;;) &#123;</div><div class="line">			preNode = tail;</div><div class="line">			if (unsafe.compareAndSwapObject(this, valueOffset, tail,currentThreadNode))</div><div class="line">				break;</div><div class="line">			&#125;</div><div class="line">			if (preNode != null)</div><div class="line">				while (preNode.isLocked) &#123;</div><div class="line">				&#125;</div><div class="line">			&#125;</div><div class="line"></div><div class="line">		&#125;</div><div class="line"></div><div class="line">	public void unlock(CLHNode currentThreadNode) &#123;</div><div class="line">  		if (!unsafe.compareAndSwapObject(this, valueOffset, currentThreadNode,null))</div><div class="line">   			currentThreadNode.isLocked = false;</div><div class="line">		&#125;</div><div class="line"></div><div class="line">	private static Unsafe getUnsafeInstance() throws SecurityException,</div><div class="line">							NoSuchFieldException, IllegalArgumentException,IllegalAccessException &#123;</div><div class="line">		Field theUnsafeInstance = Unsafe.class.getDeclaredField(&quot;theUnsafe&quot;);</div><div class="line">		theUnsafeInstance.setAccessible(true);</div><div class="line">		return (Unsafe) theUnsafeInstance.get(Unsafe.class);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="CLH锁改造"><a href="#CLH锁改造" class="headerlink" title="CLH锁改造"></a>CLH锁改造</h3><p>在CLH锁核心思想的影响下，Java并发包的基础框架AQS以CLH锁作为基础而设计，其中主要是考虑到CLH锁更容易实现取消与超时功能。比起原来的CLH锁已经做了很大的改造，主要从两方面进行了改造：节点的结构与节点等待机制。在结构上引入了头结点和尾节点，他们分别指向队列的头和尾，尝试获取锁、入队列、释放锁等实现都与头尾节点相关，并且每个节点都引入前驱节点和后后续节点的引用；在等待机制上由原来的自旋改成阻塞唤醒。如图2-5-9-4，通过前驱后续节点的引用一节节连接起来形成一个链表队列，对于头尾节点的更新必须是原子的。下面详细看看入队、检测挂起、释放出队、超时、取消等操作。</p>
+<p><img src="/img/sy/sy-3.jpg" alt=""></p>
+<ol>
+<li><p>入队，整块逻辑其实是用一个无限循环进行CAS操作，即用自旋方式竞争直到成功。将尾节点tail的旧值赋予新节点node的前驱节点，并尝试CAS操作将新节点node赋予尾节点tail，原先的尾节点的后续节点指向新建节点node。完成上面步骤就建立起一条如图2-5-9-4所示的链表队列。代码简化如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">for (;;) &#123;</div><div class="line">   Node t = tail;</div><div class="line">   node.prev = t;</div><div class="line">   if (compareAndSetTail(t, node)) &#123;</div><div class="line">      t.next = node;</div><div class="line">      return node;</div><div class="line">   &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+<li><p>检测挂起，上面我们说到节点等待机制已经被AQS作者由自旋机制改造成阻塞机制，一个新建的节点完成入队操作后，如果是自旋则直接进入循环检测前驱节点是否为头结点即可，但现在被改为阻塞机制，当前线程将首先检测是否为头结点且尝试获取锁，如果当前节点为头结点并成功获取锁则直接返回，当前线程不进入阻塞，否则将当前线程阻塞。代码简化如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"> for (;;) &#123;</div><div class="line">    if (node.prev == head)</div><div class="line">	if(尝试获取锁成功)&#123;</div><div class="line">         head=node;</div><div class="line">         node.next=null;</div><div class="line">         return;</div><div class="line">     &#125;</div><div class="line">   阻塞线程</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+<li><p>释放出队，出队的主要工作是负责唤醒等待队列中后续节点，让所有等待节点环环相接，每条线程有序地往下执行。代码简化如下：<br>Node s = node.next;<br>唤醒节点s包含的线程</p>
+</li>
+<li><p>超时，在支持超时的模式下需要LockSupport类的parkNanos方法支持，线程在阻塞一段时间后会自动唤醒，每次循环将累加消耗时间，当总消耗时间大于等于自定义的超时时间时就直接分返。代码简化如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">for (;;) &#123;</div><div class="line">   尝试获取锁</div><div class="line">   if (nanosTimeout &lt;= 总消耗时间)</div><div class="line">      return;</div><div class="line">   LockSupport.parkNanos(this, nanosTimeout);</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
+</li>
+<li><p>取消，队列中等待锁的队列可能因为中断或超时而涉及到取消操作，这种情况下被取消的节点不再进行锁竞争。此过程主要完成的工作是将取消的节点移除，先将节点的。先将节点node状态设置成取消，再将前驱节点pred的后续节点指向node的后续节点，这里由于涉及到竞争，必须通过CAS进行操作，CAS操作就算失败也不必理会，因为已经改了节点的状态，在尝试获取锁操作中会循环对节点的状态判断。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">node.waitStatus = Node.CANCELLED;</div><div class="line">Node pred = node.prev;</div><div class="line">Node predNext = pred.next;</div><div class="line">Node next = node.next;</div><div class="line">compareAndSetNext(pred, predNext, next);</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="公平性"><a href="#公平性" class="headerlink" title="公平性"></a>公平性</h3><p>所谓公平性指所有线程对临界资源申请访问权限的成功率都一样，不会让某些线程拥有优先权。通过前面的CLH Node FIFO学习知道了等待队列是一个先进先出的队列，那么是否就可以说每条线程获取锁时就是公平的呢？关于公平性这里分拆成三个点分别阐述：</p>
+<ol>
+<li><p>准备入队列的节点，此情况讨论的是线程加入等待队列时产生的竞争是否公平，线程在尝试获取锁失败后将被加入等待队列，这时多个线程通过自旋将节点加入队列，所有线程在自旋过程中是无法保证其公平性的，可能后来的线程比早到的先进入队列，所以节点入队列不具公平性。</p>
+</li>
+<li><p>等待队列中的节点，情况①中成功加入队列后即成为等待队列中的节点，我们知道此队列是一个先入先出队列，那么很简单能得到，队列中的所有节点是公平的，他们都按照顺序等待自己被前驱节点唤醒并获取锁，所以等待队列中的节点具有公平性。</p>
+</li>
+<li><p>闯入的节点，这种情况是指一个新线程到达共享资源边界时不管等待队列中是否存在其他等待节点它都将优先尝试去获取锁，这种称为可闯入策略。可闯入特性破坏了公平性，AQS框架对外体现的公平性主要由此体现，下面将对闯入特性展开分析。</p>
+</li>
+</ol>
+<p>AQS提供的基础获取锁算法是一种可闯入的算法，即如果有新线程到来先进行一次获取尝试，不成功的情况下才将当前线程加入等待队列。如图2-5-9-6所示，等待队列中节点线程按照顺序一个接一个尝试去获取共享资源的使用权，某时刻头结点线程准备尝试获取的同时另外一条线程闯入，此线程并非直接加入等待队列的尾部，而是先跟头结点线程竞争获取资源，闯入线程如果成功获取共享资源则直接执行，头结点线程则继续等待下一次尝试，如此一来闯入线程成功插队，后来的线程比早到的线程先执行，说明AQS基础获取算法是不严格公平的。</p>
+<p><img src="/img/sy/sy-4.png" alt=""></p>
+<p>基础获取算法逻辑简化如下：首先尝试获取锁，假如获取失败才创建节点并加入到等待队列的尾部，接着通过不断循环检查是否轮到自己执行，当然此过程为了提高性能可能将线程先挂起，最终由前驱节点唤醒。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">if (尝试获取锁失败) &#123;</div><div class="line">    创建node</div><div class="line">    使用CAS方式把node插入到队列尾部</div><div class="line">    while(true)&#123;</div><div class="line">    if(尝试获取锁成功 并且 node的前驱节点为头节点)&#123;</div><div class="line">	把当前节点设置为头节点</div><div class="line">    跳出循环</div><div class="line">&#125; else &#123;</div><div class="line">    使用CAS方式修改node前驱节点的waitStatus标识为signal</div><div class="line">    if(修改成功)</div><div class="line">        挂起当前线程</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>为什么要使用闯入策略？可闯入的策略通常可以提供更高的总吞吐量。由于一般同步器颗粒度比较小，也可以说共享资源的范围较小，而线程从阻塞状态到被唤醒所消耗的时间周期可能是通过共享资源时间周期的几倍甚至几十倍，如此一来线程唤醒过程中将存在一个很大的时间周期空窗期，导致资源没有得到充分利用，为了提高吞吐量，引入这种闯入策略，它可以使在等待队列头结点从阻塞到被唤醒的时间段内闯入的线程直接获取锁并通过同步器，以便充分利用唤醒过程这一空窗期，大大增加了吞吐率。另外，闯入机制的实现对外提供一种竞争调节机制，即开发者可以在自定义同步器中定义闯入尝试获取的次数，假设次数为n则不断重复获取直到n次都获取不成功才把线程加入等待队列中，随着次数n的增加可以增大成功闯入的几率。同时，这种闯入策略可能导致等待队列中的线程饥饿，因为锁可能一直被闯入的线程获取，但由于一般持有同步器的时间很短暂而避免饥饿的发生，反之如果保护的代码体很长并且持有同步器的时间较长，这将大大增加等待队列无限等待的风险。</p>
+<p>在实际情况中还是要根据用户需求制定策略，在一个公平性要求很高的场景，则可以把闯入策略去除掉以达到公平。在自定义同步器中可以通过AQS预留方法tryAcquire方法实现，只需判断当前线程是否为等待队列中头结点对应的线程，若不是则直接返回false，尝试获取失败。但前面这种公平性是相对Java语法语义层面上的公平性，在现实中JVM的实现会直接影响线程执行的顺序。</p>
+<h3 id="AQS超时机制"><a href="#AQS超时机制" class="headerlink" title="AQS超时机制"></a>AQS超时机制</h3><p>AQS框架提供的另外一个优秀机制是锁获取超时的支持，当大量线程对某一锁竞争时可能导致某些线程在很长一段时间都获取不了锁，在某些场景下可能希望如果线程在一段时间内不能成功获取锁就取消对该锁的等待以提高性能，这时就需要用到超时机制。在JDK1.5之前还没有juc工具，当时的并发控制职能通过JVM内置的synchronized关键词实现锁，但对一些特殊要求却力不从心，例如超时取消控制。JDK1.5开始引入juc工具完美解决了此问题，而这正得益于并发基础框架AQS提供了超时的支持。</p>
+<p>为了更精确地保证时间间隔统计的准确性，实现时使用了System.nanoTime()更为精确的方法，它能精确到纳秒级别。超时机制的思想就是在不断进行锁竞争的同时记录竞争的时间，一旦时间段超过指定的时间则停止轮询直接返回，返回前对等待队列中对应节点进行取消操作。往下看实现的逻辑，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">if(尝试获取锁失败) &#123;</div><div class="line">long lastTime = System.nanoTime();</div><div class="line">    创建node</div><div class="line">    使用CAS方式把node插入到队列尾部</div><div class="line">    while(true)&#123;</div><div class="line">    if(尝试获取锁成功 并且 node的前驱节点为头节点)&#123;</div><div class="line">	把当前节点设置为头节点</div><div class="line">    跳出循环</div><div class="line">&#125; else &#123;</div><div class="line">    if (nanosTimeout &lt;= 0)&#123;</div><div class="line">	取消等待队列中此节点</div><div class="line">	跳出循环</div><div class="line">&#125;</div><div class="line">    使用CAS方式修改node前驱节点的waitStatus标识为signal</div><div class="line">    if(修改成功)</div><div class="line">        if(nanosTimeout &gt; spinForTimeoutThreshold)</div><div class="line">        阻塞当前线程nanosTimeout纳秒</div><div class="line">   		long now = System.nanoTime();</div><div class="line">    	nanosTimeout -= now - lastTime;</div><div class="line">    	lastTime = now;</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>上面正是在前面章节锁的获取逻辑中添加超时处理，核心逻辑是不断循环减去处理的时间消耗，一旦小于0就取消节点并跳出循环，其中有两点必须要注意，一个是真正的阻塞时间应该是扣除了竞争入队的时间后剩余的时间，保证阻塞事件的准确性，我们可以看到每次循环都会减去相应的处理时间；另外一个是关于spinForTimeoutThreshold变量阀值，它是决定使用自旋方式消耗时间还是使用系统阻塞方式消耗时间的分割线，juc工具包作者通过测试将默认值设置为1000ns，即如果在成功插入等待队列后剩余时间大于1000ns则调用系统底层阻塞，否则不调用系统底层，取而代之的是仅仅让之在Java应用层不断循环消耗时间，属于优化的措施。</p>
+<h3 id="同步状态的管理"><a href="#同步状态的管理" class="headerlink" title="同步状态的管理"></a>同步状态的管理</h3><p>整个AQS框架核心功能都是围绕着其32位整型属性state进行，一般可以说它表示锁的数量，对同步状态的控制可以实现不同的同步工具，例如闭锁、信号量、栅栏等等。为了保证可见性此变量被声明为volatile，保证每次的原子更新都将及时反映到每条线程上。而对于同步状态的管理可以大体分为两块，一是独占模式的管理，另外是共享模式的管理。通过对这两种模式的灵活变换可以实现多种不同的同步器，如下图，对state的控制可以看成一个管道，管道的大小决定了同时通过的线程，独占模式好比宽度只容许一个线程通过的管道，在这种模式下线程只能逐一通过管道，任意时刻管内只能存在一条线程，这便形成了互斥效果。而共享模式就是管道宽度大于1的管道，可以同时让n条管道通过，吞吐量增加但可能存在共享数据一致性问题。（注意：两种模式的讨论忽略了队列的管理逻辑，实际上CLH Node的引入是为了优化竞争带来的性能问题，不影响同步状态管理的探讨）</p>
+<p><img src="/img/sy/sy-4.png" alt=""><br>图5 独占模式与共享模式</p>
+<p>如何通过state实现独占模式和共享模式？在此之前先了解AQS框架中相关的getState、setState、compareAndSetState三个操作state的基本方法，前两个方法是普通的获取设置方法，其必须保证不存在数据竞争的情况下使用，compareAndSetState方法则提供了CAS方式的硬件级别的原子更新。两种模式就是通过这些方法对state操作实现不同同步模式，下面给出最简单的实现。</p>
+<p> 独占模式<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">public boolean tryAcquire(int acquires) &#123;</div><div class="line">	if (compareAndSetState(0, 1)) &#123;</div><div class="line">		return true;</div><div class="line">	&#125;</div><div class="line">	return false;</div><div class="line">&#125;</div><div class="line"></div><div class="line">protected boolean tryRelease(int releases) &#123;</div><div class="line">	setState(0);</div><div class="line">	return true;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>多条线程通过tryAcquire尝试把state变量改为1，由于CAS算法的保证，最终有且仅有一条线程成功修改state，修改成功的线程代表获取锁成功，将拥有往下执行的权利，进入管道。当执行完毕退出管道时执行tryRelease尝试把state变量改为0，让出管道，此处由于不存在线程竞争所以可直接使用setState，接着其他未通过的线程继续重复尝试</p>
+<p> 共享模式<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">public int tryAcquireShared(int interval) &#123;</div><div class="line">	for (;;) &#123;</div><div class="line">		int current = getState();</div><div class="line">		int newCount = current - 1;</div><div class="line">		if (newCount &lt; 0 || compareAndSetState(current, newCount)) &#123;</div><div class="line">			return newCount;</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">public boolean tryReleaseShared(int interval) &#123;</div><div class="line">	for (;;) &#123;</div><div class="line">		int current = getState();</div><div class="line">		int newCount = current + 1;</div><div class="line">		if (compareAndSetState(current, newCount)) &#123;</div><div class="line">			return true;</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>与独占模式不同的是对state的管理及判断条件，独占模式state的值只能为0或1，而共享模式的state是可以被出事换成任意整数，一般初始值表示提供一个同时n条线程通过的管道宽度，这样一来，多条线程通过tryAcquireShared尝试将state的值减去1，成功修改state后就返回新值，只有当新值大于等于0才表示获取锁成功，拥有往下执行的权利，进入管道。在执行完毕时线程将调用tryReleaseShared尝试修改state值使之增加1，表示我已经执行完了并让出管道的通道供后面线程使用，需要说明的是与独占模式不同，由于可能存在多条线程并发释放锁，所以此处必须使用基于CAS算法的修改方法，修改成功后其他线程便可继续竞争锁。</p>
+<p>ASQ框架提供了对同步状态state的基本操作，了解了两种模式对state操作开发者可能很自由地自定义自己的同步器。实际中AQS框架在提供state状态管理接口的同时也将维护等待队列的工作，两项工作被封装成一个模板，规定了工作流程，工作流程包括什么条件下加入等待队列、什么条件移除等待节点、如何操作等待队列、需不需要阻塞、支不支持中断等等，对外仅仅提供state状态操作接口供开发者自定义，而队列的维护工作已经绑定在模板中，无需你自己动手。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;自旋锁&quot;&gt;&lt;a href=&quot;#自旋锁&quot; class=&quot;headerlink&quot; title=&quot;自旋锁&quot;&gt;&lt;/a&gt;自旋锁&lt;/h2&gt;&lt;p&gt;我们知道一个线程在尝试获取锁失败后将被阻塞并加入等待队列中，它是一个怎样的队列？又是如何管理此队列？这节聊聊CHL Node FIF
     
     </summary>
     
@@ -340,7 +422,7 @@
     <link href="https://fudawei.github.io/2017/02/04/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%BA%8C)%5DAQS/"/>
     <id>https://fudawei.github.io/2017/02/04/[并发锁(二)]AQS/</id>
     <published>2017-02-04T12:07:52.000Z</published>
-    <updated>2017-02-12T01:59:37.004Z</updated>
+    <updated>2017-02-15T07:59:44.115Z</updated>
     
     <content type="html"><![CDATA[<p>AQS</p>
 <p>首先从理论知识开始，在了解了相关原理后会针对源码进行一些分析，最后加上一些实战来描述。</p>
@@ -1477,34 +1559,6 @@
   </entry>
   
   <entry>
-    <title>[Spark源码四]图解作业生命周期</title>
-    <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"/>
-    <id>https://fudawei.github.io/2016/10/25/[Spark源码四]图解作业生命周期/</id>
-    <published>2016-10-25T14:42:01.000Z</published>
-    <updated>2017-02-12T01:59:36.960Z</updated>
-    
-    <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！&lt;br&gt;&lt;img src=&quot;/img/spark4.1.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
-
-    
-    </summary>
-    
-      <category term="大数据" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
-    
-      <category term="Spark" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Spark/"/>
-    
-    
-      <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
-    
-      <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
-    
-  </entry>
-  
-  <entry>
     <title>[Spark源码三】作业运行过程</title>
     <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E4%B8%89%5D%E4%BD%9C%E4%B8%9A%E8%BF%90%E8%A1%8C%E8%BF%87%E7%A8%8B/"/>
     <id>https://fudawei.github.io/2016/10/25/[Spark源码三]作业运行过程/</id>
@@ -1548,54 +1602,30 @@ eventProcessActor ! JobSubmitted(jobId, rdd, func2, partitions.toArray, allowLoc
   </entry>
   
   <entry>
-    <title>ubuntu下恢复rm删除的数据</title>
-    <link href="https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/"/>
-    <id>https://fudawei.github.io/2016/10/19/ubuntu下恢复rm删除的数据/</id>
-    <published>2016-10-19T08:12:41.000Z</published>
-    <updated>2017-02-12T01:59:36.440Z</updated>
+    <title>[Spark源码四]图解作业生命周期</title>
+    <link href="https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"/>
+    <id>https://fudawei.github.io/2016/10/25/[Spark源码四]图解作业生命周期/</id>
+    <published>2016-10-25T14:42:01.000Z</published>
+    <updated>2017-02-12T01:59:36.960Z</updated>
     
-    <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
-<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
-<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
-<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
-<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
-<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
-<li>安装extundelete</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
-<pre><code>umount /dev/sdb2 
-mount -o remount,ro /dev/sdb2
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
-extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
-</code></pre><p>```</p>
-<ul>
-<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
-</ul>
-<ul>
-<li><p>总结经验</p>
-<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
-</li>
-</ul>
-<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
+    <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
 ]]></content>
     
     <summary type="html">
     
-      &lt;h1 id=&quot;1-论“备份”的重要性&quot;&gt;&lt;a href=&quot;#1-论“备份”的重要性&quot; class=&quot;headerlink&quot; title=&quot;1. 论“备份”的重要性&quot;&gt;&lt;/a&gt;1. 论“备份”的重要性&lt;/h1&gt;&lt;p&gt;今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。&lt;/p&gt;
-&lt;p&gt;被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。&lt;/p&gt;
-&lt;p&gt;我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。&lt;br&gt;
+      &lt;p&gt;这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！&lt;br&gt;&lt;img src=&quot;/img/spark4.1.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+
     
     </summary>
     
-      <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
+      <category term="大数据" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
+    
+      <category term="Spark" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Spark/"/>
     
     
-      <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
+      <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
     
-      <category term="Ubuntu" scheme="https://fudawei.github.io/tags/Ubuntu/"/>
+      <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
     
   </entry>
   
@@ -1756,85 +1786,54 @@ c)   关键字的个数n必须满足： ceil(m / 2)-1 &lt;= n &lt;= m-1。
   </entry>
   
   <entry>
-    <title>[Spark源码二】RDD讲解</title>
-    <link href="https://fudawei.github.io/2016/10/10/%5BSpark%E6%BA%90%E7%A0%81%E4%BA%8C%5DRDD%E8%AE%B2%E8%A7%A3/"/>
-    <id>https://fudawei.github.io/2016/10/10/[Spark源码二]RDD讲解/</id>
-    <published>2016-10-10T14:42:01.000Z</published>
-    <updated>2017-02-12T01:59:36.948Z</updated>
+    <title>ubuntu下恢复rm删除的数据</title>
+    <link href="https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/"/>
+    <id>https://fudawei.github.io/2016/10/19/ubuntu下恢复rm删除的数据/</id>
+    <published>2016-10-19T08:12:41.000Z</published>
+    <updated>2017-02-12T01:59:36.440Z</updated>
     
-    <content type="html"><![CDATA[<p>1、什么是RDD？</p>
-<p> RDD的全名是Resilient Distributed Dataset，意思是容错的分布式数据集，每一个RDD都会有5个特征：</p>
-<p>1、有一个分片列表。就是能被切分，和hadoop一样的，能够切分的数据才能并行计算。<br>2、有一个函数计算每一个分片，这里指的是下面会提到的compute函数。<br>3、对其他的RDD的依赖列表，依赖还具体分为宽依赖和窄依赖，但并不是所有的RDD都有依赖。<br>4、可选：key-value型的RDD是根据哈希来分区的，类似于mapreduce当中的Paritioner接口，控制key分到哪个reduce。<br>5、可选：每一个分片的优先计算位置（preferred locations），比如HDFS的block的所在位置应该是优先计算的位置。</p>
-<p>我们一项一项按着看。首先我们找到RDD这个文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">//对一个分片进行计算，得出一个可遍历的结果</div><div class="line">def compute(split: Partition, context: TaskContext): Iterator[T]</div><div class="line">//只调用一次，返回RDD分区</div><div class="line">protected def getPartitions: Array[Partition]</div><div class="line"> //也只会调用一次，返回依赖的Rdd</div><div class="line">protected def getDependencies: Seq[Dependency[_]] = deps</div></pre></td></tr></table></figure>
-<p>多种RDD之间的转换<br>下面用一个实例讲解一下吧，就拿我们常用的一段代码来讲吧，然后会把我们常用的RDD都会讲到。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">val hdfsFile = sc.textFile(args(1))</div><div class="line">val flatMapRdd = hdfsFile.flatMap(s =&gt; s.split(&quot; &quot;))</div><div class="line">val filterRdd = flatMapRdd.filter(_.length == 2)</div><div class="line">val mapRdd = filterRdd.map(word =&gt; (word, 1))</div><div class="line">val reduce = mapRdd.reduceByKey(_ + _)</div></pre></td></tr></table></figure>
-<p>这里涉及到多个RDD，首先sc.textFile得到一个HadoopRDD经过map之后MapPartitionsRDD经过flatMap之后为MapPartitionsRDD，经过filter之后MapPartitionsRDD经过map之后隐式转换未PairRDDFunctions静reduceByKey后转化为ShuffledRDD</p>
-<p>我们先看一下<br>问题导读：<br>1.什么是RDD?<br>2.如何实现RDD转换？</p>
-<p>1、什么是RDD？<br>上一章讲了Spark提交作业的过程，这一章我们要讲RDD。简单的讲，RDD就是Spark的input，知道input是啥吧，就是输入的数据。</p>
-<p>RDD的全名是Resilient Distributed Dataset，意思是容错的分布式数据集，每一个RDD都会有5个特征：</p>
-<p>1、有一个分片列表。就是能被切分，和hadoop一样的，能够切分的数据才能并行计算。<br>2、有一个函数计算每一个分片，这里指的是下面会提到的compute函数。<br>3、对其他的RDD的依赖列表，依赖还具体分为宽依赖和窄依赖，但并不是所有的RDD都有依赖。<br>4、可选：key-value型的RDD是根据哈希来分区的，类似于mapreduce当中的Paritioner接口，控制key分到哪个reduce。<br>5、可选：每一个分片的优先计算位置（preferred locations），比如HDFS的block的所在位置应该是优先计算的位置。</p>
-<p>对应着上面这几点，我们在RDD里面能找到这4个方法和1个属性，别着急，下面我们会慢慢展开说这5个东东。</p>
-<p>//只计算一次<br>  protected def getPartitions: Array[Partition]<br>  //对一个分片进行计算，得出一个可遍历的结果<br>  def compute(split: Partition, context: TaskContext): Iterator[T]<br>  //只计算一次，计算RDD对父RDD的依赖<br>  protected def getDependencies: Seq[Dependency[_]] = deps<br>  //可选的，分区的方法，针对第4点，类似于mapreduce当中的Paritioner接口，控制key分到哪个reduce<br>  @transient val partitioner: Option[Partitioner] = None<br>  //可选的，指定优先位置，输入参数是split分片，输出结果是一组优先的节点位置<br>  protected def getPreferredLocations(split: Partition): Seq[String] = Nil<br>复制代码</p>
-<p>2、多种RDD之间的转换<br>下面用一个实例讲解一下吧，就拿我们常用的一段代码来讲吧，然后会把我们常用的RDD都会讲到。</p>
-<p>val hdfsFile = sc.textFile(args(1))<br>    val flatMapRdd = hdfsFile.flatMap(s =&gt; s.split(“ “))<br>    val filterRdd = flatMapRdd.filter(<em>.length == 2)<br>    val mapRdd = filterRdd.map(word =&gt; (word, 1))<br>    val reduce = mapRdd.reduceByKey(</em> + _)<br>复制代码</p>
-<p>这里涉及到很多个RDD，textFile是一个HadoopRDD经过map后的MappredRDD，经过flatMap是一个FlatMappedRDD，经过filter方法之后生成了一个FilteredRDD，经过map函数之后，变成一个MappedRDD，通过隐式转换成 PairRDD，最后经过reduceByKey。</p>
-<p>我们首先看textFile的这个方法，进入SparkContext这个方法，找到它。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">def textFile(</div><div class="line">     path: String,</div><div class="line">     minPartitions: Int = defaultMinPartitions): RDD[String] = withScope &#123;</div><div class="line">   assertNotStopped()</div><div class="line">   hadoopFile(path, classOf[TextInputFormat], classOf[LongWritable], classOf[Text],</div><div class="line">     minPartitions).map(pair =&gt; pair._2.toString).setName(path)</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
-<p>这个方法能读取hdfs文件、本地文件以及hadoop支持的其他文本文件，里面调用了hadoopFile,接着看这个方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">def hadoopFile[K, V](</div><div class="line">      path: String,</div><div class="line">      inputFormatClass: Class[_ &lt;: InputFormat[K, V]],</div><div class="line">      keyClass: Class[K],</div><div class="line">      valueClass: Class[V],</div><div class="line">      minPartitions: Int = defaultMinPartitions): RDD[(K, V)] = withScope &#123;</div><div class="line">    assertNotStopped()</div><div class="line">    // A Hadoop configuration can be about 10 KB, which is pretty big, so broadcast it.</div><div class="line">    val confBroadcast = broadcast(new SerializableConfiguration(hadoopConfiguration))</div><div class="line">    val setInputPathsFunc = (jobConf: JobConf) =&gt; FileInputFormat.setInputPaths(jobConf, path)</div><div class="line">    new HadoopRDD(</div><div class="line">      this,</div><div class="line">      confBroadcast,</div><div class="line">      Some(setInputPathsFunc),</div><div class="line">      inputFormatClass,</div><div class="line">      keyClass,</div><div class="line">      valueClass,</div><div class="line">      minPartitions).setName(path)</div><div class="line">  &#125;</div></pre></td></tr></table></figure></p>
-<p>hadoopFile方法内静hadoop的配置文件放到广播变量，人后new 了一个HadoopRDD然后调用setName返回HadoopRDD，<br>以下构造HadoopRDD的参数<br>   sc:spark上下文<br> 　broadcastedConf：广播变量配置（hadoop的配置文件<br> 　initLocalJobConfFuncOpt:用于初始化HadoopRDD的job配置文件<br>   inputFormatClass:格式化读取数据文件<br> 　keyClass：为inputFormatClass指定的key<br> 　valueClass： inputFormatClass的Class<br> 　minPartitions：　HadoopRDD最小分区数<br>我们看一下HadoopRDD的主要方法：<br>首先getPartitions<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">override def getPartitions: Array[Partition] = &#123;</div><div class="line">    val jobConf = getJobConf()</div><div class="line">    // add the credentials here as this can be called before SparkContext initialized</div><div class="line">    SparkHadoopUtil.get.addCredentials(jobConf)</div><div class="line">    val inputFormat = getInputFormat(jobConf)</div><div class="line">    val inputSplits = inputFormat.getSplits(jobConf, minPartitions)</div><div class="line">    val array = new Array[Partition](inputSplits.size)</div><div class="line">    for (i &lt;- 0 until inputSplits.size) &#123;</div><div class="line">      array(i) = new HadoopPartition(id, i, inputSplits(i))</div><div class="line">    &#125;</div><div class="line">    array</div><div class="line">  &#125;</div></pre></td></tr></table></figure></p>
-<p>HadoopRDD按照inputSplits.size分割数据来分区的,然后把分片HadoopPartition包装到到array里面返回。</p>
-<p>我们接下来看compute方法，它的输入值是一个Partition，返回是一个Iterator[(K, V)]类型的数据，这里面我们只需要关注2点即可。</p>
-<p>1、把Partition转成HadoopPartition，然后通过InputSplit创建一个RecordReader<br>2、重写Iterator的getNext方法，通过创建的reader调用next方法读取下一个值。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div></pre></td><td class="code"><pre><div class="line">override def compute(theSplit: Partition, context: TaskContext): InterruptibleIterator[(K, V)] = &#123;</div><div class="line">    val iter = new NextIterator[(K, V)] &#123;</div><div class="line"></div><div class="line">      val split = theSplit.asInstanceOf[HadoopPartition]</div><div class="line">      logInfo(&quot;Input split: &quot; + split.inputSplit)</div><div class="line">      val jobConf = getJobConf()</div><div class="line"></div><div class="line">      val inputMetrics = context.taskMetrics().inputMetrics</div><div class="line">      val existingBytesRead = inputMetrics.bytesRead</div><div class="line"></div><div class="line">      // Sets the thread local variable for the file&apos;s name</div><div class="line">      split.inputSplit.value match &#123;</div><div class="line">        case fs: FileSplit =&gt; InputFileNameHolder.setInputFileName(fs.getPath.toString)</div><div class="line">        case _ =&gt; InputFileNameHolder.unsetInputFileName()</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      // Find a function that will return the FileSystem bytes read by this thread. Do this before</div><div class="line">      // creating RecordReader, because RecordReader&apos;s constructor might read some bytes</div><div class="line">      val getBytesReadCallback: Option[() =&gt; Long] = split.inputSplit.value match &#123;</div><div class="line">        case _: FileSplit | _: CombineFileSplit =&gt;</div><div class="line">          SparkHadoopUtil.get.getFSBytesReadOnThreadCallback()</div><div class="line">        case _ =&gt; None</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      // For Hadoop 2.5+, we get our input bytes from thread-local Hadoop FileSystem statistics.</div><div class="line">      // If we do a coalesce, however, we are likely to compute multiple partitions in the same</div><div class="line">      // task and in the same thread, in which case we need to avoid override values written by</div><div class="line">      // previous partitions (SPARK-13071).</div><div class="line">      def updateBytesRead(): Unit = &#123;</div><div class="line">        getBytesReadCallback.foreach &#123; getBytesRead =&gt;</div><div class="line">          inputMetrics.setBytesRead(existingBytesRead + getBytesRead())</div><div class="line">        &#125;</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      var reader: RecordReader[K, V] = null</div><div class="line">      val inputFormat = getInputFormat(jobConf)</div><div class="line">      HadoopRDD.addLocalConfiguration(new SimpleDateFormat(&quot;yyyyMMddHHmm&quot;).format(createTime),</div><div class="line">        context.stageId, theSplit.index, context.attemptNumber, jobConf)</div><div class="line">      reader = inputFormat.getRecordReader(split.inputSplit.value, jobConf, Reporter.NULL)</div><div class="line"></div><div class="line">      context.addTaskCompletionListener&#123; context =&gt; closeIfNeeded() &#125;</div><div class="line">      val key: K = reader.createKey()</div><div class="line">      val value: V = reader.createValue()</div><div class="line"></div><div class="line">      override def getNext(): (K, V) = &#123;</div><div class="line">       ......</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      override def close() &#123;</div><div class="line">       ......</div><div class="line">      &#125;</div><div class="line">    &#125;</div><div class="line">    new InterruptibleIterator[(K, V)](context, iter)</div><div class="line">  &#125;</div></pre></td></tr></table></figure>
-<p>从这里我们可以看得出来compute方法是通过分片来获得Iterator接口，以遍历分片的数据。</p>
-<p>getPreferredLocations方法就更简单了，直接调用InputSplit的getLocations方法获得所在的位置。</p>
-<p>2.2 依赖<br>下面我们看RDD里面的map方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">def map[U: ClassTag](f: T =&gt; U): RDD[U] = withScope &#123;</div><div class="line">    val cleanF = sc.clean(f)</div><div class="line">    new MapPartitionsRDD[U, T](this, (context, pid, iter) =&gt; iter.map(cleanF))</div><div class="line">  &#125;</div></pre></td></tr></table></figure></p>
-<p>直接new了一个MapPartitionsRDD然后讲函数穿进去，我们杀进MapPartitionsRDD<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">private[spark] class MapPartitionsRDD[U: ClassTag, T: ClassTag](</div><div class="line">    var prev: RDD[T],</div><div class="line">    f: (TaskContext, Int, Iterator[T]) =&gt; Iterator[U],  // (TaskContext, partition index, iterator)</div><div class="line">    preservesPartitioning: Boolean = false)</div><div class="line">  extends RDD[U](prev) &#123;</div><div class="line"></div><div class="line">  override val partitioner = if (preservesPartitioning) firstParent[T].partitioner else None</div><div class="line"></div><div class="line">  override def getPartitions: Array[Partition] = firstParent[T].partitions</div><div class="line"></div><div class="line">  override def compute(split: Partition, context: TaskContext): Iterator[U] =</div><div class="line">    f(context, split.index, firstParent[T].iterator(split, context))</div><div class="line">  // 清空父RDD</div><div class="line">  override def clearDependencies() &#123;</div><div class="line">    super.clearDependencies()</div><div class="line">    prev = null</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>先看一下RDD对应的构造方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">def this(@transient oneParent: RDD[_]) =</div><div class="line">    this(oneParent.context, List(new OneToOneDependency(oneParent)))</div></pre></td></tr></table></figure></p>
-<p>就这样你会发现它把RDD复制给了deps，HadoopRDD成了我们杀进MapPartitionsRDD的父依赖了，这个OneToOneDependency是一个窄依赖，子RDD直接依赖于父RDD，继续看firstParent。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">protected[spark] def firstParent[U: ClassTag]: RDD[U] = &#123;</div><div class="line">   dependencies.head.rdd.asInstanceOf[RDD[U]]</div><div class="line"> &#125;</div></pre></td></tr></table></figure></p>
-<p>由此我们可以得出两个结论：</p>
-<p>1、getPartitions直接沿用了父RDD的分片信息<br>2、compute函数是在父RDD遍历每一行数据时套一个匿名函数f进行处理<br>好吧，现在我们可以理解compute函数真正是在干嘛的了</p>
-<p>它的两个显著作用：</p>
-<p>1、在没有依赖的条件下，根据分片的信息生成遍历数据的Iterable接口<br>2、在有前置依赖的条件下，在父RDD的Iterable接口上给遍历每个元素的时候再套上一个方法</p>
-<p>我们看看点击进入map(f)的方法进去看一下<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">def map[B](f: A =&gt; B): Iterator[B] = new AbstractIterator[B] &#123;</div><div class="line">    def hasNext = self.hasNext</div><div class="line">    def next() = f(self.next())</div><div class="line">  &#125;</div></pre></td></tr></table></figure></p>
-<p>map方法将数据集的每一个数据按照f函数执行后返回数据</p>
-<p>我们接着看RDD的flatMap方法，你会发现它和map函数几乎没什么区别，但是flatMap和map的效果还是差别挺大的。</p>
-<p>比如((1,2),(3,4)), 如果是调用了flatMap函数，我们访问到的就是(1,2,3,4)4个元素；如果是map的话，我们访问到的就是(1,2),(3,4)两个元素。</p>
-<p>有兴趣的可以去看看FlatMappedRDD和FilteredRDD</p>
-<p>2.3 reduceByKey<br>下面我们看一下reduceByKey的实现。<br>reduceByKey隐藏的比较深，并没有在RDD中，而是在因式转换为PairRDDFunctions才可以使用，所以我们去PairRDDFunctions找一下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"> def reduceByKey(func: (V, V) =&gt; V): RDD[(K, V)] = self.withScope &#123;</div><div class="line">   reduceByKey(defaultPartitioner(self), func)</div><div class="line"> &#125;</div><div class="line"> </div><div class="line">def defaultPartitioner(rdd: RDD[_], others: RDD[_]*): Partitioner = &#123;</div><div class="line">  val bySize = (Seq(rdd) ++ others).sortBy(_.partitions.length).reverse</div><div class="line">  for (r &lt;- bySize if r.partitioner.isDefined &amp;&amp; r.partitioner.get.numPartitions &gt; 0) &#123;</div><div class="line">    return r.partitioner.get</div><div class="line">  &#125;</div><div class="line">  if (rdd.context.conf.contains(&quot;spark.default.parallelism&quot;)) &#123;</div><div class="line">    new HashPartitioner(rdd.context.defaultParallelism)</div><div class="line">  &#125; else &#123;</div><div class="line">    new HashPartitioner(bySize.head.partitions.length)</div><div class="line">  &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">def reduceByKey(partitioner: Partitioner, func: (V, V) =&gt; V): RDD[(K, V)] = self.withScope &#123;</div><div class="line">   combineByKeyWithClassTag[V]((v: V) =&gt; v, func, func, partitioner)</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
-<p>我们可以看到reduceByKeyreduceByKeyWithClassTag方法，有心去可以看一下<br> <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div></pre></td><td class="code"><pre><div class="line">def combineByKeyWithClassTag[C](</div><div class="line">     createCombiner: V =&gt; C,</div><div class="line">     mergeValue: (C, V) =&gt; C,</div><div class="line">     mergeCombiners: (C, C) =&gt; C,</div><div class="line">     partitioner: Partitioner,</div><div class="line">     mapSideCombine: Boolean = true,</div><div class="line">     serializer: Serializer = null)(implicit ct: ClassTag[C]): RDD[(K, C)] = self.withScope &#123;</div><div class="line">   require(mergeCombiners != null, &quot;mergeCombiners must be defined&quot;) // required as of Spark 0.9.0</div><div class="line">   if (keyClass.isArray) &#123;</div><div class="line">     if (mapSideCombine) &#123;</div><div class="line">       throw new SparkException(&quot;Cannot use map-side combining with array keys.&quot;)</div><div class="line">     &#125;</div><div class="line">     if (partitioner.isInstanceOf[HashPartitioner]) &#123;</div><div class="line">       throw new SparkException(&quot;Default partitioner cannot partition array keys.&quot;)</div><div class="line">     &#125;</div><div class="line">   &#125;</div><div class="line">   val aggregator = new Aggregator[K, V, C](</div><div class="line">     self.context.clean(createCombiner),  //设置句聚合函数</div><div class="line">     self.context.clean(mergeValue),   //valueMrege函数</div><div class="line">     self.context.clean(mergeCombiners)) // 最终结果的整合函数</div><div class="line">   if (self.partitioner == Some(partitioner)) &#123;</div><div class="line">   //不存在自定义分区</div><div class="line">     self.mapPartitions(iter =&gt; &#123;</div><div class="line">       val context = TaskContext.get()</div><div class="line">       new InterruptibleIterator(context, aggregator.combineValuesByKey(iter, context))</div><div class="line">     &#125;, preservesPartitioning = true)</div><div class="line">   &#125; else &#123;</div><div class="line">   //不存在自定义分区</div><div class="line">     new ShuffledRDD[K, V, C](self, partitioner)</div><div class="line">       .setSerializer(serializer)</div><div class="line">       .setAggregator(aggregator)</div><div class="line">       .setMapSideCombine(mapSideCombine)</div><div class="line">   &#125;</div><div class="line"> &#125;</div><div class="line"> </div><div class="line"> .......</div><div class="line"> </div><div class="line"> override def getDependencies: Seq[Dependency[_]] = &#123;</div><div class="line">   val serializer = userSpecifiedSerializer.getOrElse &#123;</div><div class="line">     val serializerManager = SparkEnv.get.serializerManager</div><div class="line">     if (mapSideCombine) &#123;</div><div class="line">       serializerManager.getSerializer(implicitly[ClassTag[K]], implicitly[ClassTag[C]])</div><div class="line">     &#125; else &#123;</div><div class="line">       serializerManager.getSerializer(implicitly[ClassTag[K]], implicitly[ClassTag[V]])</div><div class="line">     &#125;</div><div class="line">   &#125;</div><div class="line">   //</div><div class="line">   List(new ShuffleDependency(prev, part, serializer, keyOrdering, aggregator, mapSideCombine))</div><div class="line"> &#125;</div></pre></td></tr></table></figure></p>
-<p>reduce流程可以总结为<br>1、将分区包装秤HashPartitioner分区<br>2、如果没有自定义分区则，直接执行combineCombinersByKey<br>3、  如果有自定义分区，则对shuffle自行combineCombinersByKey</p>
-<p>下面我们先看MapPartitionsRDD，我把和别的RDD有别的两行给拿出来了，很明显的区别，f方法是套在iterator的外边，这样才能对iterator的所有数据做一个合并。</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"> override val partitioner = if (preservesPartitioning) firstParent[T].partitioner else None</div><div class="line">  override def compute(split: Partition, context: TaskContext) =</div><div class="line">    f(context, split.index, firstParent[T].iterator(split, context))</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>接下来我们看Aggregator的combineValuesByKey的方法吧。</p>
-<p>def combineValuesByKey(iter: Iterator[_ &lt;: Product2[K, V]],<br>                         context: TaskContext): Iterator[(K, C)] = {<br>    // 是否使用外部排序，是由参数spark.shuffle.spill，默认是true<br>    if (!externalSorting) {<br>      val combiners = new AppendOnlyMap[K,C]<br>      var kv: Product2[K, V] = null<br>      val update = (hadValue: Boolean, oldValue: C) =&gt; {<br>        if (hadValue) mergeValue(oldValue, kv._2) else createCombiner(kv.<em>2)<br>      }<br>      // 用map来去重，用update方法来更新值，如果没值的时候，返回值，如果有值的时候，通过mergeValue方法来合并<br>      // mergeValue方法就是我们在reduceByKey里面写的那个匿名函数，在这里就是（</em> + _）<br>      while (iter.hasNext) {<br>        kv = iter.next()<br>        combiners.changeValue(kv._1, update)<br>      }<br>      combiners.iterator<br>    } else {<br>      // 用了一个外部排序的map来去重，就不停的往里面插入值即可，基本原理和上面的差不多，区别在于需要外部排序<br>      val combiners = new ExternalAppendOnlyMap<a href="createCombiner, mergeValue, mergeCombiners">K, V, C</a><br>      while (iter.hasNext) {<br>        val (k, v) = iter.next()<br>        combiners.insert(k, v)<br>      }<br>      combiners.iterator<br>}</p>
-<p>这个就是一个很典型的按照key来做合并的方法了，我们继续看ShuffledRDD吧。</p>
-<p>ShuffledRDD和之前的RDD很明显的特征是</p>
-<p>1、它的依赖传了一个Nil（空列表）进去，表示它没有依赖。<br>2、它的compute计算方式比较特别，这个在之后的文章说，过程比较复杂。<br>3、它的分片默认是采用HashPartitioner，数量和前面的RDD的分片数量一样，也可以不一样，我们可以在reduceByKey的时候多传一个分片数量即可。</p>
-<p>在new完ShuffledRDD之后又来了一遍mapPartitionsWithContext，不过调用的匿名函数变成了combineCombinersByKey。</p>
-<p>combineCombinersByKey和combineValuesByKey的逻辑基本相同，只是输入输出的类型有区别。combineCombinersByKey只是做单纯的合并，不会对输入输出的类型进行改变，combineValuesByKey会把iter[K, V]的V值变成iter[K, C]。</p>
-<p>case class Aggregator[K, V, C] (<br>　　createCombiner: V =&gt; C,<br>　　mergeValue: (C, V) =&gt; C,<br>　　mergeCombiners: (C, C) =&gt; C)<br>　　……<br>}<br>复制代码</p>
-<p>这个方法会根据我们传进去的匿名方法的参数的类型做一个自动转换。<br>到这里，作业都没有真正执行，只是将RDD各种嵌套，我们通过RDD的id和类型的变化观测到这一点，RDD[1]-&gt;RDD[2]-&gt;RDD[3]……</p>
+    <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
+<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
+<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
+<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
+<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
+<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
+<li>安装extundelete</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
+<pre><code>umount /dev/sdb2 
+mount -o remount,ro /dev/sdb2
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
+extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
+</code></pre><p>```</p>
+<ul>
+<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
+</ul>
+<ul>
+<li><p>总结经验</p>
+<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
+</li>
+</ul>
+<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
 ]]></content>
     
     <summary type="html">
     
-      &lt;p&gt;1、什么是RDD？&lt;/p&gt;
-&lt;p&gt; RDD的全名是Resilient Distributed Dataset，意思是容错的分布式数据集，每一个RDD都会有5个特征：&lt;/p&gt;
-&lt;p&gt;1、有一个分片列表。就是能被切分，和hadoop一样的，能够切分的数据才能并行计算。&lt;br&gt;2
+      &lt;h1 id=&quot;1-论“备份”的重要性&quot;&gt;&lt;a href=&quot;#1-论“备份”的重要性&quot; class=&quot;headerlink&quot; title=&quot;1. 论“备份”的重要性&quot;&gt;&lt;/a&gt;1. 论“备份”的重要性&lt;/h1&gt;&lt;p&gt;今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。&lt;/p&gt;
+&lt;p&gt;被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。&lt;/p&gt;
+&lt;p&gt;我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。&lt;br&gt;
     
     </summary>
     
-      <category term="大数据" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
-    
-      <category term="Spark" scheme="https://fudawei.github.io/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Spark/"/>
+      <category term="Linux" scheme="https://fudawei.github.io/categories/Linux/"/>
     
     
-      <category term="大数据" scheme="https://fudawei.github.io/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
+      <category term="Linux" scheme="https://fudawei.github.io/tags/Linux/"/>
     
-      <category term="Spark" scheme="https://fudawei.github.io/tags/Spark/"/>
+      <category term="Ubuntu" scheme="https://fudawei.github.io/tags/Ubuntu/"/>
     
   </entry>
   

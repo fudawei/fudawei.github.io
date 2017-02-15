@@ -1,0 +1,1167 @@
+
+<!doctype html>
+<html class="theme-next use-motion theme-next-mala">
+<head>
+  
+
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+  <link rel="stylesheet" type="text/css" href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5"/>
+
+
+
+
+<link rel="stylesheet" type="text/css" href="/css/main.css?v=0.4.5.1"/>
+
+
+    <meta name="description" content="我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。" />
+
+
+
+  <meta name="keywords" content="Java,并发库," />
+
+
+
+  <link rel="alternate" href="/atom.xml" title="冰鸟" type="application/atom+xml" />
+
+
+
+  <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
+
+
+<meta name="description" content="自旋锁我们知道一个线程在尝试获取锁失败后将被阻塞并加入等待队列中，它是一个怎样的队列？又是如何管理此队列？这节聊聊CHL Node FIFO队列。 在谈到CHL Node FIFO队列之前，我们先分析这种队列的几个要素。首先要了解的是自旋锁，所谓自旋锁即是某一线程去尝试获取某个锁时，如果该锁已经被其他线程占用的话，此线程将不断循环检查该锁是否被释放，而不是让此线程挂起或睡眠。它属于为了保证共享资源">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[并发锁(二)]AQS阻塞队列">
+<meta property="og:url" content="https://fudawei.github.io/2017/02/14/[并发锁(二)]AQS阻塞队列/index.html">
+<meta property="og:site_name" content="冰鸟">
+<meta property="og:description" content="自旋锁我们知道一个线程在尝试获取锁失败后将被阻塞并加入等待队列中，它是一个怎样的队列？又是如何管理此队列？这节聊聊CHL Node FIFO队列。 在谈到CHL Node FIFO队列之前，我们先分析这种队列的几个要素。首先要了解的是自旋锁，所谓自旋锁即是某一线程去尝试获取某个锁时，如果该锁已经被其他线程占用的话，此线程将不断循环检查该锁是否被释放，而不是让此线程挂起或睡眠。它属于为了保证共享资源">
+<meta property="og:image" content="https://fudawei.github.io/img/sy/sy-1.jpg">
+<meta property="og:image" content="https://fudawei.github.io/img/sy/sy-2.jpg">
+<meta property="og:image" content="https://fudawei.github.io/img/sy/sy-3.jpg">
+<meta property="og:image" content="https://fudawei.github.io/img/sy/sy-4.png">
+<meta property="og:image" content="https://fudawei.github.io/img/sy/sy-4.png">
+<meta property="og:updated_time" content="2017-02-15T07:54:55.536Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="[并发锁(二)]AQS阻塞队列">
+<meta name="twitter:description" content="自旋锁我们知道一个线程在尝试获取锁失败后将被阻塞并加入等待队列中，它是一个怎样的队列？又是如何管理此队列？这节聊聊CHL Node FIFO队列。 在谈到CHL Node FIFO队列之前，我们先分析这种队列的几个要素。首先要了解的是自旋锁，所谓自旋锁即是某一线程去尝试获取某个锁时，如果该锁已经被其他线程占用的话，此线程将不断循环检查该锁是否被释放，而不是让此线程挂起或睡眠。它属于为了保证共享资源">
+<meta name="twitter:image" content="https://fudawei.github.io/img/sy/sy-1.jpg">
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var CONFIG = {
+    scheme: 'Mala',
+    sidebar: 'post'
+  };
+</script>
+
+  <title> [并发锁(二)]AQS阻塞队列 | 冰鸟 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  <!--[if lte IE 8]>
+  <div style=' clear: both; height: 59px; padding:0 0 0 15px; position: relative;margin:0 auto;'>
+    <a href="http://windows.microsoft.com/en-US/internet-explorer/products/ie/home?ocid=ie6_countdown_bannercode">
+      <img src="http://7u2nvr.com1.z0.glb.clouddn.com/picouterie.jpg" border="0" height="42" width="820"
+           alt="You are using an outdated browser. For a faster, safer browsing experience, upgrade for free today or use other browser ,like chrome firefox safari."
+           style='margin-left:auto;margin-right:auto;display: block;'/>
+    </a>
+  </div>
+<![endif]-->
+  
+
+
+
+  <div class="container one-column page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><h1 class="site-meta">
+  <span class="logo-line-before"><i></i></span>
+  <a href="/" class="brand" rel="start">
+      <span class="logo">
+        <i class="icon-next-logo"></i>
+      </span>
+      <span class="site-title">冰鸟-博客</span>
+  </a>
+  <span class="logo-line-after"><i></i></span>
+</h1>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu ">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            <i class="menu-item-icon icon-next-home"></i> <br />
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            <i class="menu-item-icon icon-next-categories"></i> <br />
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            <i class="menu-item-icon icon-next-archives"></i> <br />
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            <i class="menu-item-icon icon-next-tags"></i> <br />
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            <i class="menu-item-icon icon-next-about"></i> <br />
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            <i class="menu-item-icon icon-next-commonweal"></i> <br />
+            公益404
+          </a>
+        </li>
+      
+
+      
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    
+      
+
+      
+        <style type="text/css">
+
+    .circle {
+        width: 40px;
+        height: 40px;
+        background: #555 no-repeat;
+        cursor: move;
+    }
+
+    .assist-btn {
+        position: fixed;
+        top: 50％;
+        left: 10px;
+        -moz-border-radius: 50px;
+        -webkit-border-radius: 50px;
+        border-radius: 50px;
+        outline: none;
+        border: none;
+        color: #87daff;
+    }
+
+</style>
+
+<script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+<script type="text/javascript">
+    // 浮动圆点展开与收缩
+    /*
+    $(function () {
+        var assist_box = $('.assist-box');
+        $('#assist_btn').hover(function () {
+            assist_box.stop().show(300);
+        }, function () {
+            assist_box.stop().hide(150);
+        })
+    });
+    */  
+    //浮动圆点拖动
+    $(function () {
+        var box = document.getElementById('assist_btn');
+        box.onmousedown = function (event) {
+            var e = event || window.event,
+                t = e.target || e.srcElement,
+                // 鼠标按下时的坐标x1,y1
+                x1 = e.clientX,
+                y1 = e.clientY,
+                //鼠标按下时的左右偏移量
+                dragLeft = this.offsetLeft,
+                dragTop = this.offsetTop;
+
+            document.onmousemove = function (event) {
+                var e = event || window.event,
+                    t = e.target || e.srcElement,
+                    // 鼠标移动时的动态坐标
+                    x2 = e.clientX,
+                    y2 = e.clientY,
+                    // 鼠标移动时的坐标的变化量
+                    x = x2 - x1,
+                    y = y2 - y1;
+                box.style.left = (dragLeft + x) + 'px';
+                box.style.top = (dragTop + y) + 'px';
+            }
+
+            document.onmouseup = function () {
+                this.onmousemove = null;
+            }
+        }
+    });
+
+/*
+    $whitesmoke   = #f5f5f5
+    $gainsboro    = #eee
+    $gray-lighter = #ddd
+    $grey-light   = #ccc
+    $grey         = #bbb
+    $grey-dark    = #999
+    $grey-dim     = #666
+    $black-light  = #555
+    $black-deep   = #222
+    $red          = #ff2a2a
+    $blue-bright  = #87daff
+    $blue         = #0684bd
+    $blue-deep    = #262a30
+*/
+    // white theme
+    var body = {color: "#555", background: "white"};
+    var a_tag = {color: "#222"};
+    var header = { background: "#f5f5f5"};
+    var logo_line_i = {background: "#222"};
+    // var post_code = {background: "#eee", color: "#222"};
+
+    function switch_theme() {
+        $("body").css(body);
+        $("a:not('.links-of-author-item a, .site-state-item a, .site-state-posts a, .feed-link a, .motion-element a, .post-tags a, .show-commit-cls a, #donate_board a')").css(a_tag);
+        $(".header, .footer").css(header);
+        $(".logo-line-before i, .logo-line-after i").css(logo_line_i);
+        //$(".post code").css(post_code);
+        $("#idhyt-surprise-ball #idhyt-surprise-ball-animation .drag").css(a_tag);
+        $(".post-title-link, .posts-expand .post-meta, .post-comments-count, .disqus-comment-count, .post-category a, .post-nav-next a, .post-nav-item a").css(a_tag);
+        
+        // $("code").css({color: '#c5c8c6', background: '#1d1f21'});
+        $("#assist_btn").hide(1500);
+    }
+
+    $(function () {
+        $("#assist_btn").dblclick(function() {
+            switch_theme();
+        });
+    });
+
+</script>
+
+<div>
+
+    <button class="assist-btn circle" id="assist_btn" title="双击切换">
+        亮
+    </button>
+
+</div>
+
+
+
+
+
+
+
+
+
+      
+
+    
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div id="content" class="content"> 
+
+  <div id="posts" class="posts-expand">
+    
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              [并发锁(二)]AQS阻塞队列
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2017-02-14T20:07:52+08:00" content="2017-02-14">
+            2017-02-14
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/" itemprop="url" rel="index">
+                  <span itemprop="name">Java</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/并发库/" itemprop="url" rel="index">
+                  <span itemprop="name">并发库</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2017/02/14/[并发锁(二)]AQS阻塞队列/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/14/[并发锁(二)]AQS阻塞队列/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2017/02/14/[并发锁(二)]AQS阻塞队列/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2017/02/14/[并发锁(二)]AQS阻塞队列/"class="leancloud_visitors" data-flag-title="[并发锁(二)]AQS阻塞队列">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        <span itemprop="articleBody"><h2 id="自旋锁"><a href="#自旋锁" class="headerlink" title="自旋锁"></a>自旋锁</h2><p>我们知道一个线程在尝试获取锁失败后将被阻塞并加入等待队列中，它是一个怎样的队列？又是如何管理此队列？这节聊聊CHL Node FIFO队列。<br> 在谈到CHL Node FIFO队列之前，我们先分析这种队列的几个要素。首先要了解的是自旋锁，所谓自旋锁即是某一线程去尝试获取某个锁时，如果该锁已经被其他线程占用的话，此线程将不断循环检查该锁是否被释放，而不是让此线程挂起或睡眠。它属于为了保证共享资源而提出的一种锁机制，与互斥锁类似，保证了公共资源在任意时刻最多只能由一条线程获取使用，不同的是互斥锁在获取锁失败后将进入睡眠或阻塞状态。下面利用代码实现一个简单的自旋锁，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div></pre></td><td class="code"><pre><div class="line">public class SpinLock &#123;</div><div class="line">	private static Unsafe unsafe = null;</div><div class="line">	private static final long valueOffset;</div><div class="line">	private volatile int value = 0;</div><div class="line"></div><div class="line">	static &#123;</div><div class="line">		try &#123;</div><div class="line">			unsafe=getUnsafeInstance();</div><div class="line">			valueOffset = unsafe.objectFieldOffset(SpinLock.class.getDeclaredField(&quot;value&quot;));</div><div class="line">		&#125; catch (Exception ex) &#123;</div><div class="line">			throw new Error(ex);</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	private static Unsafe getUnsafeInstance() throws SecurityException,NoSuchFieldException,IllegalArgumentException,IllegalAccessException &#123;</div><div class="line">		Field theUnsafeInstance = Unsafe.class.getDeclaredField(&quot;theUnsafe&quot;);</div><div class="line">		theUnsafeInstance.setAccessible(true);</div><div class="line">		return (Unsafe) theUnsafeInstance.get(Unsafe.class);</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	public void lock() &#123;</div><div class="line">		for (;;) &#123;</div><div class="line">            int newV = value + 1;</div><div class="line">            if(newV==1)</div><div class="line">                if (unsafe.compareAndSwapInt(this, valueOffset, 0, newV))&#123;</div><div class="line">                	return ;</div><div class="line">                &#125;</div><div class="line">        	&#125;</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">    public void unlock() &#123;</div><div class="line">		unsafe.compareAndSwapInt(this, valueOffset, 1, 0);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这是一个很简单的自旋锁，主要看加粗加红的两个方法lock和unlock，Unsafe仅仅是为操作提供了硬件级别的原子CAS操作，暂时忽略此类，只要知道它的作用即可，我们将在后面的“原子性如何保证”小节中对此进行更加深入的阐述。对于lock方法，假如有若干线程竞争，能成功通过CAS操作修改value值为newV的线程即是成功获取锁的线程，将直接通过，而其他的线程则不断在循环检测value值是否又改回0，而将value改为0的操作就是获取锁的线程执行完后对该锁进行释放，通过unlock方法释放锁，释放后若干线程又对该锁竞争。如此一来，没获取的锁也不会被挂起或阻塞，而是不断循环检查状态。图2-5-9-3可加深自旋锁的理解，五条线程轮询value变量，t1获取成功后将value置为1，此状态时其他线程无法竞争锁，t1使用完锁后将value置为0，剩下的线程继续竞争锁，以此类推。这样就保证了某个区域块的线程安全性。</p>
+<p><img src="/img/sy/sy-1.jpg" alt=""><br>自旋锁</p>
+<blockquote>
+<p>自旋锁缺点<br>自旋锁适用于锁占用时间短，即锁保护临界区很小的情景，同时它需要硬件级别操作，也要保证各缓存数据的一致性，另外，无法保证公平性，不保证先到先获得，可能造成线程饥饿。在多处理器机器上，每个线程对应的处理器都对同一个变量进行读写，而每次读写操作都将要同步每个处理器缓存，导致系统性能严重下降。</p>
+</blockquote>
+<h3 id="自旋锁优化"><a href="#自旋锁优化" class="headerlink" title="自旋锁优化"></a>自旋锁优化</h3><p>看Craig, Landin, and Hagersten发明的CLH锁如何优化同步带来的花销，其核心思想是：通过一定手段将所有线程对某一共享变量轮询竞争转化为一个线程队列且队列中的线程各自轮询自己的本地变量。这个转化过程由两个要点，一是构建怎样的队列&amp;如何构建队列，为了保证公平性，构建的将是一个FIFO队列，构建的时候主要通过移动尾部节点tail实现队列的排队，每个想获取锁的线程创建一个新节点并通过CAS原子操作将新节点赋予tail，然后让当前线程轮询前一节点的某个状态位，如图2-5-9-3，如此就成功构建线程排队队列；二是如何释放队列，执行完线程后只需将当前线程对应的节点状态位置为解锁状态，由于下一节点一直在轮询，可获取到锁</p>
+<p><img src="/img/sy/sy-2.jpg" alt=""></p>
+<p>CLH锁的核心思想貌似是将众多线程长时间对某资源的竞争，通过有序化这些线程转化为只需对本地变量检测。唯一存在竞争的地方就是在入队列之前对尾节点tail的竞争，但竞争的线程的数量已经少了很多，且比起所有线程直接对某资源竞争的轮询次数也减少了很多，节省了很多CPU缓存同步操作，大大提升系统性能，利用空间换取性能。下面提供一个简单的CLH锁实现代码，lock与unlock两方法提供加锁解锁操作，每次加锁解锁必须将一个CLHNode对象作为参数传入，lock方法的for循环是通过CAS操作将新节点插入队列，而while循环则是检测前驱节点的锁状态位，一旦前驱节点锁状态位允许则结束检测让线程往下执行。解锁操作先判断当前节点是否为尾节点，如是则直接将尾节点置为空，此时说名仅仅只有一条线程在执行，否则将当前节点的锁状态位置为解锁状态。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div></pre></td><td class="code"><pre><div class="line">public class CLHLock &#123;</div><div class="line"></div><div class="line">	private static Unsafe unsafe = null;</div><div class="line">	private static final long valueOffset;</div><div class="line">	private volatile CLHNode tail;</div><div class="line">	public class CLHNode &#123;</div><div class="line">		private boolean isLocked = true;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	static &#123;</div><div class="line">		try &#123;</div><div class="line">			unsafe = getUnsafeInstance();</div><div class="line">     		valueOffset = unsafe.objectFieldOffset(CLHLock.class.getDeclaredField(&quot;tail&quot;));</div><div class="line">		&#125; catch (Exception ex) &#123;</div><div class="line">			throw new Error(ex);</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	public void lock(CLHNode currentThreadNode) &#123;</div><div class="line">		CLHNode preNode = null;</div><div class="line">		for (;;) &#123;</div><div class="line">			preNode = tail;</div><div class="line">			if (unsafe.compareAndSwapObject(this, valueOffset, tail,currentThreadNode))</div><div class="line">				break;</div><div class="line">			&#125;</div><div class="line">			if (preNode != null)</div><div class="line">				while (preNode.isLocked) &#123;</div><div class="line">				&#125;</div><div class="line">			&#125;</div><div class="line"></div><div class="line">		&#125;</div><div class="line"></div><div class="line">	public void unlock(CLHNode currentThreadNode) &#123;</div><div class="line">  		if (!unsafe.compareAndSwapObject(this, valueOffset, currentThreadNode,null))</div><div class="line">   			currentThreadNode.isLocked = false;</div><div class="line">		&#125;</div><div class="line"></div><div class="line">	private static Unsafe getUnsafeInstance() throws SecurityException,</div><div class="line">							NoSuchFieldException, IllegalArgumentException,IllegalAccessException &#123;</div><div class="line">		Field theUnsafeInstance = Unsafe.class.getDeclaredField(&quot;theUnsafe&quot;);</div><div class="line">		theUnsafeInstance.setAccessible(true);</div><div class="line">		return (Unsafe) theUnsafeInstance.get(Unsafe.class);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="CLH锁改造"><a href="#CLH锁改造" class="headerlink" title="CLH锁改造"></a>CLH锁改造</h3><p>在CLH锁核心思想的影响下，Java并发包的基础框架AQS以CLH锁作为基础而设计，其中主要是考虑到CLH锁更容易实现取消与超时功能。比起原来的CLH锁已经做了很大的改造，主要从两方面进行了改造：节点的结构与节点等待机制。在结构上引入了头结点和尾节点，他们分别指向队列的头和尾，尝试获取锁、入队列、释放锁等实现都与头尾节点相关，并且每个节点都引入前驱节点和后后续节点的引用；在等待机制上由原来的自旋改成阻塞唤醒。如图2-5-9-4，通过前驱后续节点的引用一节节连接起来形成一个链表队列，对于头尾节点的更新必须是原子的。下面详细看看入队、检测挂起、释放出队、超时、取消等操作。</p>
+<p><img src="/img/sy/sy-3.jpg" alt=""></p>
+<ol>
+<li><p>入队，整块逻辑其实是用一个无限循环进行CAS操作，即用自旋方式竞争直到成功。将尾节点tail的旧值赋予新节点node的前驱节点，并尝试CAS操作将新节点node赋予尾节点tail，原先的尾节点的后续节点指向新建节点node。完成上面步骤就建立起一条如图2-5-9-4所示的链表队列。代码简化如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">for (;;) &#123;</div><div class="line">   Node t = tail;</div><div class="line">   node.prev = t;</div><div class="line">   if (compareAndSetTail(t, node)) &#123;</div><div class="line">      t.next = node;</div><div class="line">      return node;</div><div class="line">   &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+<li><p>检测挂起，上面我们说到节点等待机制已经被AQS作者由自旋机制改造成阻塞机制，一个新建的节点完成入队操作后，如果是自旋则直接进入循环检测前驱节点是否为头结点即可，但现在被改为阻塞机制，当前线程将首先检测是否为头结点且尝试获取锁，如果当前节点为头结点并成功获取锁则直接返回，当前线程不进入阻塞，否则将当前线程阻塞。代码简化如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"> for (;;) &#123;</div><div class="line">    if (node.prev == head)</div><div class="line">	if(尝试获取锁成功)&#123;</div><div class="line">         head=node;</div><div class="line">         node.next=null;</div><div class="line">         return;</div><div class="line">     &#125;</div><div class="line">   阻塞线程</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+<li><p>释放出队，出队的主要工作是负责唤醒等待队列中后续节点，让所有等待节点环环相接，每条线程有序地往下执行。代码简化如下：<br>Node s = node.next;<br>唤醒节点s包含的线程</p>
+</li>
+<li><p>超时，在支持超时的模式下需要LockSupport类的parkNanos方法支持，线程在阻塞一段时间后会自动唤醒，每次循环将累加消耗时间，当总消耗时间大于等于自定义的超时时间时就直接分返。代码简化如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">for (;;) &#123;</div><div class="line">   尝试获取锁</div><div class="line">   if (nanosTimeout &lt;= 总消耗时间)</div><div class="line">      return;</div><div class="line">   LockSupport.parkNanos(this, nanosTimeout);</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
+</li>
+<li><p>取消，队列中等待锁的队列可能因为中断或超时而涉及到取消操作，这种情况下被取消的节点不再进行锁竞争。此过程主要完成的工作是将取消的节点移除，先将节点的。先将节点node状态设置成取消，再将前驱节点pred的后续节点指向node的后续节点，这里由于涉及到竞争，必须通过CAS进行操作，CAS操作就算失败也不必理会，因为已经改了节点的状态，在尝试获取锁操作中会循环对节点的状态判断。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">node.waitStatus = Node.CANCELLED;</div><div class="line">Node pred = node.prev;</div><div class="line">Node predNext = pred.next;</div><div class="line">Node next = node.next;</div><div class="line">compareAndSetNext(pred, predNext, next);</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="公平性"><a href="#公平性" class="headerlink" title="公平性"></a>公平性</h3><p>所谓公平性指所有线程对临界资源申请访问权限的成功率都一样，不会让某些线程拥有优先权。通过前面的CLH Node FIFO学习知道了等待队列是一个先进先出的队列，那么是否就可以说每条线程获取锁时就是公平的呢？关于公平性这里分拆成三个点分别阐述：</p>
+<ol>
+<li><p>准备入队列的节点，此情况讨论的是线程加入等待队列时产生的竞争是否公平，线程在尝试获取锁失败后将被加入等待队列，这时多个线程通过自旋将节点加入队列，所有线程在自旋过程中是无法保证其公平性的，可能后来的线程比早到的先进入队列，所以节点入队列不具公平性。</p>
+</li>
+<li><p>等待队列中的节点，情况①中成功加入队列后即成为等待队列中的节点，我们知道此队列是一个先入先出队列，那么很简单能得到，队列中的所有节点是公平的，他们都按照顺序等待自己被前驱节点唤醒并获取锁，所以等待队列中的节点具有公平性。</p>
+</li>
+<li><p>闯入的节点，这种情况是指一个新线程到达共享资源边界时不管等待队列中是否存在其他等待节点它都将优先尝试去获取锁，这种称为可闯入策略。可闯入特性破坏了公平性，AQS框架对外体现的公平性主要由此体现，下面将对闯入特性展开分析。</p>
+</li>
+</ol>
+<p>AQS提供的基础获取锁算法是一种可闯入的算法，即如果有新线程到来先进行一次获取尝试，不成功的情况下才将当前线程加入等待队列。如图2-5-9-6所示，等待队列中节点线程按照顺序一个接一个尝试去获取共享资源的使用权，某时刻头结点线程准备尝试获取的同时另外一条线程闯入，此线程并非直接加入等待队列的尾部，而是先跟头结点线程竞争获取资源，闯入线程如果成功获取共享资源则直接执行，头结点线程则继续等待下一次尝试，如此一来闯入线程成功插队，后来的线程比早到的线程先执行，说明AQS基础获取算法是不严格公平的。</p>
+<p><img src="/img/sy/sy-4.png" alt=""></p>
+<p>基础获取算法逻辑简化如下：首先尝试获取锁，假如获取失败才创建节点并加入到等待队列的尾部，接着通过不断循环检查是否轮到自己执行，当然此过程为了提高性能可能将线程先挂起，最终由前驱节点唤醒。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">if (尝试获取锁失败) &#123;</div><div class="line">    创建node</div><div class="line">    使用CAS方式把node插入到队列尾部</div><div class="line">    while(true)&#123;</div><div class="line">    if(尝试获取锁成功 并且 node的前驱节点为头节点)&#123;</div><div class="line">	把当前节点设置为头节点</div><div class="line">    跳出循环</div><div class="line">&#125; else &#123;</div><div class="line">    使用CAS方式修改node前驱节点的waitStatus标识为signal</div><div class="line">    if(修改成功)</div><div class="line">        挂起当前线程</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>为什么要使用闯入策略？可闯入的策略通常可以提供更高的总吞吐量。由于一般同步器颗粒度比较小，也可以说共享资源的范围较小，而线程从阻塞状态到被唤醒所消耗的时间周期可能是通过共享资源时间周期的几倍甚至几十倍，如此一来线程唤醒过程中将存在一个很大的时间周期空窗期，导致资源没有得到充分利用，为了提高吞吐量，引入这种闯入策略，它可以使在等待队列头结点从阻塞到被唤醒的时间段内闯入的线程直接获取锁并通过同步器，以便充分利用唤醒过程这一空窗期，大大增加了吞吐率。另外，闯入机制的实现对外提供一种竞争调节机制，即开发者可以在自定义同步器中定义闯入尝试获取的次数，假设次数为n则不断重复获取直到n次都获取不成功才把线程加入等待队列中，随着次数n的增加可以增大成功闯入的几率。同时，这种闯入策略可能导致等待队列中的线程饥饿，因为锁可能一直被闯入的线程获取，但由于一般持有同步器的时间很短暂而避免饥饿的发生，反之如果保护的代码体很长并且持有同步器的时间较长，这将大大增加等待队列无限等待的风险。</p>
+<p>在实际情况中还是要根据用户需求制定策略，在一个公平性要求很高的场景，则可以把闯入策略去除掉以达到公平。在自定义同步器中可以通过AQS预留方法tryAcquire方法实现，只需判断当前线程是否为等待队列中头结点对应的线程，若不是则直接返回false，尝试获取失败。但前面这种公平性是相对Java语法语义层面上的公平性，在现实中JVM的实现会直接影响线程执行的顺序。</p>
+<h3 id="AQS超时机制"><a href="#AQS超时机制" class="headerlink" title="AQS超时机制"></a>AQS超时机制</h3><p>AQS框架提供的另外一个优秀机制是锁获取超时的支持，当大量线程对某一锁竞争时可能导致某些线程在很长一段时间都获取不了锁，在某些场景下可能希望如果线程在一段时间内不能成功获取锁就取消对该锁的等待以提高性能，这时就需要用到超时机制。在JDK1.5之前还没有juc工具，当时的并发控制职能通过JVM内置的synchronized关键词实现锁，但对一些特殊要求却力不从心，例如超时取消控制。JDK1.5开始引入juc工具完美解决了此问题，而这正得益于并发基础框架AQS提供了超时的支持。</p>
+<p>为了更精确地保证时间间隔统计的准确性，实现时使用了System.nanoTime()更为精确的方法，它能精确到纳秒级别。超时机制的思想就是在不断进行锁竞争的同时记录竞争的时间，一旦时间段超过指定的时间则停止轮询直接返回，返回前对等待队列中对应节点进行取消操作。往下看实现的逻辑，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">if(尝试获取锁失败) &#123;</div><div class="line">long lastTime = System.nanoTime();</div><div class="line">    创建node</div><div class="line">    使用CAS方式把node插入到队列尾部</div><div class="line">    while(true)&#123;</div><div class="line">    if(尝试获取锁成功 并且 node的前驱节点为头节点)&#123;</div><div class="line">	把当前节点设置为头节点</div><div class="line">    跳出循环</div><div class="line">&#125; else &#123;</div><div class="line">    if (nanosTimeout &lt;= 0)&#123;</div><div class="line">	取消等待队列中此节点</div><div class="line">	跳出循环</div><div class="line">&#125;</div><div class="line">    使用CAS方式修改node前驱节点的waitStatus标识为signal</div><div class="line">    if(修改成功)</div><div class="line">        if(nanosTimeout &gt; spinForTimeoutThreshold)</div><div class="line">        阻塞当前线程nanosTimeout纳秒</div><div class="line">   		long now = System.nanoTime();</div><div class="line">    	nanosTimeout -= now - lastTime;</div><div class="line">    	lastTime = now;</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>上面正是在前面章节锁的获取逻辑中添加超时处理，核心逻辑是不断循环减去处理的时间消耗，一旦小于0就取消节点并跳出循环，其中有两点必须要注意，一个是真正的阻塞时间应该是扣除了竞争入队的时间后剩余的时间，保证阻塞事件的准确性，我们可以看到每次循环都会减去相应的处理时间；另外一个是关于spinForTimeoutThreshold变量阀值，它是决定使用自旋方式消耗时间还是使用系统阻塞方式消耗时间的分割线，juc工具包作者通过测试将默认值设置为1000ns，即如果在成功插入等待队列后剩余时间大于1000ns则调用系统底层阻塞，否则不调用系统底层，取而代之的是仅仅让之在Java应用层不断循环消耗时间，属于优化的措施。</p>
+<h3 id="同步状态的管理"><a href="#同步状态的管理" class="headerlink" title="同步状态的管理"></a>同步状态的管理</h3><p>整个AQS框架核心功能都是围绕着其32位整型属性state进行，一般可以说它表示锁的数量，对同步状态的控制可以实现不同的同步工具，例如闭锁、信号量、栅栏等等。为了保证可见性此变量被声明为volatile，保证每次的原子更新都将及时反映到每条线程上。而对于同步状态的管理可以大体分为两块，一是独占模式的管理，另外是共享模式的管理。通过对这两种模式的灵活变换可以实现多种不同的同步器，如下图，对state的控制可以看成一个管道，管道的大小决定了同时通过的线程，独占模式好比宽度只容许一个线程通过的管道，在这种模式下线程只能逐一通过管道，任意时刻管内只能存在一条线程，这便形成了互斥效果。而共享模式就是管道宽度大于1的管道，可以同时让n条管道通过，吞吐量增加但可能存在共享数据一致性问题。（注意：两种模式的讨论忽略了队列的管理逻辑，实际上CLH Node的引入是为了优化竞争带来的性能问题，不影响同步状态管理的探讨）</p>
+<p><img src="/img/sy/sy-4.png" alt=""><br>图5 独占模式与共享模式</p>
+<p>如何通过state实现独占模式和共享模式？在此之前先了解AQS框架中相关的getState、setState、compareAndSetState三个操作state的基本方法，前两个方法是普通的获取设置方法，其必须保证不存在数据竞争的情况下使用，compareAndSetState方法则提供了CAS方式的硬件级别的原子更新。两种模式就是通过这些方法对state操作实现不同同步模式，下面给出最简单的实现。</p>
+<p> 独占模式<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">public boolean tryAcquire(int acquires) &#123;</div><div class="line">	if (compareAndSetState(0, 1)) &#123;</div><div class="line">		return true;</div><div class="line">	&#125;</div><div class="line">	return false;</div><div class="line">&#125;</div><div class="line"></div><div class="line">protected boolean tryRelease(int releases) &#123;</div><div class="line">	setState(0);</div><div class="line">	return true;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>多条线程通过tryAcquire尝试把state变量改为1，由于CAS算法的保证，最终有且仅有一条线程成功修改state，修改成功的线程代表获取锁成功，将拥有往下执行的权利，进入管道。当执行完毕退出管道时执行tryRelease尝试把state变量改为0，让出管道，此处由于不存在线程竞争所以可直接使用setState，接着其他未通过的线程继续重复尝试</p>
+<p> 共享模式<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">public int tryAcquireShared(int interval) &#123;</div><div class="line">	for (;;) &#123;</div><div class="line">		int current = getState();</div><div class="line">		int newCount = current - 1;</div><div class="line">		if (newCount &lt; 0 || compareAndSetState(current, newCount)) &#123;</div><div class="line">			return newCount;</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">public boolean tryReleaseShared(int interval) &#123;</div><div class="line">	for (;;) &#123;</div><div class="line">		int current = getState();</div><div class="line">		int newCount = current + 1;</div><div class="line">		if (compareAndSetState(current, newCount)) &#123;</div><div class="line">			return true;</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>与独占模式不同的是对state的管理及判断条件，独占模式state的值只能为0或1，而共享模式的state是可以被出事换成任意整数，一般初始值表示提供一个同时n条线程通过的管道宽度，这样一来，多条线程通过tryAcquireShared尝试将state的值减去1，成功修改state后就返回新值，只有当新值大于等于0才表示获取锁成功，拥有往下执行的权利，进入管道。在执行完毕时线程将调用tryReleaseShared尝试修改state值使之增加1，表示我已经执行完了并让出管道的通道供后面线程使用，需要说明的是与独占模式不同，由于可能存在多条线程并发释放锁，所以此处必须使用基于CAS算法的修改方法，修改成功后其他线程便可继续竞争锁。</p>
+<p>ASQ框架提供了对同步状态state的基本操作，了解了两种模式对state操作开发者可能很自由地自定义自己的同步器。实际中AQS框架在提供state状态管理接口的同时也将维护等待队列的工作，两项工作被封装成一个模板，规定了工作流程，工作流程包括什么条件下加入等待队列、什么条件移除等待节点、如何操作等待队列、需不需要阻塞、支不支持中断等等，对外仅仅提供state状态操作接口供开发者自定义，而队列的维护工作已经绑定在模板中，无需你自己动手。</p>
+</span>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Java/" rel="tag">#Java</a>
+          
+            <a href="/tags/并发库/" rel="tag">#并发库</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/02/15/[并发锁(四)]加锁原理/" rel="prev">[并发锁(四)]枷锁原理</a>
+            
+          </div>
+
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/02/08/Java 并发编程：volatile的使用及其原理/" rel="next">Java 并发编程：volatile的使用及其原理</a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div>
+      
+        <style type="text/css">
+
+    .donate_bar {
+        text-align: center;
+        margin-top : 5%;
+    }
+
+    .donate_bar.hidden {
+        display:none;
+    }
+/*
+    .donate_bar a.btn_donate {
+        display: inline-block;
+        width: 82px;
+        height: 82px;
+        margin-left:auto;
+        margin-right:auto;
+
+        background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat;
+        _background: url("http://img.t.sinajs.cn/t5/style/images/apps_PRF/e_media/btn_reward.gif") no-repeat; 
+
+        -webkit-transition: background 0s;
+        -moz-transition: background 0s;
+        -o-transition: background 0s;
+        -ms-transition: background 0s;
+        transition: background 0s;
+    }
+*/
+    .donate_bar a.btn_donate:hover { 
+        // background-position: 0px -82px;
+        color: #87daff
+    }
+
+    .donate_bar .donate_txt {
+        display: block;
+        color: #9d9d9d;
+        font: 14px/2 "Microsoft Yahei";
+    }
+
+    .bold { 
+        font-weight: bold; 
+    }
+
+    .post-donate a {
+        border-bottom: 0px;
+    }
+
+    #donate_guide table {
+        border: none;
+    }
+
+    #donate_guide td {
+        border-bottom: none;
+        border-right: none;
+        background: #333333;
+        valign: top;
+    }
+
+</style>
+
+
+
+    
+
+    <div class ="post-donate">
+        <div id="donate_board" class="donate_bar center">
+              <a id="btn_donate" class="btn_donate" href="javascript:;" title="打赏">赏</a>
+              <span id="donate_txt" class="donate_txt">
+                   
+                        仅仅是一个功能
+                   
+              </span>
+            <br>
+        </div>  
+  
+        <div id="donate_guide" class="donate_bar center hidden">
+            <!--
+            
+                <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                    style="float:left;margin-left:25%;margin-right:10px;">
+                    <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                </a> 
+              
+
+            
+                <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                    style="margin-right:30%">
+                    <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                </a>
+            
+            -->
+            <table>
+                <tr>
+                    <td>
+                        
+                            <a href="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="支付宝打赏" class="fancybox" rel="article0" 
+                                style="float:left;margin-left:25%;margin-right:10px;">
+                                <img src="http://o7keinrz4.bkt.clouddn.com/alipay.jpg" title="" height="164px" width="164px">
+                            </a> 
+                         
+                    </td>
+                    <td>
+                        
+                            <a href="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="微信打赏" class="fancybox" rel="article0"
+                                style="margin-right:30%">
+                                <img src="http://a1.qpic.cn/psb?/V14YOoud1BGVTo/jixVOczWkObdtwZ3pmS3REM285bhwg3q*z0ZzUGUjWc!/c/dAgBAAAAAAAA&ek=1&kp=1&pt=0&bo=rgGuAQAAAAABACc!&sce=60-2-2&rf=0-0" title="" height="164px" width="164px">
+                            </a>
+                        
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+
+        <script type="text/javascript">
+            document.getElementById('btn_donate').onclick = function() {
+                $('#donate_board').addClass('hidden');
+                // $('#donate_guide').removeClass('hidden');
+                $('#donate_guide').show(2000);
+            }
+
+        </script>
+    </div>
+
+    
+
+
+      
+    </div>
+
+    <div class="post-spread">
+      
+        <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+  <a class="jiathis_button_tsina"></a>
+  <a class="jiathis_button_tqq"></a>
+  <a class="jiathis_button_weixin"></a>
+  <a class="jiathis_button_cqq"></a>
+  <a class="jiathis_button_douban"></a>
+  <a class="jiathis_button_renren"></a>
+  <a class="jiathis_button_qzone"></a>
+  <a class="jiathis_button_kaixin001"></a>
+  <a class="jiathis_button_copy"></a>
+  <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank"></a>
+  <a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" >
+  var jiathis_config={
+    hideMore:false
+  }
+</script>
+<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+    </div>
+  </div>
+
+ </div>
+
+        
+            <!-- 多说热评文章-->
+            <p>热评文章</p>
+            <div class="ds-top-threads" data-range="weekly" data-num-items="4"></div>
+        
+
+        
+          <div class="comments" id="comments">
+            
+              <div class="ds-thread" data-thread-key="2017/02/14/[并发锁(二)]AQS阻塞队列/"
+                   data-title="[并发锁(二)]AQS阻塞队列" data-url="https://fudawei.github.io/2017/02/14/[并发锁(二)]AQS阻塞队列/">
+              </div>
+            
+          </div>
+        
+      </div>
+
+      
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" src="/images/default_avatar.jpg" alt="冰鸟" itemprop="image"/>
+          <p class="site-author-name" itemprop="name">冰鸟</p>
+        </div>
+        <p class="site-description motion-element" itemprop="description">我们整天忙忙碌碌，像一群群没有灵魂的苍蝇，喧闹着，躁动着，听不到灵魂深处的声音。时光流逝，童年远去，我们渐渐长大，岁月带走了许许多多的回忆，也消蚀了心底曾经拥有的那份童稚的纯真，我们不顾心灵桎梏，沉溺于人世浮华，专注于利益法则，我们把自己弄丢了。</p>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">140</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          <div class="site-state-item site-state-categories">
+            <a href="/categories">
+              <span class="site-state-item-count">39</span>
+              <span class="site-state-item-name">分类</span>
+              </a>
+          </div>
+
+          <div class="site-state-item site-state-tags">
+            <a href="/tags">
+              <span class="site-state-item-count">73</span>
+              <span class="site-state-item-name">标签</span>
+              </a>
+          </div>
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="menu-item-icon icon-next-feed"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/fudw1987" target="_blank">GitHub</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="https://www.zhihu.com/people/fu-da-wei-70" target="_blank">知乎</a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://t.qq.com/fudw764923019" target="_blank">微博</a>
+              </span>
+            
+          
+        </div>
+
+        <div class="links-of-friendly motion-element">
+          
+        </div>
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator"></div>
+          <div class="post-toc">
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#自旋锁"><span class="nav-number">1.</span> <span class="nav-text">自旋锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#自旋锁优化"><span class="nav-number">1.1.</span> <span class="nav-text">自旋锁优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CLH锁改造"><span class="nav-number">1.2.</span> <span class="nav-text">CLH锁改造</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#公平性"><span class="nav-number">1.3.</span> <span class="nav-text">公平性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AQS超时机制"><span class="nav-number">1.4.</span> <span class="nav-text">AQS超时机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#同步状态的管理"><span class="nav-number">1.5.</span> <span class="nav-text">同步状态的管理</span></a></li></ol></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator"></div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner"> <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<div class="copyright" >
+  
+  &copy; &nbsp; 
+  <span itemprop="copyrightYear">2017
+  </span>
+  <span class="with-love">
+    <i class="icon-next-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">冰鸟
+  </span>
+</div>
+
+<div class="powered-by">
+  Powered by <a class="theme-link" href="http://hexo.io">Hexo</a>
+</div>
+
+<div class="theme-info">
+  Theme by <a class="theme-link" href="https://github.com/fudawei">fudawei</a>
+</div>
+ &nbsp; |  &nbsp; 
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+  &nbsp; |  &nbsp; 
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+<!-- busuanzi -->
+
+
+
+ </div>
+    </footer>
+
+    <div class="back-to-top"></div>
+  </div>
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  
+  
+    
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"fudawei"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+    
+
+    
+  
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="/js/fancy-box.js?v=0.4.5.1"></script>
+
+
+  <script type="text/javascript" src="/js/helpers.js?v=0.4.5.1"></script>
+  
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/js/motion_global.js?v=0.4.5.1" id="motion.global"></script>
+
+
+
+
+  <script type="text/javascript" src="/js/nav-toggle.js?v=0.4.5.1"></script>
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  
+<script type="text/javascript" src="/js/bootstrap.scrollspy.js?v=0.4.5.1" id="bootstrap.scrollspy.custom"></script>
+
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 0.4 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    var $tocContent = $('.post-toc-content');
+    if (isDesktop() && CONFIG.sidebar === 'post') {
+      if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+        displaySidebar();
+      }
+    }
+  });
+</script>
+
+
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (CONFIG.sidebar === 'always') {
+        displaySidebar();
+      }
+      if (isMobile()) {
+        FastClick.attach(document.body);
+      }
+    });
+  </script>
+
+  
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+      processEscapes: true,
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for (i=0; i < all.length; i += 1) {
+      all[i].SourceElement().parentNode.className += ' has-jax';
+    }
+  });
+</script>
+
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/lazyload.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      $("#posts").find('img').lazyload({
+        placeholder: "/images/loading.gif",
+        effect: "fadeIn"
+      });
+    });
+  </script>
+
+<!-- custom analytics part create by xiamo -->
+<script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+<script>AV.initialize("SbuO6UqesUpwpVQpFOF85w4b-gzGzoHsz", "nU6WMv6iTcTpjLHKtOIoovuO");</script>
+<script>
+function showTime(Counter) {
+	var query = new AV.Query(Counter);
+	$(".leancloud_visitors").each(function() {
+		var url = $(this).attr("id").trim();
+		query.equalTo("url", url);
+		query.find({
+			success: function(results) {
+				if (results.length == 0) {
+					var content = '0 ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+					return;
+				}
+				for (var i = 0; i < results.length; i++) {
+					var object = results[i];
+					var content = object.get('time') + ' ' + $(document.getElementById(url)).text();
+					$(document.getElementById(url)).text(content);
+				}
+			},
+			error: function(object, error) {
+				console.log("Error: " + error.code + " " + error.message);
+			}
+		});
+
+	});
+}
+
+function addCount(Counter) {
+	var Counter = AV.Object.extend("Counter");
+	url = $(".leancloud_visitors").attr('id').trim();
+	title = $(".leancloud_visitors").attr('data-flag-title').trim();
+	var query = new AV.Query(Counter);
+	query.equalTo("url", url);
+	query.find({
+		success: function(results) {
+			if (results.length > 0) {
+				var counter = results[0];
+				counter.fetchWhenSave(true);
+				counter.increment("time");
+				counter.save(null, {
+					success: function(counter) {
+						var content =  counter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(counter, error) {
+						console.log('Failed to save Visitor num, with error message: ' + error.message);
+					}
+				});
+			} else {
+				var newcounter = new Counter();
+				newcounter.set("title", title);
+				newcounter.set("url", url);
+				newcounter.set("time", 1);
+				newcounter.save(null, {
+					success: function(newcounter) {
+					    console.log("newcounter.get('time')="+newcounter.get('time'));
+						var content = newcounter.get('time') + ' ' + $(document.getElementById(url)).text();
+						$(document.getElementById(url)).text(content);
+					},
+					error: function(newcounter, error) {
+						console.log('Failed to create');
+					}
+				});
+			}
+		},
+		error: function(error) {
+			console.log('Error:' + error.code + " " + error.message);
+		}
+	});
+}
+$(function() {
+	var Counter = AV.Object.extend("Counter");
+	if ($('.leancloud_visitors').length == 1) {
+		addCount(Counter);
+	} else if ($('.post-title-link').length > 1) {
+		showTime(Counter);
+	}
+}); 
+</script>
+
+
+</body>
+</html>

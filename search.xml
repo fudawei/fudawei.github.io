@@ -4,8 +4,8 @@
   
     
     <entry>
-      <title><![CDATA[[并发锁(三)]枷锁原理]]></title>
-      <url>https://fudawei.github.io/2017/02/13/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%B8%89)%5D%E5%8A%A0%E9%94%81%E5%8E%9F%E7%90%86/</url>
+      <title><![CDATA[[并发锁(四)]枷锁原理]]></title>
+      <url>https://fudawei.github.io/2017/02/15/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E5%9B%9B)%5D%E5%8A%A0%E9%94%81%E5%8E%9F%E7%90%86/</url>
       <content type="html"><![CDATA[<p>接上篇，这篇从Lock.lock/unlock开始。特别说明在没有特殊情况下所有程序、API、文档都是基于JDK 6.0的。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">public void Java.util.concurrent.locks.ReentrantLock.lock()</div><div class="line"></div><div class="line">		获取锁。</div><div class="line">	    如果该锁没有被另一个线程保持，则获取该锁并立即返回，将锁的保持计数设置为 1。</div><div class="line">	    如果当前线程已经保持该锁，则将保持计数加 1，并且该方法立即返回。</div><div class="line">	    如果该锁被另一个线程保持，则出于线程调度的目的，禁用当前线程，并且在获得锁之前，该线程将一直处于休眠状态，此时锁保持计数被设置为 1。</div></pre></td></tr></table></figure>
 <p>从上面的文档可以看出ReentrantLock是可重入锁的实现。而内部是委托java.util.concurrent.locks.ReentrantLock.Sync.lock()实现的。java.util.concurrent.locks.ReentrantLock.Sync是抽象类，有java.util.concurrent.locks.ReentrantLock.FairSync和java.util.concurrent.locks.ReentrantLock.NonfairSync两个实现，也就是常说的公平锁和不公平锁。</p>
@@ -67,6 +67,68 @@
 <p>如果前一个节点的等待状态waitStatus<0，也就是前面的节点还没有获得到锁，那么返回true，表示当前节点（线程）就应该park()了。否则进行2。 如果前一个节点的等待状态waitstatus="">0，也就是前一个节点被CANCELLED了，那么就将前一个节点去掉，递归此操作直到所有前一个节点的waitStatus&lt;=0，进行4。否则进行3。<br>前一个节点等待状态waitStatus=0，修改前一个节点状态位为SINGAL，表示后面有节点等待你处理，需要根据它的等待状态来决定是否该park()。进行4。<br>返回false，表示线程不应该park()。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">selfInterrupt()</div><div class="line"></div><div class="line">private static void selfInterrupt() &#123;</div><div class="line">    Thread.currentThread().interrupt();</div><div class="line">&#125;</div></pre></td></tr></table></figure></0，也就是前面的节点还没有获得到锁，那么返回true，表示当前节点（线程）就应该park()了。否则进行2。></p>
 <p>如果线程曾经中断过（或者阻塞过）（比如手动interrupt()或者超时等等，那么就再中断一次，中断两次的意思就是清除中断位）。</p>
 <p>大体上整个Lock.lock()就这样一个流程。除了lock()方法外，还有lockInterruptibly()/tryLock()/unlock()/newCondition()等，在接下来的章节中会一一介绍</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[[并发锁(二)]AQS阻塞队列]]></title>
+      <url>https://fudawei.github.io/2017/02/14/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%BA%8C)%5DAQS%E9%98%BB%E5%A1%9E%E9%98%9F%E5%88%97/</url>
+      <content type="html"><![CDATA[<h2 id="自旋锁"><a href="#自旋锁" class="headerlink" title="自旋锁"></a>自旋锁</h2><p>我们知道一个线程在尝试获取锁失败后将被阻塞并加入等待队列中，它是一个怎样的队列？又是如何管理此队列？这节聊聊CHL Node FIFO队列。<br> 在谈到CHL Node FIFO队列之前，我们先分析这种队列的几个要素。首先要了解的是自旋锁，所谓自旋锁即是某一线程去尝试获取某个锁时，如果该锁已经被其他线程占用的话，此线程将不断循环检查该锁是否被释放，而不是让此线程挂起或睡眠。它属于为了保证共享资源而提出的一种锁机制，与互斥锁类似，保证了公共资源在任意时刻最多只能由一条线程获取使用，不同的是互斥锁在获取锁失败后将进入睡眠或阻塞状态。下面利用代码实现一个简单的自旋锁，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div></pre></td><td class="code"><pre><div class="line">public class SpinLock &#123;</div><div class="line">	private static Unsafe unsafe = null;</div><div class="line">	private static final long valueOffset;</div><div class="line">	private volatile int value = 0;</div><div class="line"></div><div class="line">	static &#123;</div><div class="line">		try &#123;</div><div class="line">			unsafe=getUnsafeInstance();</div><div class="line">			valueOffset = unsafe.objectFieldOffset(SpinLock.class.getDeclaredField(&quot;value&quot;));</div><div class="line">		&#125; catch (Exception ex) &#123;</div><div class="line">			throw new Error(ex);</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	private static Unsafe getUnsafeInstance() throws SecurityException,NoSuchFieldException,IllegalArgumentException,IllegalAccessException &#123;</div><div class="line">		Field theUnsafeInstance = Unsafe.class.getDeclaredField(&quot;theUnsafe&quot;);</div><div class="line">		theUnsafeInstance.setAccessible(true);</div><div class="line">		return (Unsafe) theUnsafeInstance.get(Unsafe.class);</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	public void lock() &#123;</div><div class="line">		for (;;) &#123;</div><div class="line">            int newV = value + 1;</div><div class="line">            if(newV==1)</div><div class="line">                if (unsafe.compareAndSwapInt(this, valueOffset, 0, newV))&#123;</div><div class="line">                	return ;</div><div class="line">                &#125;</div><div class="line">        	&#125;</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">    public void unlock() &#123;</div><div class="line">		unsafe.compareAndSwapInt(this, valueOffset, 1, 0);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这是一个很简单的自旋锁，主要看加粗加红的两个方法lock和unlock，Unsafe仅仅是为操作提供了硬件级别的原子CAS操作，暂时忽略此类，只要知道它的作用即可，我们将在后面的“原子性如何保证”小节中对此进行更加深入的阐述。对于lock方法，假如有若干线程竞争，能成功通过CAS操作修改value值为newV的线程即是成功获取锁的线程，将直接通过，而其他的线程则不断在循环检测value值是否又改回0，而将value改为0的操作就是获取锁的线程执行完后对该锁进行释放，通过unlock方法释放锁，释放后若干线程又对该锁竞争。如此一来，没获取的锁也不会被挂起或阻塞，而是不断循环检查状态。图2-5-9-3可加深自旋锁的理解，五条线程轮询value变量，t1获取成功后将value置为1，此状态时其他线程无法竞争锁，t1使用完锁后将value置为0，剩下的线程继续竞争锁，以此类推。这样就保证了某个区域块的线程安全性。</p>
+<p><img src="/img/sy/sy-1.jpg" alt=""><br>自旋锁</p>
+<blockquote>
+<p>自旋锁缺点<br>自旋锁适用于锁占用时间短，即锁保护临界区很小的情景，同时它需要硬件级别操作，也要保证各缓存数据的一致性，另外，无法保证公平性，不保证先到先获得，可能造成线程饥饿。在多处理器机器上，每个线程对应的处理器都对同一个变量进行读写，而每次读写操作都将要同步每个处理器缓存，导致系统性能严重下降。</p>
+</blockquote>
+<h3 id="自旋锁优化"><a href="#自旋锁优化" class="headerlink" title="自旋锁优化"></a>自旋锁优化</h3><p>看Craig, Landin, and Hagersten发明的CLH锁如何优化同步带来的花销，其核心思想是：通过一定手段将所有线程对某一共享变量轮询竞争转化为一个线程队列且队列中的线程各自轮询自己的本地变量。这个转化过程由两个要点，一是构建怎样的队列&amp;如何构建队列，为了保证公平性，构建的将是一个FIFO队列，构建的时候主要通过移动尾部节点tail实现队列的排队，每个想获取锁的线程创建一个新节点并通过CAS原子操作将新节点赋予tail，然后让当前线程轮询前一节点的某个状态位，如图2-5-9-3，如此就成功构建线程排队队列；二是如何释放队列，执行完线程后只需将当前线程对应的节点状态位置为解锁状态，由于下一节点一直在轮询，可获取到锁</p>
+<p><img src="/img/sy/sy-2.jpg" alt=""></p>
+<p>CLH锁的核心思想貌似是将众多线程长时间对某资源的竞争，通过有序化这些线程转化为只需对本地变量检测。唯一存在竞争的地方就是在入队列之前对尾节点tail的竞争，但竞争的线程的数量已经少了很多，且比起所有线程直接对某资源竞争的轮询次数也减少了很多，节省了很多CPU缓存同步操作，大大提升系统性能，利用空间换取性能。下面提供一个简单的CLH锁实现代码，lock与unlock两方法提供加锁解锁操作，每次加锁解锁必须将一个CLHNode对象作为参数传入，lock方法的for循环是通过CAS操作将新节点插入队列，而while循环则是检测前驱节点的锁状态位，一旦前驱节点锁状态位允许则结束检测让线程往下执行。解锁操作先判断当前节点是否为尾节点，如是则直接将尾节点置为空，此时说名仅仅只有一条线程在执行，否则将当前节点的锁状态位置为解锁状态。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div></pre></td><td class="code"><pre><div class="line">public class CLHLock &#123;</div><div class="line"></div><div class="line">	private static Unsafe unsafe = null;</div><div class="line">	private static final long valueOffset;</div><div class="line">	private volatile CLHNode tail;</div><div class="line">	public class CLHNode &#123;</div><div class="line">		private boolean isLocked = true;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	static &#123;</div><div class="line">		try &#123;</div><div class="line">			unsafe = getUnsafeInstance();</div><div class="line">     		valueOffset = unsafe.objectFieldOffset(CLHLock.class.getDeclaredField(&quot;tail&quot;));</div><div class="line">		&#125; catch (Exception ex) &#123;</div><div class="line">			throw new Error(ex);</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	public void lock(CLHNode currentThreadNode) &#123;</div><div class="line">		CLHNode preNode = null;</div><div class="line">		for (;;) &#123;</div><div class="line">			preNode = tail;</div><div class="line">			if (unsafe.compareAndSwapObject(this, valueOffset, tail,currentThreadNode))</div><div class="line">				break;</div><div class="line">			&#125;</div><div class="line">			if (preNode != null)</div><div class="line">				while (preNode.isLocked) &#123;</div><div class="line">				&#125;</div><div class="line">			&#125;</div><div class="line"></div><div class="line">		&#125;</div><div class="line"></div><div class="line">	public void unlock(CLHNode currentThreadNode) &#123;</div><div class="line">  		if (!unsafe.compareAndSwapObject(this, valueOffset, currentThreadNode,null))</div><div class="line">   			currentThreadNode.isLocked = false;</div><div class="line">		&#125;</div><div class="line"></div><div class="line">	private static Unsafe getUnsafeInstance() throws SecurityException,</div><div class="line">							NoSuchFieldException, IllegalArgumentException,IllegalAccessException &#123;</div><div class="line">		Field theUnsafeInstance = Unsafe.class.getDeclaredField(&quot;theUnsafe&quot;);</div><div class="line">		theUnsafeInstance.setAccessible(true);</div><div class="line">		return (Unsafe) theUnsafeInstance.get(Unsafe.class);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="CLH锁改造"><a href="#CLH锁改造" class="headerlink" title="CLH锁改造"></a>CLH锁改造</h3><p>在CLH锁核心思想的影响下，Java并发包的基础框架AQS以CLH锁作为基础而设计，其中主要是考虑到CLH锁更容易实现取消与超时功能。比起原来的CLH锁已经做了很大的改造，主要从两方面进行了改造：节点的结构与节点等待机制。在结构上引入了头结点和尾节点，他们分别指向队列的头和尾，尝试获取锁、入队列、释放锁等实现都与头尾节点相关，并且每个节点都引入前驱节点和后后续节点的引用；在等待机制上由原来的自旋改成阻塞唤醒。如图2-5-9-4，通过前驱后续节点的引用一节节连接起来形成一个链表队列，对于头尾节点的更新必须是原子的。下面详细看看入队、检测挂起、释放出队、超时、取消等操作。</p>
+<p><img src="/img/sy/sy-3.jpg" alt=""></p>
+<ol>
+<li><p>入队，整块逻辑其实是用一个无限循环进行CAS操作，即用自旋方式竞争直到成功。将尾节点tail的旧值赋予新节点node的前驱节点，并尝试CAS操作将新节点node赋予尾节点tail，原先的尾节点的后续节点指向新建节点node。完成上面步骤就建立起一条如图2-5-9-4所示的链表队列。代码简化如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">for (;;) &#123;</div><div class="line">   Node t = tail;</div><div class="line">   node.prev = t;</div><div class="line">   if (compareAndSetTail(t, node)) &#123;</div><div class="line">      t.next = node;</div><div class="line">      return node;</div><div class="line">   &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+<li><p>检测挂起，上面我们说到节点等待机制已经被AQS作者由自旋机制改造成阻塞机制，一个新建的节点完成入队操作后，如果是自旋则直接进入循环检测前驱节点是否为头结点即可，但现在被改为阻塞机制，当前线程将首先检测是否为头结点且尝试获取锁，如果当前节点为头结点并成功获取锁则直接返回，当前线程不进入阻塞，否则将当前线程阻塞。代码简化如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"> for (;;) &#123;</div><div class="line">    if (node.prev == head)</div><div class="line">	if(尝试获取锁成功)&#123;</div><div class="line">         head=node;</div><div class="line">         node.next=null;</div><div class="line">         return;</div><div class="line">     &#125;</div><div class="line">   阻塞线程</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+<li><p>释放出队，出队的主要工作是负责唤醒等待队列中后续节点，让所有等待节点环环相接，每条线程有序地往下执行。代码简化如下：<br>Node s = node.next;<br>唤醒节点s包含的线程</p>
+</li>
+<li><p>超时，在支持超时的模式下需要LockSupport类的parkNanos方法支持，线程在阻塞一段时间后会自动唤醒，每次循环将累加消耗时间，当总消耗时间大于等于自定义的超时时间时就直接分返。代码简化如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">for (;;) &#123;</div><div class="line">   尝试获取锁</div><div class="line">   if (nanosTimeout &lt;= 总消耗时间)</div><div class="line">      return;</div><div class="line">   LockSupport.parkNanos(this, nanosTimeout);</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
+</li>
+<li><p>取消，队列中等待锁的队列可能因为中断或超时而涉及到取消操作，这种情况下被取消的节点不再进行锁竞争。此过程主要完成的工作是将取消的节点移除，先将节点的。先将节点node状态设置成取消，再将前驱节点pred的后续节点指向node的后续节点，这里由于涉及到竞争，必须通过CAS进行操作，CAS操作就算失败也不必理会，因为已经改了节点的状态，在尝试获取锁操作中会循环对节点的状态判断。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">node.waitStatus = Node.CANCELLED;</div><div class="line">Node pred = node.prev;</div><div class="line">Node predNext = pred.next;</div><div class="line">Node next = node.next;</div><div class="line">compareAndSetNext(pred, predNext, next);</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="公平性"><a href="#公平性" class="headerlink" title="公平性"></a>公平性</h3><p>所谓公平性指所有线程对临界资源申请访问权限的成功率都一样，不会让某些线程拥有优先权。通过前面的CLH Node FIFO学习知道了等待队列是一个先进先出的队列，那么是否就可以说每条线程获取锁时就是公平的呢？关于公平性这里分拆成三个点分别阐述：</p>
+<ol>
+<li><p>准备入队列的节点，此情况讨论的是线程加入等待队列时产生的竞争是否公平，线程在尝试获取锁失败后将被加入等待队列，这时多个线程通过自旋将节点加入队列，所有线程在自旋过程中是无法保证其公平性的，可能后来的线程比早到的先进入队列，所以节点入队列不具公平性。</p>
+</li>
+<li><p>等待队列中的节点，情况①中成功加入队列后即成为等待队列中的节点，我们知道此队列是一个先入先出队列，那么很简单能得到，队列中的所有节点是公平的，他们都按照顺序等待自己被前驱节点唤醒并获取锁，所以等待队列中的节点具有公平性。</p>
+</li>
+<li><p>闯入的节点，这种情况是指一个新线程到达共享资源边界时不管等待队列中是否存在其他等待节点它都将优先尝试去获取锁，这种称为可闯入策略。可闯入特性破坏了公平性，AQS框架对外体现的公平性主要由此体现，下面将对闯入特性展开分析。</p>
+</li>
+</ol>
+<p>AQS提供的基础获取锁算法是一种可闯入的算法，即如果有新线程到来先进行一次获取尝试，不成功的情况下才将当前线程加入等待队列。如图2-5-9-6所示，等待队列中节点线程按照顺序一个接一个尝试去获取共享资源的使用权，某时刻头结点线程准备尝试获取的同时另外一条线程闯入，此线程并非直接加入等待队列的尾部，而是先跟头结点线程竞争获取资源，闯入线程如果成功获取共享资源则直接执行，头结点线程则继续等待下一次尝试，如此一来闯入线程成功插队，后来的线程比早到的线程先执行，说明AQS基础获取算法是不严格公平的。</p>
+<p><img src="/img/sy/sy-4.png" alt=""></p>
+<p>基础获取算法逻辑简化如下：首先尝试获取锁，假如获取失败才创建节点并加入到等待队列的尾部，接着通过不断循环检查是否轮到自己执行，当然此过程为了提高性能可能将线程先挂起，最终由前驱节点唤醒。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">if (尝试获取锁失败) &#123;</div><div class="line">    创建node</div><div class="line">    使用CAS方式把node插入到队列尾部</div><div class="line">    while(true)&#123;</div><div class="line">    if(尝试获取锁成功 并且 node的前驱节点为头节点)&#123;</div><div class="line">	把当前节点设置为头节点</div><div class="line">    跳出循环</div><div class="line">&#125; else &#123;</div><div class="line">    使用CAS方式修改node前驱节点的waitStatus标识为signal</div><div class="line">    if(修改成功)</div><div class="line">        挂起当前线程</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>为什么要使用闯入策略？可闯入的策略通常可以提供更高的总吞吐量。由于一般同步器颗粒度比较小，也可以说共享资源的范围较小，而线程从阻塞状态到被唤醒所消耗的时间周期可能是通过共享资源时间周期的几倍甚至几十倍，如此一来线程唤醒过程中将存在一个很大的时间周期空窗期，导致资源没有得到充分利用，为了提高吞吐量，引入这种闯入策略，它可以使在等待队列头结点从阻塞到被唤醒的时间段内闯入的线程直接获取锁并通过同步器，以便充分利用唤醒过程这一空窗期，大大增加了吞吐率。另外，闯入机制的实现对外提供一种竞争调节机制，即开发者可以在自定义同步器中定义闯入尝试获取的次数，假设次数为n则不断重复获取直到n次都获取不成功才把线程加入等待队列中，随着次数n的增加可以增大成功闯入的几率。同时，这种闯入策略可能导致等待队列中的线程饥饿，因为锁可能一直被闯入的线程获取，但由于一般持有同步器的时间很短暂而避免饥饿的发生，反之如果保护的代码体很长并且持有同步器的时间较长，这将大大增加等待队列无限等待的风险。</p>
+<p>在实际情况中还是要根据用户需求制定策略，在一个公平性要求很高的场景，则可以把闯入策略去除掉以达到公平。在自定义同步器中可以通过AQS预留方法tryAcquire方法实现，只需判断当前线程是否为等待队列中头结点对应的线程，若不是则直接返回false，尝试获取失败。但前面这种公平性是相对Java语法语义层面上的公平性，在现实中JVM的实现会直接影响线程执行的顺序。</p>
+<h3 id="AQS超时机制"><a href="#AQS超时机制" class="headerlink" title="AQS超时机制"></a>AQS超时机制</h3><p>AQS框架提供的另外一个优秀机制是锁获取超时的支持，当大量线程对某一锁竞争时可能导致某些线程在很长一段时间都获取不了锁，在某些场景下可能希望如果线程在一段时间内不能成功获取锁就取消对该锁的等待以提高性能，这时就需要用到超时机制。在JDK1.5之前还没有juc工具，当时的并发控制职能通过JVM内置的synchronized关键词实现锁，但对一些特殊要求却力不从心，例如超时取消控制。JDK1.5开始引入juc工具完美解决了此问题，而这正得益于并发基础框架AQS提供了超时的支持。</p>
+<p>为了更精确地保证时间间隔统计的准确性，实现时使用了System.nanoTime()更为精确的方法，它能精确到纳秒级别。超时机制的思想就是在不断进行锁竞争的同时记录竞争的时间，一旦时间段超过指定的时间则停止轮询直接返回，返回前对等待队列中对应节点进行取消操作。往下看实现的逻辑，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">if(尝试获取锁失败) &#123;</div><div class="line">long lastTime = System.nanoTime();</div><div class="line">    创建node</div><div class="line">    使用CAS方式把node插入到队列尾部</div><div class="line">    while(true)&#123;</div><div class="line">    if(尝试获取锁成功 并且 node的前驱节点为头节点)&#123;</div><div class="line">	把当前节点设置为头节点</div><div class="line">    跳出循环</div><div class="line">&#125; else &#123;</div><div class="line">    if (nanosTimeout &lt;= 0)&#123;</div><div class="line">	取消等待队列中此节点</div><div class="line">	跳出循环</div><div class="line">&#125;</div><div class="line">    使用CAS方式修改node前驱节点的waitStatus标识为signal</div><div class="line">    if(修改成功)</div><div class="line">        if(nanosTimeout &gt; spinForTimeoutThreshold)</div><div class="line">        阻塞当前线程nanosTimeout纳秒</div><div class="line">   		long now = System.nanoTime();</div><div class="line">    	nanosTimeout -= now - lastTime;</div><div class="line">    	lastTime = now;</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>上面正是在前面章节锁的获取逻辑中添加超时处理，核心逻辑是不断循环减去处理的时间消耗，一旦小于0就取消节点并跳出循环，其中有两点必须要注意，一个是真正的阻塞时间应该是扣除了竞争入队的时间后剩余的时间，保证阻塞事件的准确性，我们可以看到每次循环都会减去相应的处理时间；另外一个是关于spinForTimeoutThreshold变量阀值，它是决定使用自旋方式消耗时间还是使用系统阻塞方式消耗时间的分割线，juc工具包作者通过测试将默认值设置为1000ns，即如果在成功插入等待队列后剩余时间大于1000ns则调用系统底层阻塞，否则不调用系统底层，取而代之的是仅仅让之在Java应用层不断循环消耗时间，属于优化的措施。</p>
+<h3 id="同步状态的管理"><a href="#同步状态的管理" class="headerlink" title="同步状态的管理"></a>同步状态的管理</h3><p>整个AQS框架核心功能都是围绕着其32位整型属性state进行，一般可以说它表示锁的数量，对同步状态的控制可以实现不同的同步工具，例如闭锁、信号量、栅栏等等。为了保证可见性此变量被声明为volatile，保证每次的原子更新都将及时反映到每条线程上。而对于同步状态的管理可以大体分为两块，一是独占模式的管理，另外是共享模式的管理。通过对这两种模式的灵活变换可以实现多种不同的同步器，如下图，对state的控制可以看成一个管道，管道的大小决定了同时通过的线程，独占模式好比宽度只容许一个线程通过的管道，在这种模式下线程只能逐一通过管道，任意时刻管内只能存在一条线程，这便形成了互斥效果。而共享模式就是管道宽度大于1的管道，可以同时让n条管道通过，吞吐量增加但可能存在共享数据一致性问题。（注意：两种模式的讨论忽略了队列的管理逻辑，实际上CLH Node的引入是为了优化竞争带来的性能问题，不影响同步状态管理的探讨）</p>
+<p><img src="/img/sy/sy-4.png" alt=""><br>图5 独占模式与共享模式</p>
+<p>如何通过state实现独占模式和共享模式？在此之前先了解AQS框架中相关的getState、setState、compareAndSetState三个操作state的基本方法，前两个方法是普通的获取设置方法，其必须保证不存在数据竞争的情况下使用，compareAndSetState方法则提供了CAS方式的硬件级别的原子更新。两种模式就是通过这些方法对state操作实现不同同步模式，下面给出最简单的实现。</p>
+<p> 独占模式<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">public boolean tryAcquire(int acquires) &#123;</div><div class="line">	if (compareAndSetState(0, 1)) &#123;</div><div class="line">		return true;</div><div class="line">	&#125;</div><div class="line">	return false;</div><div class="line">&#125;</div><div class="line"></div><div class="line">protected boolean tryRelease(int releases) &#123;</div><div class="line">	setState(0);</div><div class="line">	return true;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>多条线程通过tryAcquire尝试把state变量改为1，由于CAS算法的保证，最终有且仅有一条线程成功修改state，修改成功的线程代表获取锁成功，将拥有往下执行的权利，进入管道。当执行完毕退出管道时执行tryRelease尝试把state变量改为0，让出管道，此处由于不存在线程竞争所以可直接使用setState，接着其他未通过的线程继续重复尝试</p>
+<p> 共享模式<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">public int tryAcquireShared(int interval) &#123;</div><div class="line">	for (;;) &#123;</div><div class="line">		int current = getState();</div><div class="line">		int newCount = current - 1;</div><div class="line">		if (newCount &lt; 0 || compareAndSetState(current, newCount)) &#123;</div><div class="line">			return newCount;</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">public boolean tryReleaseShared(int interval) &#123;</div><div class="line">	for (;;) &#123;</div><div class="line">		int current = getState();</div><div class="line">		int newCount = current + 1;</div><div class="line">		if (compareAndSetState(current, newCount)) &#123;</div><div class="line">			return true;</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>与独占模式不同的是对state的管理及判断条件，独占模式state的值只能为0或1，而共享模式的state是可以被出事换成任意整数，一般初始值表示提供一个同时n条线程通过的管道宽度，这样一来，多条线程通过tryAcquireShared尝试将state的值减去1，成功修改state后就返回新值，只有当新值大于等于0才表示获取锁成功，拥有往下执行的权利，进入管道。在执行完毕时线程将调用tryReleaseShared尝试修改state值使之增加1，表示我已经执行完了并让出管道的通道供后面线程使用，需要说明的是与独占模式不同，由于可能存在多条线程并发释放锁，所以此处必须使用基于CAS算法的修改方法，修改成功后其他线程便可继续竞争锁。</p>
+<p>ASQ框架提供了对同步状态state的基本操作，了解了两种模式对state操作开发者可能很自由地自定义自己的同步器。实际中AQS框架在提供state状态管理接口的同时也将维护等待队列的工作，两项工作被封装成一个模板，规定了工作流程，工作流程包括什么条件下加入等待队列、什么条件移除等待节点、如何操作等待队列、需不需要阻塞、支不支持中断等等，对外仅仅提供state状态操作接口供开发者自定义，而队列的维护工作已经绑定在模板中，无需你自己动手。</p>
 ]]></content>
     </entry>
     
@@ -1178,13 +1240,6 @@
     </entry>
     
     <entry>
-      <title><![CDATA[[Spark源码四]图解作业生命周期]]></title>
-      <url>https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
-      <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[[Spark源码三】作业运行过程]]></title>
       <url>https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E4%B8%89%5D%E4%BD%9C%E4%B8%9A%E8%BF%90%E8%A1%8C%E8%BF%87%E7%A8%8B/</url>
       <content type="html"><![CDATA[<p>官方给的例子里面，一执行collect方法就能出结果，那我们就从collect开始看吧，进入RDD，找到collect方法。</p>
@@ -1207,34 +1262,9 @@ eventProcessActor ! JobSubmitted(jobId, rdd, func2, partitions.toArray, allowLoc
     </entry>
     
     <entry>
-      <title><![CDATA[ubuntu下恢复rm删除的数据]]></title>
-      <url>https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/</url>
-      <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
-<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
-<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
-<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
-<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
-<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
-<li>安装extundelete</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
-<pre><code>umount /dev/sdb2 
-mount -o remount,ro /dev/sdb2
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
-extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
-</code></pre><p>```</p>
-<ul>
-<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
-</ul>
-<ul>
-<li><p>总结经验</p>
-<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
-</li>
-</ul>
-<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
+      <title><![CDATA[[Spark源码四]图解作业生命周期]]></title>
+      <url>https://fudawei.github.io/2016/10/25/%5BSpark%E6%BA%90%E7%A0%81%E5%9B%9B%5D%E5%9B%BE%E8%A7%A3%E4%BD%9C%E4%B8%9A%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
+      <content type="html"><![CDATA[<p>这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！<br><img src="/img/spark4.1.png" alt=""></p>
 ]]></content>
     </entry>
     
@@ -1371,6 +1401,38 @@ c)   关键字的个数n必须满足： ceil(m / 2)-1 &lt;= n &lt;= m-1。
   在大规模数据存储的文件系统中，B~tree系列数据结构，起着很重要的作用，对于存储不同的数据，节点相关的信息也是有所不同，这里根据自己的理解，画的一个查找以职工号为关键字，职工号为38的记录的简单示意图。(这里假设每个物理块容纳3个索引，磁盘的I/O操作的基本单位是块（block),磁盘访问很费时，采用B+-tree有效的减少了访问磁盘的次数。）
 </code></pre><p>对于像MySQL，DB2，Oracle等数据库中的索引结构有待深入的了解才行，不过网上可以找到很多B-tree相关的开源代码可以用来研究。</p>
 <p><img src="/img/btree_24.png" alt=""></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[ubuntu下恢复rm删除的数据]]></title>
+      <url>https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/</url>
+      <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
+<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
+<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
+<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
+<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
+<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
+<li>安装extundelete</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
+<pre><code>umount /dev/sdb2 
+mount -o remount,ro /dev/sdb2
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
+extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
+</code></pre><p>```</p>
+<ul>
+<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
+</ul>
+<ul>
+<li><p>总结经验</p>
+<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
+</li>
+</ul>
+<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
 ]]></content>
     </entry>
     
@@ -2888,28 +2950,6 @@ return numbers
     </entry>
     
     <entry>
-      <title><![CDATA[排序算法的稳定性]]></title>
-      <url>https://fudawei.github.io/2016/04/16/%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95%E7%9A%84%E7%A8%B3%E5%AE%9A%E6%80%A7/</url>
-      <content type="html"><![CDATA[<p>稳定排序和不稳定排序</p>
-<blockquote>
-<p>这几天笔试了好几次了，连续碰到一个关于常见排序算法稳定性判别的问题，往往还是多选，对于我以及和我一样拿不准的同学可不是一个能轻易下结论的题目，当然如果你笔试之前已经记住了数据结构书上哪些是稳定的，哪些不是稳定的，做起来应该可以轻松搞定。本文是针对老是记不住这个或者想真正明白到底为什么是稳定或者不稳定的人准备的。<br>首先，排序算法的稳定性大家应该都知道，通俗地讲就是能保证排序前2个相等的数其在序列的前后位置顺序和排序后它们两个的前后位置顺序相同。在简单形式化一下，如果Ai = Aj，Ai原来在位置前，排序后Ai还是要在Aj位置前。<br>其次，说一下稳定性的好处。排序算法如果是稳定的，那么从一个键上排序，然后再从另一个键上排序，第一个键排序的结果可以为第二个键排序所用。基数排序就是这样，先按低位排序，逐次按高位排序，低位相同的元素其顺序再高位也相同时是不会改变的。另外，如果排序算法稳定，对基于比较的排序算法而言，元素交换的次数可能会少一些（个人感觉，没有证实）。</p>
-</blockquote>
-<p>回到主题，现在分析一下常见的排序算法的稳定性，每个都给出简单的理由。</p>
-<p>(1)冒泡排序</p>
-<p>冒泡排序就是把小的元素往前调或者把大的元素往后调。比较是相邻的两个元素比较，交换也发生在这两个元素之间。所以，如果两个元素相等，我想你是不会再无聊地把他们俩交换一下的；如果两个相等的元素没有相邻，那么即使通过前面的两两交换把两个相邻起来，这时候也不会交换，所以相同元素的前后顺序并没有改变，所以冒泡排序是一种稳定排序算法。</p>
-<p>(2)选择排序</p>
-<p>选择排序是给每个位置选择当前元素最小的，比如给第一个位置选择最小的，在剩余元素里面给第二个元素选择第二小的，依次类推，直到第n - 1个元素，第n个元素不用选择了，因为只剩下它一个最大的元素了。那么，在一趟选择，如果当前元素比一个元素小，而该小的元素又出现在一个和当前元素相等的元素后面，那么交换后稳定性就被破坏了。比较拗口，举个例子，序列5 8 5 2 9，我们知道第一遍选择第1个元素5会和2交换，那么原序列中2个5的相对前后顺序就被破坏了，所以选择排序不是一个稳定的排序算法。</p>
-<p>(3)插入排序<br>插入排序是在一个已经有序的小序列的基础上，一次插入一个元素。当然，刚开始这个有序的小序列只有1个元素，就是第一个元素。比较是从有序序列的末尾开始，也就是想要插入的元素和已经有序的最大者开始比起，如果比它大则直接插入在其后面，否则一直往前找直到找到它该插入的位置。如果碰见一个和插入元素相等的，那么插入元素把想插入的元素放在相等元素的后面。所以，相等元素的前后顺序没有改变，从原无序序列出去的顺序就是排好序后的顺序，所以插入排序是稳定的。</p>
-<p>(4)快速排序<br>快速排序有两个方向，左边的i下标一直往右走，当a[i] &lt;= a[center_index]，其中center_index是中枢元素的数组下标，一般取为数组第0个元素。而右边的j下标一直往左走，当a[j] &gt; a[center_index]。如果i和j都走不动了，i &lt;= j，交换a[i]和a[j],重复上面的过程，直到i &gt; j。 交换a[j]和a[center_index]，完成一趟快速排序。在中枢元素和a[j]交换的时候，很有可能把前面的元素的稳定性打乱，比如序列为5 3 3 4 3 8 9 10 11，现在中枢元素5和3（第5个元素，下标从1开始计）交换就会把元素3的稳定性打乱，所以快速排序是一个不稳定的排序算法，不稳定发生在中枢元素和a[j] 交换的时刻。</p>
-<p>(5)归并排序<br>归并排序是把序列递归地分成短序列，递归出口是短序列只有1个元素（认为直接有序）或者2个序列（1次比较和交换），然后把各个有序的段序列合并成一个有序的长序列，不断合并直到原序列全部排好序。可以发现，在1个或2个元素时，1个元素不会交换，2个元素如果大小相等也没有人故意交换，这不会破坏稳定性。那么，在短的有序序列合并的过程中，稳定是是否受到破坏？没有，合并过程中我们可以保证如果两个当前元素相等时，我们把处在前面的序列的元素保存在结果序列的前面，这样就保证了稳定性。所以，归并排序也是稳定的排序算法。</p>
-<p>(6)基数排序<br>基数排序是按照低位先排序，然后收集；再按照高位排序，然后再收集；依次类推，直到最高位。有时候有些属性是有优先级顺序的，先按低优先级排序，再按高优先级排序，最后的次序就是高优先级高的在前，高优先级相同的低优先级高的在前。基数排序基于分别排序，分别收集，所以其是稳定的排序算法。</p>
-<p>(7)希尔排序(shell)<br>希尔排序是按照不同步长对元素进行插入排序，当刚开始元素很无序的时候，步长最大，所以插入排序的元素个数很少，速度很快；当元素基本有序了，步长很小， 插入排序对于有序的序列效率很高。所以，希尔排序的时间复杂度会比O(n^2)好一些。由于多次插入排序，我们知道一次插入排序是稳定的，不会改变相同元素的相对顺序，但在不同的插入排序过程中，相同的元素可能在各自的插入排序中移动，最后其稳定性就会被打乱，所以shell排序是不稳定的。</p>
-<p>(8)堆排序<br>我们知道堆的结构是节点i的孩子为2 <em> i和2 </em> i + 1节点，大顶堆要求父节点大于等于其2个子节点，小顶堆要求父节点小于等于其2个子节点。在一个长为n 的序列，堆排序的过程是从第n / 2开始和其子节点共3个值选择最大（大顶堆）或者最小（小顶堆），这3个元素之间的选择当然不会破坏稳定性。但当为n / 2 - 1， n / 2 - 2， … 1这些个父节点选择元素时，就会破坏稳定性。有可能第n / 2个父节点交换把后面一个元素交换过去了，而第n / 2 - 1个父节点把后面一个相同的元素没 有交换，那么这2个相同的元素之间的稳定性就被破坏了。所以，堆排序不是稳定的排序算法。</p>
-<p>综上，得出结论: 选择排序、快速排序、希尔排序、堆排序不是稳定的排序算法，而冒泡排序、插入排序、归并排序和基数排序是稳定的排序算法<br>PS: 快[快速排序]些[希尔排序]选[选择排序]一堆[堆排序]不稳定排序</p>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[六大原则]]></title>
       <url>https://fudawei.github.io/2016/04/16/%E5%85%AD%E5%A4%A7%E5%8E%9F%E5%88%99/</url>
       <content type="html"><![CDATA[<h3 id="单一职责原则"><a href="#单一职责原则" class="headerlink" title="单一职责原则"></a>单一职责原则</h3><p>高内聚，低耦合。每一个类应该只有一个职责，对外只能提供一种功能，而引起类变化的原因应该只有一个。将不同的职责分别进行封装，不要将其组合在一个勒种，要使这个类只有一个可能会以前它变化的原因。</p>
@@ -2933,6 +2973,28 @@ return numbers
 <blockquote>
 <p>抽象类可以有构造方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">public abstract class AMan &#123;</div><div class="line">	protected IPrettyGirl prettyGirl;</div><div class="line">	public AMan(IPrettyGirl prettyGirl)&#123;</div><div class="line">		this.prettyGirl = prettyGirl;</div><div class="line">	&#125;</div><div class="line">	public abstract void findGirl();</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
 </blockquote>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[排序算法的稳定性]]></title>
+      <url>https://fudawei.github.io/2016/04/16/%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95%E7%9A%84%E7%A8%B3%E5%AE%9A%E6%80%A7/</url>
+      <content type="html"><![CDATA[<p>稳定排序和不稳定排序</p>
+<blockquote>
+<p>这几天笔试了好几次了，连续碰到一个关于常见排序算法稳定性判别的问题，往往还是多选，对于我以及和我一样拿不准的同学可不是一个能轻易下结论的题目，当然如果你笔试之前已经记住了数据结构书上哪些是稳定的，哪些不是稳定的，做起来应该可以轻松搞定。本文是针对老是记不住这个或者想真正明白到底为什么是稳定或者不稳定的人准备的。<br>首先，排序算法的稳定性大家应该都知道，通俗地讲就是能保证排序前2个相等的数其在序列的前后位置顺序和排序后它们两个的前后位置顺序相同。在简单形式化一下，如果Ai = Aj，Ai原来在位置前，排序后Ai还是要在Aj位置前。<br>其次，说一下稳定性的好处。排序算法如果是稳定的，那么从一个键上排序，然后再从另一个键上排序，第一个键排序的结果可以为第二个键排序所用。基数排序就是这样，先按低位排序，逐次按高位排序，低位相同的元素其顺序再高位也相同时是不会改变的。另外，如果排序算法稳定，对基于比较的排序算法而言，元素交换的次数可能会少一些（个人感觉，没有证实）。</p>
+</blockquote>
+<p>回到主题，现在分析一下常见的排序算法的稳定性，每个都给出简单的理由。</p>
+<p>(1)冒泡排序</p>
+<p>冒泡排序就是把小的元素往前调或者把大的元素往后调。比较是相邻的两个元素比较，交换也发生在这两个元素之间。所以，如果两个元素相等，我想你是不会再无聊地把他们俩交换一下的；如果两个相等的元素没有相邻，那么即使通过前面的两两交换把两个相邻起来，这时候也不会交换，所以相同元素的前后顺序并没有改变，所以冒泡排序是一种稳定排序算法。</p>
+<p>(2)选择排序</p>
+<p>选择排序是给每个位置选择当前元素最小的，比如给第一个位置选择最小的，在剩余元素里面给第二个元素选择第二小的，依次类推，直到第n - 1个元素，第n个元素不用选择了，因为只剩下它一个最大的元素了。那么，在一趟选择，如果当前元素比一个元素小，而该小的元素又出现在一个和当前元素相等的元素后面，那么交换后稳定性就被破坏了。比较拗口，举个例子，序列5 8 5 2 9，我们知道第一遍选择第1个元素5会和2交换，那么原序列中2个5的相对前后顺序就被破坏了，所以选择排序不是一个稳定的排序算法。</p>
+<p>(3)插入排序<br>插入排序是在一个已经有序的小序列的基础上，一次插入一个元素。当然，刚开始这个有序的小序列只有1个元素，就是第一个元素。比较是从有序序列的末尾开始，也就是想要插入的元素和已经有序的最大者开始比起，如果比它大则直接插入在其后面，否则一直往前找直到找到它该插入的位置。如果碰见一个和插入元素相等的，那么插入元素把想插入的元素放在相等元素的后面。所以，相等元素的前后顺序没有改变，从原无序序列出去的顺序就是排好序后的顺序，所以插入排序是稳定的。</p>
+<p>(4)快速排序<br>快速排序有两个方向，左边的i下标一直往右走，当a[i] &lt;= a[center_index]，其中center_index是中枢元素的数组下标，一般取为数组第0个元素。而右边的j下标一直往左走，当a[j] &gt; a[center_index]。如果i和j都走不动了，i &lt;= j，交换a[i]和a[j],重复上面的过程，直到i &gt; j。 交换a[j]和a[center_index]，完成一趟快速排序。在中枢元素和a[j]交换的时候，很有可能把前面的元素的稳定性打乱，比如序列为5 3 3 4 3 8 9 10 11，现在中枢元素5和3（第5个元素，下标从1开始计）交换就会把元素3的稳定性打乱，所以快速排序是一个不稳定的排序算法，不稳定发生在中枢元素和a[j] 交换的时刻。</p>
+<p>(5)归并排序<br>归并排序是把序列递归地分成短序列，递归出口是短序列只有1个元素（认为直接有序）或者2个序列（1次比较和交换），然后把各个有序的段序列合并成一个有序的长序列，不断合并直到原序列全部排好序。可以发现，在1个或2个元素时，1个元素不会交换，2个元素如果大小相等也没有人故意交换，这不会破坏稳定性。那么，在短的有序序列合并的过程中，稳定是是否受到破坏？没有，合并过程中我们可以保证如果两个当前元素相等时，我们把处在前面的序列的元素保存在结果序列的前面，这样就保证了稳定性。所以，归并排序也是稳定的排序算法。</p>
+<p>(6)基数排序<br>基数排序是按照低位先排序，然后收集；再按照高位排序，然后再收集；依次类推，直到最高位。有时候有些属性是有优先级顺序的，先按低优先级排序，再按高优先级排序，最后的次序就是高优先级高的在前，高优先级相同的低优先级高的在前。基数排序基于分别排序，分别收集，所以其是稳定的排序算法。</p>
+<p>(7)希尔排序(shell)<br>希尔排序是按照不同步长对元素进行插入排序，当刚开始元素很无序的时候，步长最大，所以插入排序的元素个数很少，速度很快；当元素基本有序了，步长很小， 插入排序对于有序的序列效率很高。所以，希尔排序的时间复杂度会比O(n^2)好一些。由于多次插入排序，我们知道一次插入排序是稳定的，不会改变相同元素的相对顺序，但在不同的插入排序过程中，相同的元素可能在各自的插入排序中移动，最后其稳定性就会被打乱，所以shell排序是不稳定的。</p>
+<p>(8)堆排序<br>我们知道堆的结构是节点i的孩子为2 <em> i和2 </em> i + 1节点，大顶堆要求父节点大于等于其2个子节点，小顶堆要求父节点小于等于其2个子节点。在一个长为n 的序列，堆排序的过程是从第n / 2开始和其子节点共3个值选择最大（大顶堆）或者最小（小顶堆），这3个元素之间的选择当然不会破坏稳定性。但当为n / 2 - 1， n / 2 - 2， … 1这些个父节点选择元素时，就会破坏稳定性。有可能第n / 2个父节点交换把后面一个元素交换过去了，而第n / 2 - 1个父节点把后面一个相同的元素没 有交换，那么这2个相同的元素之间的稳定性就被破坏了。所以，堆排序不是稳定的排序算法。</p>
+<p>综上，得出结论: 选择排序、快速排序、希尔排序、堆排序不是稳定的排序算法，而冒泡排序、插入排序、归并排序和基数排序是稳定的排序算法<br>PS: 快[快速排序]些[希尔排序]选[选择排序]一堆[堆排序]不稳定排序</p>
 ]]></content>
     </entry>
     
@@ -5075,34 +5137,6 @@ return numbers
     </entry>
     
     <entry>
-      <title><![CDATA[[数据库]NoSQL简介]]></title>
-      <url>https://fudawei.github.io/2015/08/04/%5B%E6%95%B0%E6%8D%AE%E5%BA%93%5DNoSQL%E7%AE%80%E4%BB%8B/</url>
-      <content type="html"><![CDATA[<h1 id="什么是NoSQL"><a href="#什么是NoSQL" class="headerlink" title="什么是NoSQL"></a>什么是NoSQL</h1><p>NoSQL是“Not only sql”的简称，泛指非关系型的数据库。</p>
-<blockquote>
-<p>随着互联网web2.0网站的兴起，传统的关系数据库在应付web2.0网站，特别是超大规模和高并发的SNS类型的<br>web2.0纯动态网站已经显得力不从心，暴露了很多难以克服的问题，而非关系型的数据库则由于其本身的特点得到了非常迅速的发展。NoSQL数据库的产生就是为了解决大规模数据集合多重数据种类带来的挑战，尤其是大数据应用难题。</p>
-</blockquote>
-<a id="more"></a>
-<h1 id="NoSQL数据库的分类"><a href="#NoSQL数据库的分类" class="headerlink" title="NoSQL数据库的分类"></a>NoSQL数据库的分类</h1><h2 id="键值-Key-Value-存储数据库"><a href="#键值-Key-Value-存储数据库" class="headerlink" title="键值(Key-Value)存储数据库"></a>键值(Key-Value)存储数据库</h2><p>  这一类数据库主要会使用到一个哈希表，这个表中有一个特定的键和一个指针指向特定的数据。Key/value模型对于IT系统来说的优势在于简单、易部署。但是如果DBA只对部分值进行查询或更新的时候，Key/value就显得效率低下了。常见的key-value数据库比如Redis。</p>
-<h2 id="列存储数据库"><a href="#列存储数据库" class="headerlink" title="列存储数据库"></a>列存储数据库</h2><p>  这部分数据库通常是用来应对分布式存储的海量数据。键仍然存在，但是它们的特点是指向了多个列。这些列是由列家族来安排的。因为列的数据结构天生是相似的，即便逻辑上每一行之间有细微的差异，仍旧比按行存储的结构聚合在一起的数据更利于压缩，因为大多数的压缩算法只关注有限的压缩接口，像增量压缩法和前缀压缩法这类专业算法，是基于列存储的数据定制的，能够大大提高压缩比，更高的压缩比更有利于在返回查询接口的时候降低带宽的消耗。比如Hbase就是这类数据库。</p>
-<h2 id="文档型数据库"><a href="#文档型数据库" class="headerlink" title="文档型数据库"></a>文档型数据库</h2><p>  文档型数据库的灵感是来自于Lotus Notes办公软件的，而且它同第一种键值存储相类似。该类型的数据模型是版本化的文档，半结构化的文档以特定的格式存储，比如JSON。文档型数据库可 以看作是键值数据库的升级版，允许之间嵌套键值。而且文档型数据库比键值数据库的查询效率更高。如：CouchDB, MongoDb. 国内也有文档型数据库SequoiaDB，已经开源。</p>
-<h2 id="图形-Graph-数据库"><a href="#图形-Graph-数据库" class="headerlink" title="图形(Graph)数据库"></a>图形(Graph)数据库</h2><p>  图形结构的数据库同其他行列以及刚性结构的SQL数据库不同，它是使用灵活的图形模型，并且能够扩展到多个服务器上。NoSQL数据库没有标准的查询语言(SQL)，因此进行数据库查询需要制定数据模型。许多NoSQL数据库都有REST式的数据接口或者查询API，比如 Infinite Graph。</p>
-<h1 id="NoSQL的共同特征"><a href="#NoSQL的共同特征" class="headerlink" title="NoSQL的共同特征"></a>NoSQL的共同特征</h1><p>对于NoSQL并没有一个明确的范围和定义，但是他们都普遍存在下面一些共同特征：</p>
-<ul>
-<li><strong>不需要预定义模式：</strong>不需要事先定义数据模式，预定义表结构。数据中的每条记录都可能有不同的属性和格式。当插入数据时，并不需要预先定义它们的模式。  </li>
-<li><strong>无共享架构：</strong>相对于将所有数据存储的存储区域网络中的全共享架构。NoSQL往往将数据划分后存储在各个本地服务器上。因为从本地磁盘读取数据的性能往往好于通过网络传输读取数据的性能，从而提高了系统的性能。  </li>
-<li><strong>弹性可扩展：</strong>可以在系统运行的时候，动态增加或者删除结点。不需要停机维护，数据可以自动迁移。  </li>
-<li><strong>分区：</strong>相对于将数据存放于同一个节点，NoSQL数据库需要将数据进行分区，将记录分散在多个节点上面。并且通常分区的同时还要做复制。这样既提高了并行性能，又能保证没有单点失效的问题。  </li>
-<li><strong>异步复制：</strong>和RAID存储系统不同的是，NoSQL中的复制，往往是基于日志的异步复制。这样，数据就可以尽快地写入一个节点，而不会被网络传输引起迟延。缺点是并不总是能保证一致性，这样的方式在出现故障的时候，可能会丢失少量的数据。  </li>
-<li><strong>BASE：</strong>相对于事务严格的ACID特性，NoSQL数据库保证的是BASE特性。BASE是最终一致性和软事务。<br>NoSQL数据库并没有一个统一的架构，两种NoSQL数据库之间的不同，甚至远远超过两种关系型数据库的不同。可以说，NoSQL各有所长，成功的NoSQL必然特别适用于某些场合或者某些应用，在这些场合中会远远胜过关系型数据库和其他的NoSQL。</li>
-</ul>
-<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><ul>
-<li><a href="http://baike.baidu.com/link?url=Lqb3ql7kuUlVrv8YbEX_0D9Wu9C8EJrwHcz4XQn1x2U_XIkiNqIFqhkei8QrNOErr2-I2AKNGbn2ZPxnOIBplK" target="_blank" rel="external">百度百科</a></li>
-<li>Lars george，代志远，刘佳，蒋杰，<code>&lt;&lt;Hbase权威指南&gt;&gt;</code>，人民邮电出版社，2013</li>
-</ul>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[[JDK工具学习七]jcmd命令使用]]></title>
       <url>https://fudawei.github.io/2015/08/01/%5BJDK%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0%E4%B8%83%5Djcmd%E5%91%BD%E4%BB%A4%E4%BD%BF%E7%94%A8/</url>
       <content type="html"><![CDATA[<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>在JDK 1.7之后，新增了一个命令行工具jcmd。它是一个多功能工具，可以用来导出堆，查看java进程，导出线程信息，执行GC等。</p>
@@ -7074,65 +7108,6 @@ return numbers
     </entry>
     
     <entry>
-      <title><![CDATA[面试题]]></title>
-      <url>https://fudawei.github.io/2014/03/02/Java%E9%9D%A2%E8%AF%95%E5%9F%BA%E7%A1%80/</url>
-      <content type="html"><![CDATA[<p>判断一块内存空间是否符合垃圾收集器标准是：</p>
-<ol>
-<li>给对象赋予了控制null，以后再也没掉用过</li>
-<li>给对象赋予了新值，即重新分配了内存空间<h3 id="Object-基类方法包含"><a href="#Object-基类方法包含" class="headerlink" title="Object 基类方法包含"></a>Object 基类方法包含</h3>clone()  创建并返回对象的一个副本<br>equals()  notify()  notifyAll()   wait()  toString()<br>finalize()   当垃圾回收器确定不存在对该对象的更多引用时，由对象的垃圾回收器调用此方法<br>hashCode()   返回该对象的哈希值</li>
-</ol>
-<h3 id="不通过构造函数能创建对象吗？"><a href="#不通过构造函数能创建对象吗？" class="headerlink" title="不通过构造函数能创建对象吗？"></a>不通过构造函数能创建对象吗？</h3><p>1.用new语句创建<br>2.运用反射，调用java.lang.Class 或者  java.lang.reflect.ConStruct 类的newInstance()实例方法<br>3.调用对象的clone() 方法<br>4.运用反序列手段，调用java.io.ObjectInputStream 对象的readObject() 方法</p>
-<h3 id="有哪几种存储结构？"><a href="#有哪几种存储结构？" class="headerlink" title="有哪几种存储结构？"></a>有哪几种存储结构？</h3><p>1.随机存取。可以任意存取任意一个元素<br>2.顺序存取。只能从前到后逐个访问，比如链表结构<br>3.索引存取。索引存取是为某个关键字建立索引表，从所有的表中得到地址，在直接访问<br>4.散列存取。建立散列表，根据key计算出存储位置，相当于一种索引</p>
-<p>百度或淘宝搜索时，出现搜索建议，采用什么数据结构实现？<br>字典树，是一种噶洗漱的变种，一种用于快速检索的多叉树结构。用于统计和排序大量的字符串，经常被搜索引擎用于文本词频<br>统计。核心思想是空间换时间。利用该字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。</p>
-<p>String s = “a”+”b”+”c”+”d”+”e”  产生了一个对象，因为赋值符号右边的字母都是常量，对于常量，编译时就直接存储他们<br>的字面值，而不是他们的引用。在编译时就把他们连接的结果提取出来变成了”abcde”<br>new String(“jinder”) 实际创建了2个对象，一个是”jinder”通过””双引号创建的，另一个是通过new创建的，只不过他们创建<br>的时期不同，一个是编译期，一个是运行期。<br>运行期调用String类型的intern()方法可以向StringPool中动态添加对象</p>
-<p>简述 synchronized 和 java.util.concurrent.locks.Lock 的异同？<br>Lock 能完成synchronized所实现的所有功能。主要不同点是，Lock 有比synchronized更精确的线程语义和更好的性能。synchronized<br>会自动释放锁，而Lock一定要求程序员手工释放，并且必须在finally从句中释放。</p>
-<p>只要当前JVM实例尚存在任何一个非守护线程没有结束，守护线程就全部工作;只有当最后一个非守护线程结束时，守护线程随着JVM一同<br>结束任务。守护线程最典型的应用就是GC。</p>
-<h3 id="存储过程和函数的区别是什么？"><a href="#存储过程和函数的区别是什么？" class="headerlink" title="存储过程和函数的区别是什么？"></a>存储过程和函数的区别是什么？</h3><p>存储过程是用户定义的一系列SQL语句的集合，设计特定表或其他对象的任务，用户可以调用存储过程，而函数通常是数据库已经定义的<br>方法，它接受参数并返回某种类型的值，而且不涉及特定用户表。<br>游标作用是什么？怎样判断游标到了最后？<br>游标用来定位结果集中的行，通过判断@@FETCH_STATUS，可以判断游标是否到了最后，通常此变量不等于0表示出错或者到了最后。<br>行级触发器在所影响的每一行触发一次。</p>
-<h3 id="数据库查询优化"><a href="#数据库查询优化" class="headerlink" title="数据库查询优化"></a>数据库查询优化</h3><p>执行数据库查询时，如果要查询的数据有很多，假设1000万，用什么办法可以提高查询效率？在数据库方面或java代码方面优化 ？<br>1.在数据库方面<br>建立索引   分区（MySQL，比如按时间分区）   尽量使用固定长度的字段    限制字段长度<br>2.在数据库 I/O 方面<br>增加缓冲区    如果涉及表的级联，不同的表存储在不同的磁盘上，以增加IO速度<br>3.在SQL方面<br>优化sql语句，减少比较次数     限制返回的条目数（MySQL 里面用limit）<br>4.在java方面<br>对于反复查询使用的查询，使用PreparedStatement 减少查询次数</p>
-<p>unique 约束能够约束一列保证该列值唯一，但允许有空值</p>
-<h3 id="NAT技术"><a href="#NAT技术" class="headerlink" title="NAT技术"></a>NAT技术</h3><p>NAT 技术（网络地址转换）是一种将一个IP地址域映射到另一个IP地址域的技术，从而为终端主机提供透明路由。NAT 包括静态网络地址<br>转换、动态网络地址转换、端口映射等。NAT 常用语私有地址域与工友地址的转换，解决IP地址匮乏的问题、在防火墙上实现了NAT以后<br>可以隐藏受保护网络的内部拓扑结构，在一定程度上提高网络的安全性。</p>
-<h3 id="IP-地址分配"><a href="#IP-地址分配" class="headerlink" title="IP 地址分配"></a>IP 地址分配</h3><p>A 类地址 １-127      0<br>B 类地址 128 - 191   10<br>C 类地址 192-223     110<br>FTP 是有连接的服务，必须基于TCP协议</p>
-<h3 id="TCP-的三次握手"><a href="#TCP-的三次握手" class="headerlink" title="TCP 的三次握手"></a>TCP 的三次握手</h3><p>第一次握手：建立连接时，客户端发送SYN包到服务器，并进入SYN_SEND状态，等待服务器确认。<br>第二次握手：服务器收到SYN包，必须确认客户的SYN（ack=j+1），同时自己也发送一个SYN包（SYN=k），即SYN+ACK包，此时服务器<br>进入SYN_RECV状态。<br>第三次握手：客户端收到服务器的SYN+ACK包，向服务器发送确认宝ACK（ack=k+1）,此包发送完毕，客户端和服务器进入ESTABLISHED<br>状态，完成三次握手。<br>完成三次握手后，客户端和服务器开始传送数据。<br>未连接队列：在三次握手协议中，服务器维护一个未连接队列，该队列未每个客户端的SYN包开设一个条目，该条目表明服务器已收到SYN<br>包，并向客户发出确认，正在等待客户的确认包。这些条目所标识的连接在服务器处于SYN_RECV状态，当服务器收到客户端的确认包，<br>删除该条目，服务器进入ESTABLISHED状态。</p>
-<h3 id="ping命令基于什么协议？"><a href="#ping命令基于什么协议？" class="headerlink" title="ping命令基于什么协议？"></a>ping命令基于什么协议？</h3><p>ICMP Internet 控制消息协议是TCP/IP 协议族的一个自协议，用于在IP主机、路由器之间传递控制消息，控制消息是指网路通不通，<br>主机是否可达，路由是否可用等网络本身的消息。ping命令向指定的IP地址发送一定长度的数据包，按照约定，若指定的IP存在的话，<br>会返回同样大小的数据包，若在特定的时间没有返回，超时，则认为IP不存在。</p>
-<p>子网掩码是用来判断任意两台计算机的IP地址是否属于同一子网络的根据。两台计算机各自的IP地址域子网掩码进行AND运算之后，<br>如果得出的结果是相同的额，则说明两台计算机是处于同一个子网络的，可以进行直接的通信。</p>
-<h3 id="什么是迭代器-Iterator-？"><a href="#什么是迭代器-Iterator-？" class="headerlink" title="什么是迭代器(Iterator)？"></a>什么是迭代器(Iterator)？</h3><p>Iterator 接口提供了很多对集合元素进行迭代的方法。每一个集合类都包含了可以返回迭代器实例的迭代方法。迭代器可以在迭代的<br>过程中删除底层集合的元素,但是不可以直接调用集合的remove(Object Obj)删除，可以通过迭代器的remove()方法删除。<br>如何确保N个线程可以访问N个资源同时又不导致死锁？<br>指定获取锁的顺序，并强制线程按照指定的顺序获取锁。</p>
-<h3 id="在监视器-Monitor-内部，是如何做线程同步的？"><a href="#在监视器-Monitor-内部，是如何做线程同步的？" class="headerlink" title="在监视器(Monitor)内部，是如何做线程同步的？"></a>在监视器(Monitor)内部，是如何做线程同步的？</h3><p>监视器和锁在Java虚拟机中是一块使用的。监视器监视一块同步代码块，确保一次只有一个线程执行同步代码块。每一个监视器都和一个<br>对象引用相关联。线程在获取锁之前不允许执行同步代码。</p>
-<h3 id="同步方法和同步代码块的区别？"><a href="#同步方法和同步代码块的区别？" class="headerlink" title="同步方法和同步代码块的区别？"></a>同步方法和同步代码块的区别？</h3><p>同步方法默认用this或者当前类class对象作为锁；<br>同步代码块可以选择以什么来加锁，比同步方法要更细颗粒度，我们可以选择只同步会发生同步问题的部分代码而不是整个方法；</p>
-<p>应用程序可以使用Executor框架来创建线程池 (创建线程的方式还有 继承Thread类，实现Runnable接口 )</p>
-<h3 id="重载和重写"><a href="#重载和重写" class="headerlink" title="重载和重写"></a>重载和重写</h3><p>重载发生在同一个类里面，多个方法名相同但是形参列表不同的情况，返回类型可以相同也可以不同。<br>重写发生在父类子类里面，子类重新定义了父类方法，方法重写（覆盖）必须有相同的方法名、形参列表和返回类型。</p>
-<h3 id="接口和抽象类的区别是什么？"><a href="#接口和抽象类的区别是什么？" class="headerlink" title="接口和抽象类的区别是什么？"></a>接口和抽象类的区别是什么？</h3><p>Java 提供和支持创建抽象类和接口。它们的实现有共同点，不同点在于：<br>接口中所有的方法隐含的都是抽象的。而抽象类则可以同时包含抽象和非抽象的方法。<br>类可以实现很多个接口，但是只能继承一个抽象类<br>类可以不实现抽象类和接口声明的所有方法，当然，在这种情况下，类也必须得声明成是抽象的。<br>抽象类可以在不提供接口方法实现的情况下实现接口。<br>Java 接口中声明的变量默认都是final的。抽象类可以包含非final的变量。<br>Java 接口中的成员函数默认是public的。抽象类的成员函数可以是private，protected或者是public。<br>接口是绝对抽象的，不可以被实例化。抽象类也不可以被实例化，但是，如果它包含main方法的话是可以被调用的。<br>也可以参考JDK8中抽象类和接口的区别</p>
-<h3 id="HashMap和Hashtable区别？"><a href="#HashMap和Hashtable区别？" class="headerlink" title="HashMap和Hashtable区别？"></a>HashMap和Hashtable区别？</h3><p>HashMap和Hashtable都实现了Map接口，因此很多特性非常相似。但是，他们有以下不同点：<br>HashMap允许键和值是null，而Hashtable不允许键或者值是null。<br>Hashtable是同步的，而HashMap不是。因此，HashMap更适合于单线程环境，而Hashtable适合于多线程环境。</p>
-<h3 id="Java中的HashMap的工作原理？"><a href="#Java中的HashMap的工作原理？" class="headerlink" title="Java中的HashMap的工作原理？"></a>Java中的HashMap的工作原理？</h3><p>Java中的HashMap是以键值对(key-value)的形式存储元素的。HashMap需要一个hash函数，它使用hashCode()和equals()方法来向集合<br>/从集合添加和检索元素。当调用put()方法的时候，HashMap会计算key的hash值，然后把键值对存储在集合中合适的索引上。如果key<br>已经存在了，value会被更新成新值;若计算出来的索引位置相同，形成Entry链。</p>
-<p>快速失败(fail-fast)和安全失败(fail-safe)的区别是什么？<br>Iterator的安全失败是基于对底层集合做拷贝，因此，它不受源集合上修改的影响。java.util包下面的所有的集合类都是快速失败的，<br>而java.util.concurrent包下面的所有的类都是安全失败的。快速失败的迭代器会抛出ConcurrentModificationException异常，而安全<br>失败的迭代器永远不会抛出这样的异常。</p>
-<h3 id="ArrayList和LinkedList区别？"><a href="#ArrayList和LinkedList区别？" class="headerlink" title="ArrayList和LinkedList区别？"></a>ArrayList和LinkedList区别？</h3><p>ArrayList和LinkedList都实现了List接口，他们有以下的不同点：<br>ArrayList是基于索引的数据接口，它的底层是数组。它可以以O(1)时间复杂度对元素进行随机访问。与此对应，LinkedList是以元素列表的形式存储它的数据，每一个元素都和它的前一个和后一个元素链接在一起，在这种情况下，查找某个元素的时间复杂度是O(n)。<br>相对于ArrayList，LinkedList的插入，添加，删除操作速度更快，因为当元素被添加到集合任意位置的时候，不需要像数组那样重新计算大小或者是更新索引。<br>LinkedList比ArrayList更占内存，因为LinkedList为每一个节点存储了两个引用，一个指向前一个元素，一个指向下一个元素。</p>
-<h3 id="Array和ArrayList区别？"><a href="#Array和ArrayList区别？" class="headerlink" title="Array和ArrayList区别？"></a>Array和ArrayList区别？</h3><p>Array可以包含基本类型和对象类型，ArrayList只能包含对象类型。<br>Array大小是固定的，ArrayList的大小是动态变化的。<br>ArrayList提供了更多的方法和特性，比如：addAll()，removeAll()，iterator()等等。</p>
-<h3 id="Iterator和ListIterator的区别？"><a href="#Iterator和ListIterator的区别？" class="headerlink" title="Iterator和ListIterator的区别？"></a>Iterator和ListIterator的区别？</h3><p>Iterator可用来遍历Set和List集合，但是ListIterator只能用来遍历List。<br>Iterator对集合只能是前向遍历，ListIterator既可以前向也可以后向。<br>ListIterator实现了Iterator接口，并包含其他的功能，比如：增加元素，替换元素，获取前一个和后一个元素的索引</p>
-<h3 id="Comparable和Comparator接口"><a href="#Comparable和Comparator接口" class="headerlink" title="Comparable和Comparator接口"></a>Comparable和Comparator接口</h3><p>Java提供了只包含一个compareTo()方法的Comparable接口。这个方法可以个给两个对象排序。<br>Java提供了包含compare()和equals()两个方法的Comparator接口。compare()方法用来给两个输入参数排序。</p>
-<h3 id="Java优先级队列-Priority-Queue-？"><a href="#Java优先级队列-Priority-Queue-？" class="headerlink" title="Java优先级队列(Priority Queue)？"></a>Java优先级队列(Priority Queue)？</h3><p>PriorityQueue是一个基于优先级堆的无界队列，它的元素是按照自然顺序(natural order)排序的。在创建的时候，我们可以给它提供<br>一个负责给元素排序的比较器。PriorityQueue不允许null值，因为他们没有自然顺序，或者说他们没有任何的相关联的比较器。最后，<br>riorityQueue不是线程安全的，入队和出队的时间复杂度是O(log(n))。</p>
-<p>什么时候使用CallableStatement？用来准备CallableStatement的方法是什么？<br>CallableStatement用来执行存储过程。存储过程是由数据库存储和提供的。存储过程可以接受输入参数，也可以有返回结果。非常鼓励<br>用存储过程，因为它提供了安全性和模块化。准备一个CallableStatement的方法是：CallableStament.prepareCall();</p>
-<p>PreparedStatement比Statement有什么优势？<br>PreparedStatements是预编译的，因此，性能会更好。同时，不同的查询参数值，PreparedStatement可以重用。</p>
-<h3 id="URL编码和URL解码？"><a href="#URL编码和URL解码？" class="headerlink" title="URL编码和URL解码？"></a>URL编码和URL解码？</h3><p>URL编码是负责把URL里面的空格和其他的特殊字符替换成对应的十六进制表示，反之就是解码。</p>
-<h3 id="doGet-方法和doPost-方法区别？"><a href="#doGet-方法和doPost-方法区别？" class="headerlink" title="doGet()方法和doPost()方法区别？"></a>doGet()方法和doPost()方法区别？</h3><p>doGet: GET 方法会把键值对追加在请求的URL后面。因为URL对字符数目有限制， 限制了用在客户端请求的参数值的数目。并且请求中<br>的参数值是可见的 ，不够安全。<br>doPOST：POST方法通过把请求参数值放在请求体中来克服GET方法的限制，因此，可以发送的参数的数目是没有限制的。<br>最后，通过POST请求传递的敏感信息对外部客户端是不可见的。</p>
-<h3 id="解释下Servlet的生命周期。"><a href="#解释下Servlet的生命周期。" class="headerlink" title="解释下Servlet的生命周期。"></a>解释下Servlet的生命周期。</h3><p>对每一个客户端的请求，Servlet引擎 载入Servlet，调用它的init()方法，完成Servlet的初始化。然后，Servlet 对象通过为每一个<br>请求单独调用service()方法来处理所有随后来自客户端的请求，最后，调用Servlet的destroy()方法把Servlet卸载掉。</p>
-<h3 id="什么是Servlet？"><a href="#什么是Servlet？" class="headerlink" title="什么是Servlet？"></a>什么是Servlet？</h3><p>Servlet 是用来处理客户端请求并产生动态网页内容的Java类。Servlet 主要是用来处理或者是存储HTML表单提交的数据，产生动态内容</p>
-<h3 id="什么是反射？"><a href="#什么是反射？" class="headerlink" title="什么是反射？"></a>什么是反射？</h3><p>Java 程序可以加载一个运行时才得知名称的 class，获悉其完整构造（但不包括methods定义），并生成其对象实体、<br>或对其fields设值、或唤起其methods。</p>
-<h3 id="匿名内部类的变量必须final修饰？"><a href="#匿名内部类的变量必须final修饰？" class="headerlink" title="匿名内部类的变量必须final修饰？"></a>匿名内部类的变量必须final修饰？</h3><p>首先内部类的生命周期是成员级别的，而局部变量的生命周期是在方法体之类，当mRun方法执行，new<br>的线程运行，新线程里面会睡一秒。主线程会继续执行，mRun执行完毕，name属性生命周期结束，Java就是为了杜绝这种错误，严格要求<br>内部类中方位局部变量，必须使用final关键字修饰。局部变量被final修饰之后，此时会在内存中保有一份局部变得的复制品，当内部类<br>访问的时候其实访问的是这个复制品。</p>
-<h3 id="小知识"><a href="#小知识" class="headerlink" title="小知识"></a>小知识</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">@Test</div><div class="line">public void test() &#123;</div><div class="line">	Integer a = new Integer(1000) ; int b = 1000;</div><div class="line">	Integer c = new Integer(10); Integer d = new Integer(10);</div><div class="line">	System.out.println(a == b);    //true   自动拆箱为int</div><div class="line">	System.out.println(c == d);    //false</div><div class="line">&#125;</div><div class="line">//Integer.java valueOf 方法中把-128-127 缓存了下来。官方解释是小的数字使用的频率比较高， 为了优化性能，把这之间的数缓存了下来</div><div class="line">@Test</div><div class="line">public void testInteger()&#123;</div><div class="line">	Integer a = 1000,b=1000;</div><div class="line">	Integer c = 100,d=100;</div><div class="line">	System.out.println(a==b);   //false  new出来的</div><div class="line">	System.out.println(c==d);   //true   缓存中的</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>[reference] <a href="http://www.imooc.com/article/2964" target="_blank" rel="external">http://www.imooc.com/article/2964</a></p>
-<h3 id="调用三种方式"><a href="#调用三种方式" class="headerlink" title="调用三种方式"></a>调用三种方式</h3><p>模块之间都存在一定的调用关系，从调用方式上看，可以分为三类同步调用、异步调用和回调。同步调用是一种阻塞式调用，异步调用是一种<br>类似消息或事件的机制解决了同步阻塞的问题，回调是一种双向的调用模式，也就是说，被调用的接口被调用时也会调用对方的接口，例如A<br>要调用B,B在执行完又要调用A。<br>public interface FileNameFilter{<br>    boolean accept(File dir,String name);<br>}</p>
-<h3 id="标记接口"><a href="#标记接口" class="headerlink" title="标记接口"></a>标记接口</h3><p>如果实现接口的类是抽象类，那么就没必要实现该接口的方法。<br>一个接口能继承另一个接口，这和类之间的继承比较相似。也就是说实现某一个接口之后，可能要实现的方法不是直接接口定义的方法，<br>可能是该接口继承于另外一个接口的方法。<br>没有任何方法的接口被称为标记接口。标记接口主要用于以下两种目的：<br>1.建立一个公共的父接口<br>2.向一个类添加数据类型</p>
-<h3 id="SQL三范式"><a href="#SQL三范式" class="headerlink" title="SQL三范式"></a>SQL三范式</h3><p>SQL语言支持关系数据库的三级模式结构，其中，视图对应外模式，基本表对应模式，存储文件对应内模式。<br>通过分解，可以将一个低一级别的关系模式转换成若干个高一级范式的关系模式，这种过程叫做规范化。<br>eg: FIRST(Sno,Sname,Status,City,Pno,Qty)<br>依赖关系： F={ Sno-&gt; Sname,Sno-&gt;Status,Status-&gt;City,(Sno,Pno)-&gt;Qty}</p>
-<ul>
-<li>1NF(第一范式)<br>定义：若关系模式R的每一个分量是不可再分的数据项，则关系模式R属于第一范式<br>FIRST属于第一范式，但1NF存在4个问题：<br>冗余度大，每个Sno,Sname,Status,City 要与其供应的零件的种类一样多<br>引起修改操作的不一致性<br>插入异常，若某个供应者某些信息没有提供(比如没有Pno)则不能进行插入操作</li>
-<li>2NF(第二范式)<br>定义：若关系模式R属于1NF,且每一个非主属性完全依赖于码，则关系模式R属于2NF<br>也就是说，当1NF消除了非主属性对码的部分函数依赖，则成为2NF<br>将FIRST分解为 FIRST1(Sno,Sname,Status,City) 和 FIRST2(Sno,Pno,Qty) 分解后，FIRST1 的 非主属性 Sname,Status,City 完全依赖<br>于码 Sno,FIRST2的非主属性 Qty 完全依赖于码 Sno,Pno,所以属于2NF</li>
-<li>3NF(第三范式)<br>若关系模式中不存在这样的码X，属性组Y以及非主属性Z，使得X-&gt;Y,Y-Z成立，则关系模式R属于3NF<br>即当2NF消除了非主属性对码的传递函数依赖，则成为3NF<br>分解为 FIRST1(Sno,Sname,Status)  FIRST2(Status,City)   FIRST3(Sno,Pno,Qty)<br>3NF的模式肯定是2NF,产生冗余和异常的两个重要原因是部分依赖和传递依赖，因为3NF模式中不存在非主属性对码的部分函数依赖和<br>传递函数依赖，所以具有较高的性能，通常变换为3NF或更高级别的凡是，这种变化过程成为“关系模式的规范化处理”<h3 id="Webservice"><a href="#Webservice" class="headerlink" title="Webservice"></a>Webservice</h3>W  ebService是一种跨编程语言和跨操作系统平台的远程调用技术。<br>远程调用，就是一台计算机a上的一个程序可以调用到另外一台计算机b上的一个对象的方法，譬如，银联提供给商场的pos刷卡系统，<br>商场的POS机转账调用的转账方法的代码其实是跑在银行服务器上。再比如，amazon，天气预报系统，淘宝网，校内网，百度等把自己的<br>系统服务以webservice服务的形式暴露出来，让第三方网站和程序可以调用这些服务功能，这样扩展了自己系统的市场占有率，就是<br>所谓的SOA应用。<br> WebService是建立可互操作的分布式应用程序的新平台，是一个平台，是一套标准。它定义了应用程序如何在Web上实现互操作性<br>Web service平台必须提供一种标准来描述Web service，让客户可以得到足够的信息来调用这个Web service<br>XML+XSD,SOAP和WSDL就是构成WebService平台的三大技术。<br>WebService采用HTTP协议传输数据，采用XML格式封装数据（即XML中说明调用远程服务对象的哪个方法，传递的参数是什么，以及服务<br>对象的返回结果是什么）。XML是WebService平台中表示数据的格式。<br>SOAP协议 = HTTP协议 + XML数据格式<br>WSDL(Web Services Description Language)就是这样一个基于XML的语言，用于描述Web Service及其函数、参数和返回值。<br>它是WebService客户端和服务器端都能理解的标准格式。<h3 id="Java-String-split-用法"><a href="#Java-String-split-用法" class="headerlink" title="Java String.split()用法"></a>Java String.split()用法</h3>String.split(“\.”) //用 . 分割字符串<br>acount=?and uu =? or n=?”,把三个都分隔出来可以用String.split(“and|or”); //分割多个</li>
-</ul>
-<p>需要在程序中存储许多字符串常量，所以就想到了枚举</p>
-<h3 id="获取用户IP"><a href="#获取用户IP" class="headerlink" title="获取用户IP"></a>获取用户IP</h3><p>public static String getIpAddr(HttpServletRequest request) {<br>        String ip = request.getHeader(“x-forwarded-for”);<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“WL-Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getRemoteAddr();<br>        }<br>        return ip;<br>    }</p>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[Java面试问题总结]]></title>
       <url>https://fudawei.github.io/2014/03/02/Java%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/</url>
       <content type="html"><![CDATA[<h4 id="java锁类型"><a href="#java锁类型" class="headerlink" title="java锁类型"></a>java锁类型</h4><ul>
@@ -7317,6 +7292,65 @@ return numbers
 <h3 id="线程池的好处-2"><a href="#线程池的好处-2" class="headerlink" title="线程池的好处"></a>线程池的好处</h3><p>1.降低资源消耗，重用已经创建好的线程，降低创建和销毁的开销<br>2.提高响应速度，不用等待创建线程就能立即执行<br>3.提高线程的可管理性，统一分配、调优和监控<br>4.防止服务器过载，防止内存溢出或者CPU耗尽</p>
 <h3 id="对象引用的类型-2"><a href="#对象引用的类型-2" class="headerlink" title="对象引用的类型"></a>对象引用的类型</h3><p>Reference(or named Strong Reference)（ 强引用）：普通类型的引用。<br>SoftReference（ 软引用）：被这种引用指向的对象，如果此对象没要再被其他Strong Reference引用的话，可能在任何时候被GC。虽然是可能在任何时候被GC，但是通常是在可用内存数比较低的时候，并且在程序抛出OutOfMemoryError之前才发生对此对象的GC。SoftReference通常被用作实现Cache的对象引用，如果这个对象被GC了，那么他可以在任何时候再重新被创建。另外，根据JDK文档中介绍，实际JVM的实现是鼓励不回收最近创建和最近使用的对象。SoftReference 类的一个典型用途就是用于内存敏感的高速缓存。<br>WeakReference（弱引用）：如果一个被WeakReference引用的对象，当没要任何SoftReference和StrongReference引用时，立即会被GC。和SoftReference的区别是：WeakReference对象是被eagerly collected，即一旦没要任何SoftReference和StrongReference引用，立即被清楚；而只被SoftReference引用的对象，不回立即被清楚，只有当内存不够，即将发生OutOfMemoryError时才被清除，而且是先清除不常用的。SoftReference适合实现Cache用。WeakReference 类的一个典型用途就是规范化映射（ canonicalized mapping ）<br>PhantomReference（虚引用）：当没有StrongReference，SoftReference和WeakReference引用时，随时可被GC。通常和ReferenceQueue联合使用，管理和清除与被引用对象（没有finalize方法）相关的本地资源。</p>
 <h3 id="简单工厂-工厂方法-抽象工厂-2"><a href="#简单工厂-工厂方法-抽象工厂-2" class="headerlink" title="简单工厂 工厂方法 抽象工厂"></a>简单工厂 工厂方法 抽象工厂</h3><p>简单工厂: 抽象了同一类型(比如不同品牌的笔记本电脑)产品的生产过程,通过工厂类来实现对不同产品生产过程的选择<br>工厂方法: 不仅抽象了产品类的生产过程,还抽象了工厂类本身. 将特定的产品的生产过程和特定的工厂相对应. 将原先工厂类中的选择提升到工程类以上的层级—即客户层级. 通过选择特定的工厂,来选择生产特定的产品.<br>抽象工厂: 在工厂方法的基础上,将特定的产品生产过程和特定的工厂类之间的对应关系解除,使得工厂类和产品类之间能够产生更多灵活的组合方式.</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[面试题]]></title>
+      <url>https://fudawei.github.io/2014/03/02/Java%E9%9D%A2%E8%AF%95%E5%9F%BA%E7%A1%80/</url>
+      <content type="html"><![CDATA[<p>判断一块内存空间是否符合垃圾收集器标准是：</p>
+<ol>
+<li>给对象赋予了控制null，以后再也没掉用过</li>
+<li>给对象赋予了新值，即重新分配了内存空间<h3 id="Object-基类方法包含"><a href="#Object-基类方法包含" class="headerlink" title="Object 基类方法包含"></a>Object 基类方法包含</h3>clone()  创建并返回对象的一个副本<br>equals()  notify()  notifyAll()   wait()  toString()<br>finalize()   当垃圾回收器确定不存在对该对象的更多引用时，由对象的垃圾回收器调用此方法<br>hashCode()   返回该对象的哈希值</li>
+</ol>
+<h3 id="不通过构造函数能创建对象吗？"><a href="#不通过构造函数能创建对象吗？" class="headerlink" title="不通过构造函数能创建对象吗？"></a>不通过构造函数能创建对象吗？</h3><p>1.用new语句创建<br>2.运用反射，调用java.lang.Class 或者  java.lang.reflect.ConStruct 类的newInstance()实例方法<br>3.调用对象的clone() 方法<br>4.运用反序列手段，调用java.io.ObjectInputStream 对象的readObject() 方法</p>
+<h3 id="有哪几种存储结构？"><a href="#有哪几种存储结构？" class="headerlink" title="有哪几种存储结构？"></a>有哪几种存储结构？</h3><p>1.随机存取。可以任意存取任意一个元素<br>2.顺序存取。只能从前到后逐个访问，比如链表结构<br>3.索引存取。索引存取是为某个关键字建立索引表，从所有的表中得到地址，在直接访问<br>4.散列存取。建立散列表，根据key计算出存储位置，相当于一种索引</p>
+<p>百度或淘宝搜索时，出现搜索建议，采用什么数据结构实现？<br>字典树，是一种噶洗漱的变种，一种用于快速检索的多叉树结构。用于统计和排序大量的字符串，经常被搜索引擎用于文本词频<br>统计。核心思想是空间换时间。利用该字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。</p>
+<p>String s = “a”+”b”+”c”+”d”+”e”  产生了一个对象，因为赋值符号右边的字母都是常量，对于常量，编译时就直接存储他们<br>的字面值，而不是他们的引用。在编译时就把他们连接的结果提取出来变成了”abcde”<br>new String(“jinder”) 实际创建了2个对象，一个是”jinder”通过””双引号创建的，另一个是通过new创建的，只不过他们创建<br>的时期不同，一个是编译期，一个是运行期。<br>运行期调用String类型的intern()方法可以向StringPool中动态添加对象</p>
+<p>简述 synchronized 和 java.util.concurrent.locks.Lock 的异同？<br>Lock 能完成synchronized所实现的所有功能。主要不同点是，Lock 有比synchronized更精确的线程语义和更好的性能。synchronized<br>会自动释放锁，而Lock一定要求程序员手工释放，并且必须在finally从句中释放。</p>
+<p>只要当前JVM实例尚存在任何一个非守护线程没有结束，守护线程就全部工作;只有当最后一个非守护线程结束时，守护线程随着JVM一同<br>结束任务。守护线程最典型的应用就是GC。</p>
+<h3 id="存储过程和函数的区别是什么？"><a href="#存储过程和函数的区别是什么？" class="headerlink" title="存储过程和函数的区别是什么？"></a>存储过程和函数的区别是什么？</h3><p>存储过程是用户定义的一系列SQL语句的集合，设计特定表或其他对象的任务，用户可以调用存储过程，而函数通常是数据库已经定义的<br>方法，它接受参数并返回某种类型的值，而且不涉及特定用户表。<br>游标作用是什么？怎样判断游标到了最后？<br>游标用来定位结果集中的行，通过判断@@FETCH_STATUS，可以判断游标是否到了最后，通常此变量不等于0表示出错或者到了最后。<br>行级触发器在所影响的每一行触发一次。</p>
+<h3 id="数据库查询优化"><a href="#数据库查询优化" class="headerlink" title="数据库查询优化"></a>数据库查询优化</h3><p>执行数据库查询时，如果要查询的数据有很多，假设1000万，用什么办法可以提高查询效率？在数据库方面或java代码方面优化 ？<br>1.在数据库方面<br>建立索引   分区（MySQL，比如按时间分区）   尽量使用固定长度的字段    限制字段长度<br>2.在数据库 I/O 方面<br>增加缓冲区    如果涉及表的级联，不同的表存储在不同的磁盘上，以增加IO速度<br>3.在SQL方面<br>优化sql语句，减少比较次数     限制返回的条目数（MySQL 里面用limit）<br>4.在java方面<br>对于反复查询使用的查询，使用PreparedStatement 减少查询次数</p>
+<p>unique 约束能够约束一列保证该列值唯一，但允许有空值</p>
+<h3 id="NAT技术"><a href="#NAT技术" class="headerlink" title="NAT技术"></a>NAT技术</h3><p>NAT 技术（网络地址转换）是一种将一个IP地址域映射到另一个IP地址域的技术，从而为终端主机提供透明路由。NAT 包括静态网络地址<br>转换、动态网络地址转换、端口映射等。NAT 常用语私有地址域与工友地址的转换，解决IP地址匮乏的问题、在防火墙上实现了NAT以后<br>可以隐藏受保护网络的内部拓扑结构，在一定程度上提高网络的安全性。</p>
+<h3 id="IP-地址分配"><a href="#IP-地址分配" class="headerlink" title="IP 地址分配"></a>IP 地址分配</h3><p>A 类地址 １-127      0<br>B 类地址 128 - 191   10<br>C 类地址 192-223     110<br>FTP 是有连接的服务，必须基于TCP协议</p>
+<h3 id="TCP-的三次握手"><a href="#TCP-的三次握手" class="headerlink" title="TCP 的三次握手"></a>TCP 的三次握手</h3><p>第一次握手：建立连接时，客户端发送SYN包到服务器，并进入SYN_SEND状态，等待服务器确认。<br>第二次握手：服务器收到SYN包，必须确认客户的SYN（ack=j+1），同时自己也发送一个SYN包（SYN=k），即SYN+ACK包，此时服务器<br>进入SYN_RECV状态。<br>第三次握手：客户端收到服务器的SYN+ACK包，向服务器发送确认宝ACK（ack=k+1）,此包发送完毕，客户端和服务器进入ESTABLISHED<br>状态，完成三次握手。<br>完成三次握手后，客户端和服务器开始传送数据。<br>未连接队列：在三次握手协议中，服务器维护一个未连接队列，该队列未每个客户端的SYN包开设一个条目，该条目表明服务器已收到SYN<br>包，并向客户发出确认，正在等待客户的确认包。这些条目所标识的连接在服务器处于SYN_RECV状态，当服务器收到客户端的确认包，<br>删除该条目，服务器进入ESTABLISHED状态。</p>
+<h3 id="ping命令基于什么协议？"><a href="#ping命令基于什么协议？" class="headerlink" title="ping命令基于什么协议？"></a>ping命令基于什么协议？</h3><p>ICMP Internet 控制消息协议是TCP/IP 协议族的一个自协议，用于在IP主机、路由器之间传递控制消息，控制消息是指网路通不通，<br>主机是否可达，路由是否可用等网络本身的消息。ping命令向指定的IP地址发送一定长度的数据包，按照约定，若指定的IP存在的话，<br>会返回同样大小的数据包，若在特定的时间没有返回，超时，则认为IP不存在。</p>
+<p>子网掩码是用来判断任意两台计算机的IP地址是否属于同一子网络的根据。两台计算机各自的IP地址域子网掩码进行AND运算之后，<br>如果得出的结果是相同的额，则说明两台计算机是处于同一个子网络的，可以进行直接的通信。</p>
+<h3 id="什么是迭代器-Iterator-？"><a href="#什么是迭代器-Iterator-？" class="headerlink" title="什么是迭代器(Iterator)？"></a>什么是迭代器(Iterator)？</h3><p>Iterator 接口提供了很多对集合元素进行迭代的方法。每一个集合类都包含了可以返回迭代器实例的迭代方法。迭代器可以在迭代的<br>过程中删除底层集合的元素,但是不可以直接调用集合的remove(Object Obj)删除，可以通过迭代器的remove()方法删除。<br>如何确保N个线程可以访问N个资源同时又不导致死锁？<br>指定获取锁的顺序，并强制线程按照指定的顺序获取锁。</p>
+<h3 id="在监视器-Monitor-内部，是如何做线程同步的？"><a href="#在监视器-Monitor-内部，是如何做线程同步的？" class="headerlink" title="在监视器(Monitor)内部，是如何做线程同步的？"></a>在监视器(Monitor)内部，是如何做线程同步的？</h3><p>监视器和锁在Java虚拟机中是一块使用的。监视器监视一块同步代码块，确保一次只有一个线程执行同步代码块。每一个监视器都和一个<br>对象引用相关联。线程在获取锁之前不允许执行同步代码。</p>
+<h3 id="同步方法和同步代码块的区别？"><a href="#同步方法和同步代码块的区别？" class="headerlink" title="同步方法和同步代码块的区别？"></a>同步方法和同步代码块的区别？</h3><p>同步方法默认用this或者当前类class对象作为锁；<br>同步代码块可以选择以什么来加锁，比同步方法要更细颗粒度，我们可以选择只同步会发生同步问题的部分代码而不是整个方法；</p>
+<p>应用程序可以使用Executor框架来创建线程池 (创建线程的方式还有 继承Thread类，实现Runnable接口 )</p>
+<h3 id="重载和重写"><a href="#重载和重写" class="headerlink" title="重载和重写"></a>重载和重写</h3><p>重载发生在同一个类里面，多个方法名相同但是形参列表不同的情况，返回类型可以相同也可以不同。<br>重写发生在父类子类里面，子类重新定义了父类方法，方法重写（覆盖）必须有相同的方法名、形参列表和返回类型。</p>
+<h3 id="接口和抽象类的区别是什么？"><a href="#接口和抽象类的区别是什么？" class="headerlink" title="接口和抽象类的区别是什么？"></a>接口和抽象类的区别是什么？</h3><p>Java 提供和支持创建抽象类和接口。它们的实现有共同点，不同点在于：<br>接口中所有的方法隐含的都是抽象的。而抽象类则可以同时包含抽象和非抽象的方法。<br>类可以实现很多个接口，但是只能继承一个抽象类<br>类可以不实现抽象类和接口声明的所有方法，当然，在这种情况下，类也必须得声明成是抽象的。<br>抽象类可以在不提供接口方法实现的情况下实现接口。<br>Java 接口中声明的变量默认都是final的。抽象类可以包含非final的变量。<br>Java 接口中的成员函数默认是public的。抽象类的成员函数可以是private，protected或者是public。<br>接口是绝对抽象的，不可以被实例化。抽象类也不可以被实例化，但是，如果它包含main方法的话是可以被调用的。<br>也可以参考JDK8中抽象类和接口的区别</p>
+<h3 id="HashMap和Hashtable区别？"><a href="#HashMap和Hashtable区别？" class="headerlink" title="HashMap和Hashtable区别？"></a>HashMap和Hashtable区别？</h3><p>HashMap和Hashtable都实现了Map接口，因此很多特性非常相似。但是，他们有以下不同点：<br>HashMap允许键和值是null，而Hashtable不允许键或者值是null。<br>Hashtable是同步的，而HashMap不是。因此，HashMap更适合于单线程环境，而Hashtable适合于多线程环境。</p>
+<h3 id="Java中的HashMap的工作原理？"><a href="#Java中的HashMap的工作原理？" class="headerlink" title="Java中的HashMap的工作原理？"></a>Java中的HashMap的工作原理？</h3><p>Java中的HashMap是以键值对(key-value)的形式存储元素的。HashMap需要一个hash函数，它使用hashCode()和equals()方法来向集合<br>/从集合添加和检索元素。当调用put()方法的时候，HashMap会计算key的hash值，然后把键值对存储在集合中合适的索引上。如果key<br>已经存在了，value会被更新成新值;若计算出来的索引位置相同，形成Entry链。</p>
+<p>快速失败(fail-fast)和安全失败(fail-safe)的区别是什么？<br>Iterator的安全失败是基于对底层集合做拷贝，因此，它不受源集合上修改的影响。java.util包下面的所有的集合类都是快速失败的，<br>而java.util.concurrent包下面的所有的类都是安全失败的。快速失败的迭代器会抛出ConcurrentModificationException异常，而安全<br>失败的迭代器永远不会抛出这样的异常。</p>
+<h3 id="ArrayList和LinkedList区别？"><a href="#ArrayList和LinkedList区别？" class="headerlink" title="ArrayList和LinkedList区别？"></a>ArrayList和LinkedList区别？</h3><p>ArrayList和LinkedList都实现了List接口，他们有以下的不同点：<br>ArrayList是基于索引的数据接口，它的底层是数组。它可以以O(1)时间复杂度对元素进行随机访问。与此对应，LinkedList是以元素列表的形式存储它的数据，每一个元素都和它的前一个和后一个元素链接在一起，在这种情况下，查找某个元素的时间复杂度是O(n)。<br>相对于ArrayList，LinkedList的插入，添加，删除操作速度更快，因为当元素被添加到集合任意位置的时候，不需要像数组那样重新计算大小或者是更新索引。<br>LinkedList比ArrayList更占内存，因为LinkedList为每一个节点存储了两个引用，一个指向前一个元素，一个指向下一个元素。</p>
+<h3 id="Array和ArrayList区别？"><a href="#Array和ArrayList区别？" class="headerlink" title="Array和ArrayList区别？"></a>Array和ArrayList区别？</h3><p>Array可以包含基本类型和对象类型，ArrayList只能包含对象类型。<br>Array大小是固定的，ArrayList的大小是动态变化的。<br>ArrayList提供了更多的方法和特性，比如：addAll()，removeAll()，iterator()等等。</p>
+<h3 id="Iterator和ListIterator的区别？"><a href="#Iterator和ListIterator的区别？" class="headerlink" title="Iterator和ListIterator的区别？"></a>Iterator和ListIterator的区别？</h3><p>Iterator可用来遍历Set和List集合，但是ListIterator只能用来遍历List。<br>Iterator对集合只能是前向遍历，ListIterator既可以前向也可以后向。<br>ListIterator实现了Iterator接口，并包含其他的功能，比如：增加元素，替换元素，获取前一个和后一个元素的索引</p>
+<h3 id="Comparable和Comparator接口"><a href="#Comparable和Comparator接口" class="headerlink" title="Comparable和Comparator接口"></a>Comparable和Comparator接口</h3><p>Java提供了只包含一个compareTo()方法的Comparable接口。这个方法可以个给两个对象排序。<br>Java提供了包含compare()和equals()两个方法的Comparator接口。compare()方法用来给两个输入参数排序。</p>
+<h3 id="Java优先级队列-Priority-Queue-？"><a href="#Java优先级队列-Priority-Queue-？" class="headerlink" title="Java优先级队列(Priority Queue)？"></a>Java优先级队列(Priority Queue)？</h3><p>PriorityQueue是一个基于优先级堆的无界队列，它的元素是按照自然顺序(natural order)排序的。在创建的时候，我们可以给它提供<br>一个负责给元素排序的比较器。PriorityQueue不允许null值，因为他们没有自然顺序，或者说他们没有任何的相关联的比较器。最后，<br>riorityQueue不是线程安全的，入队和出队的时间复杂度是O(log(n))。</p>
+<p>什么时候使用CallableStatement？用来准备CallableStatement的方法是什么？<br>CallableStatement用来执行存储过程。存储过程是由数据库存储和提供的。存储过程可以接受输入参数，也可以有返回结果。非常鼓励<br>用存储过程，因为它提供了安全性和模块化。准备一个CallableStatement的方法是：CallableStament.prepareCall();</p>
+<p>PreparedStatement比Statement有什么优势？<br>PreparedStatements是预编译的，因此，性能会更好。同时，不同的查询参数值，PreparedStatement可以重用。</p>
+<h3 id="URL编码和URL解码？"><a href="#URL编码和URL解码？" class="headerlink" title="URL编码和URL解码？"></a>URL编码和URL解码？</h3><p>URL编码是负责把URL里面的空格和其他的特殊字符替换成对应的十六进制表示，反之就是解码。</p>
+<h3 id="doGet-方法和doPost-方法区别？"><a href="#doGet-方法和doPost-方法区别？" class="headerlink" title="doGet()方法和doPost()方法区别？"></a>doGet()方法和doPost()方法区别？</h3><p>doGet: GET 方法会把键值对追加在请求的URL后面。因为URL对字符数目有限制， 限制了用在客户端请求的参数值的数目。并且请求中<br>的参数值是可见的 ，不够安全。<br>doPOST：POST方法通过把请求参数值放在请求体中来克服GET方法的限制，因此，可以发送的参数的数目是没有限制的。<br>最后，通过POST请求传递的敏感信息对外部客户端是不可见的。</p>
+<h3 id="解释下Servlet的生命周期。"><a href="#解释下Servlet的生命周期。" class="headerlink" title="解释下Servlet的生命周期。"></a>解释下Servlet的生命周期。</h3><p>对每一个客户端的请求，Servlet引擎 载入Servlet，调用它的init()方法，完成Servlet的初始化。然后，Servlet 对象通过为每一个<br>请求单独调用service()方法来处理所有随后来自客户端的请求，最后，调用Servlet的destroy()方法把Servlet卸载掉。</p>
+<h3 id="什么是Servlet？"><a href="#什么是Servlet？" class="headerlink" title="什么是Servlet？"></a>什么是Servlet？</h3><p>Servlet 是用来处理客户端请求并产生动态网页内容的Java类。Servlet 主要是用来处理或者是存储HTML表单提交的数据，产生动态内容</p>
+<h3 id="什么是反射？"><a href="#什么是反射？" class="headerlink" title="什么是反射？"></a>什么是反射？</h3><p>Java 程序可以加载一个运行时才得知名称的 class，获悉其完整构造（但不包括methods定义），并生成其对象实体、<br>或对其fields设值、或唤起其methods。</p>
+<h3 id="匿名内部类的变量必须final修饰？"><a href="#匿名内部类的变量必须final修饰？" class="headerlink" title="匿名内部类的变量必须final修饰？"></a>匿名内部类的变量必须final修饰？</h3><p>首先内部类的生命周期是成员级别的，而局部变量的生命周期是在方法体之类，当mRun方法执行，new<br>的线程运行，新线程里面会睡一秒。主线程会继续执行，mRun执行完毕，name属性生命周期结束，Java就是为了杜绝这种错误，严格要求<br>内部类中方位局部变量，必须使用final关键字修饰。局部变量被final修饰之后，此时会在内存中保有一份局部变得的复制品，当内部类<br>访问的时候其实访问的是这个复制品。</p>
+<h3 id="小知识"><a href="#小知识" class="headerlink" title="小知识"></a>小知识</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">@Test</div><div class="line">public void test() &#123;</div><div class="line">	Integer a = new Integer(1000) ; int b = 1000;</div><div class="line">	Integer c = new Integer(10); Integer d = new Integer(10);</div><div class="line">	System.out.println(a == b);    //true   自动拆箱为int</div><div class="line">	System.out.println(c == d);    //false</div><div class="line">&#125;</div><div class="line">//Integer.java valueOf 方法中把-128-127 缓存了下来。官方解释是小的数字使用的频率比较高， 为了优化性能，把这之间的数缓存了下来</div><div class="line">@Test</div><div class="line">public void testInteger()&#123;</div><div class="line">	Integer a = 1000,b=1000;</div><div class="line">	Integer c = 100,d=100;</div><div class="line">	System.out.println(a==b);   //false  new出来的</div><div class="line">	System.out.println(c==d);   //true   缓存中的</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>[reference] <a href="http://www.imooc.com/article/2964" target="_blank" rel="external">http://www.imooc.com/article/2964</a></p>
+<h3 id="调用三种方式"><a href="#调用三种方式" class="headerlink" title="调用三种方式"></a>调用三种方式</h3><p>模块之间都存在一定的调用关系，从调用方式上看，可以分为三类同步调用、异步调用和回调。同步调用是一种阻塞式调用，异步调用是一种<br>类似消息或事件的机制解决了同步阻塞的问题，回调是一种双向的调用模式，也就是说，被调用的接口被调用时也会调用对方的接口，例如A<br>要调用B,B在执行完又要调用A。<br>public interface FileNameFilter{<br>    boolean accept(File dir,String name);<br>}</p>
+<h3 id="标记接口"><a href="#标记接口" class="headerlink" title="标记接口"></a>标记接口</h3><p>如果实现接口的类是抽象类，那么就没必要实现该接口的方法。<br>一个接口能继承另一个接口，这和类之间的继承比较相似。也就是说实现某一个接口之后，可能要实现的方法不是直接接口定义的方法，<br>可能是该接口继承于另外一个接口的方法。<br>没有任何方法的接口被称为标记接口。标记接口主要用于以下两种目的：<br>1.建立一个公共的父接口<br>2.向一个类添加数据类型</p>
+<h3 id="SQL三范式"><a href="#SQL三范式" class="headerlink" title="SQL三范式"></a>SQL三范式</h3><p>SQL语言支持关系数据库的三级模式结构，其中，视图对应外模式，基本表对应模式，存储文件对应内模式。<br>通过分解，可以将一个低一级别的关系模式转换成若干个高一级范式的关系模式，这种过程叫做规范化。<br>eg: FIRST(Sno,Sname,Status,City,Pno,Qty)<br>依赖关系： F={ Sno-&gt; Sname,Sno-&gt;Status,Status-&gt;City,(Sno,Pno)-&gt;Qty}</p>
+<ul>
+<li>1NF(第一范式)<br>定义：若关系模式R的每一个分量是不可再分的数据项，则关系模式R属于第一范式<br>FIRST属于第一范式，但1NF存在4个问题：<br>冗余度大，每个Sno,Sname,Status,City 要与其供应的零件的种类一样多<br>引起修改操作的不一致性<br>插入异常，若某个供应者某些信息没有提供(比如没有Pno)则不能进行插入操作</li>
+<li>2NF(第二范式)<br>定义：若关系模式R属于1NF,且每一个非主属性完全依赖于码，则关系模式R属于2NF<br>也就是说，当1NF消除了非主属性对码的部分函数依赖，则成为2NF<br>将FIRST分解为 FIRST1(Sno,Sname,Status,City) 和 FIRST2(Sno,Pno,Qty) 分解后，FIRST1 的 非主属性 Sname,Status,City 完全依赖<br>于码 Sno,FIRST2的非主属性 Qty 完全依赖于码 Sno,Pno,所以属于2NF</li>
+<li>3NF(第三范式)<br>若关系模式中不存在这样的码X，属性组Y以及非主属性Z，使得X-&gt;Y,Y-Z成立，则关系模式R属于3NF<br>即当2NF消除了非主属性对码的传递函数依赖，则成为3NF<br>分解为 FIRST1(Sno,Sname,Status)  FIRST2(Status,City)   FIRST3(Sno,Pno,Qty)<br>3NF的模式肯定是2NF,产生冗余和异常的两个重要原因是部分依赖和传递依赖，因为3NF模式中不存在非主属性对码的部分函数依赖和<br>传递函数依赖，所以具有较高的性能，通常变换为3NF或更高级别的凡是，这种变化过程成为“关系模式的规范化处理”<h3 id="Webservice"><a href="#Webservice" class="headerlink" title="Webservice"></a>Webservice</h3>W  ebService是一种跨编程语言和跨操作系统平台的远程调用技术。<br>远程调用，就是一台计算机a上的一个程序可以调用到另外一台计算机b上的一个对象的方法，譬如，银联提供给商场的pos刷卡系统，<br>商场的POS机转账调用的转账方法的代码其实是跑在银行服务器上。再比如，amazon，天气预报系统，淘宝网，校内网，百度等把自己的<br>系统服务以webservice服务的形式暴露出来，让第三方网站和程序可以调用这些服务功能，这样扩展了自己系统的市场占有率，就是<br>所谓的SOA应用。<br> WebService是建立可互操作的分布式应用程序的新平台，是一个平台，是一套标准。它定义了应用程序如何在Web上实现互操作性<br>Web service平台必须提供一种标准来描述Web service，让客户可以得到足够的信息来调用这个Web service<br>XML+XSD,SOAP和WSDL就是构成WebService平台的三大技术。<br>WebService采用HTTP协议传输数据，采用XML格式封装数据（即XML中说明调用远程服务对象的哪个方法，传递的参数是什么，以及服务<br>对象的返回结果是什么）。XML是WebService平台中表示数据的格式。<br>SOAP协议 = HTTP协议 + XML数据格式<br>WSDL(Web Services Description Language)就是这样一个基于XML的语言，用于描述Web Service及其函数、参数和返回值。<br>它是WebService客户端和服务器端都能理解的标准格式。<h3 id="Java-String-split-用法"><a href="#Java-String-split-用法" class="headerlink" title="Java String.split()用法"></a>Java String.split()用法</h3>String.split(“\.”) //用 . 分割字符串<br>acount=?and uu =? or n=?”,把三个都分隔出来可以用String.split(“and|or”); //分割多个</li>
+</ul>
+<p>需要在程序中存储许多字符串常量，所以就想到了枚举</p>
+<h3 id="获取用户IP"><a href="#获取用户IP" class="headerlink" title="获取用户IP"></a>获取用户IP</h3><p>public static String getIpAddr(HttpServletRequest request) {<br>        String ip = request.getHeader(“x-forwarded-for”);<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“WL-Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getRemoteAddr();<br>        }<br>        return ip;<br>    }</p>
 ]]></content>
     </entry>
     
@@ -8654,8 +8688,8 @@ return &quot;ProductDetails&quot;;
     </entry>
     
     <entry>
-      <title><![CDATA[[Java]常用虚拟机参数]]></title>
-      <url>https://fudawei.github.io/2013/08/01/%5BJava%5D%E5%B8%B8%E7%94%A8%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8F%82%E6%95%B0/</url>
+      <title><![CDATA[常用虚拟机参数]]></title>
+      <url>https://fudawei.github.io/2013/08/01/%E5%B8%B8%E7%94%A8%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8F%82%E6%95%B0/</url>
       <content type="html"><![CDATA[<ul>
 <li>-XX:+PrintGC   启动java虚拟机后，只要遇到gc，就打印日志。</li>
 <li>-XX:+PrintGCDetails  gc发生时，打印更详细的日志。</li>

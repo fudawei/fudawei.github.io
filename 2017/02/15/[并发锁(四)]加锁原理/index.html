@@ -43,14 +43,14 @@
 <meta name="description" content="接上篇，这篇从Lock.lock/unlock开始。特别说明在没有特殊情况下所有程序、API、文档都是基于JDK 6.0的。
 123456public void Java.util.concurrent.locks.ReentrantLock.lock()		获取锁。	    如果该锁没有被另一个线程保持，则获取该锁并立即返回，将锁的保持计数设置为 1。	    如果当前线程已经保持该锁，则将保持">
 <meta property="og:type" content="article">
-<meta property="og:title" content="[并发锁(三)]枷锁原理">
-<meta property="og:url" content="https://fudawei.github.io/2017/02/13/[并发锁(三)]加锁原理/index.html">
+<meta property="og:title" content="[并发锁(四)]枷锁原理">
+<meta property="og:url" content="https://fudawei.github.io/2017/02/15/[并发锁(四)]加锁原理/index.html">
 <meta property="og:site_name" content="冰鸟">
 <meta property="og:description" content="接上篇，这篇从Lock.lock/unlock开始。特别说明在没有特殊情况下所有程序、API、文档都是基于JDK 6.0的。
 123456public void Java.util.concurrent.locks.ReentrantLock.lock()		获取锁。	    如果该锁没有被另一个线程保持，则获取该锁并立即返回，将锁的保持计数设置为 1。	    如果当前线程已经保持该锁，则将保持">
-<meta property="og:updated_time" content="2017-02-14T07:04:58.219Z">
+<meta property="og:updated_time" content="2017-02-15T08:01:21.888Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="[并发锁(三)]枷锁原理">
+<meta name="twitter:title" content="[并发锁(四)]枷锁原理">
 <meta name="twitter:description" content="接上篇，这篇从Lock.lock/unlock开始。特别说明在没有特殊情况下所有程序、API、文档都是基于JDK 6.0的。
 123456public void Java.util.concurrent.locks.ReentrantLock.lock()		获取锁。	    如果该锁没有被另一个线程保持，则获取该锁并立即返回，将锁的保持计数设置为 1。	    如果当前线程已经保持该锁，则将保持">
 
@@ -62,7 +62,7 @@
   };
 </script>
 
-  <title> [并发锁(三)]枷锁原理 | 冰鸟 </title>
+  <title> [并发锁(四)]枷锁原理 | 冰鸟 </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -320,7 +320,7 @@
           
           
             
-              [并发锁(三)]枷锁原理
+              [并发锁(四)]枷锁原理
             
           
         </h1>
@@ -329,8 +329,8 @@
       <div class="post-meta">
         <span class="post-time">
           发表于
-          <time itemprop="dateCreated" datetime="2017-02-13T20:07:52+08:00" content="2017-02-13">
-            2017-02-13
+          <time itemprop="dateCreated" datetime="2017-02-15T18:07:52+08:00" content="2017-02-15">
+            2017-02-15
           </time>
         </span>
 
@@ -368,11 +368,11 @@
             <span class="post-comments-count">
               &nbsp; | &nbsp;
               <!--
-              <a href="/2017/02/13/[并发锁(三)]加锁原理/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/13/[并发锁(三)]加锁原理/" itemprop="commentsCount"></span>
+              <a href="/2017/02/15/[并发锁(四)]加锁原理/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/15/[并发锁(四)]加锁原理/" itemprop="commentsCount"></span>
               </a>
               -->
-              <a href="/2017/02/13/[并发锁(三)]加锁原理/#comments" itemprop="discussionUrl">
+              <a href="/2017/02/15/[并发锁(四)]加锁原理/#comments" itemprop="discussionUrl">
                 <span>评论</span>
               </a>
             </span>
@@ -383,7 +383,7 @@
 
 
 &nbsp; | &nbsp;
-<span id="/2017/02/13/[并发锁(三)]加锁原理/"class="leancloud_visitors" data-flag-title="[并发锁(三)]枷锁原理">
+<span id="/2017/02/15/[并发锁(四)]加锁原理/"class="leancloud_visitors" data-flag-title="[并发锁(四)]枷锁原理">
          &nbsp;阅读次数
         </span>
 
@@ -482,7 +482,7 @@
 
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/02/08/Java 并发编程：volatile的使用及其原理/" rel="next">Java 并发编程：volatile的使用及其原理</a>
+              <a href="/2017/02/14/[并发锁(二)]AQS阻塞队列/" rel="next">[并发锁(二)]AQS阻塞队列</a>
             
           </div>
         </div>
@@ -666,8 +666,8 @@
         
           <div class="comments" id="comments">
             
-              <div class="ds-thread" data-thread-key="2017/02/13/[并发锁(三)]加锁原理/"
-                   data-title="[并发锁(三)]枷锁原理" data-url="https://fudawei.github.io/2017/02/13/[并发锁(三)]加锁原理/">
+              <div class="ds-thread" data-thread-key="2017/02/15/[并发锁(四)]加锁原理/"
+                   data-title="[并发锁(四)]枷锁原理" data-url="https://fudawei.github.io/2017/02/15/[并发锁(四)]加锁原理/">
               </div>
             
           </div>
@@ -714,14 +714,14 @@
 
           <div class="site-state-item site-state-categories">
             <a href="/categories">
-              <span class="site-state-item-count">40</span>
+              <span class="site-state-item-count">39</span>
               <span class="site-state-item-name">分类</span>
               </a>
           </div>
 
           <div class="site-state-item site-state-tags">
             <a href="/tags">
-              <span class="site-state-item-count">74</span>
+              <span class="site-state-item-count">73</span>
               <span class="site-state-item-name">标签</span>
               </a>
           </div>

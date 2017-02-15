@@ -3398,8 +3398,8 @@
           
           
             
-              <a class="post-title-link" href="/2017/02/13/[并发锁(三)]加锁原理/" itemprop="url">
-                [并发锁(三)]枷锁原理
+              <a class="post-title-link" href="/2017/02/15/[并发锁(四)]加锁原理/" itemprop="url">
+                [并发锁(四)]枷锁原理
               </a>
             
           
@@ -3409,8 +3409,8 @@
       <div class="post-meta">
         <span class="post-time">
           发表于
-          <time itemprop="dateCreated" datetime="2017-02-13T20:07:52+08:00" content="2017-02-13">
-            2017-02-13
+          <time itemprop="dateCreated" datetime="2017-02-15T18:07:52+08:00" content="2017-02-15">
+            2017-02-15
           </time>
         </span>
 
@@ -3448,11 +3448,11 @@
             <span class="post-comments-count">
               &nbsp; | &nbsp;
               <!--
-              <a href="/2017/02/13/[并发锁(三)]加锁原理/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/13/[并发锁(三)]加锁原理/" itemprop="commentsCount"></span>
+              <a href="/2017/02/15/[并发锁(四)]加锁原理/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/15/[并发锁(四)]加锁原理/" itemprop="commentsCount"></span>
               </a>
               -->
-              <a href="/2017/02/13/[并发锁(三)]加锁原理/#comments" itemprop="discussionUrl">
+              <a href="/2017/02/15/[并发锁(四)]加锁原理/#comments" itemprop="discussionUrl">
                 <span>评论</span>
               </a>
             </span>
@@ -3463,7 +3463,7 @@
 
 
 &nbsp; | &nbsp;
-<span id="/2017/02/13/[并发锁(三)]加锁原理/"class="leancloud_visitors" data-flag-title="[并发锁(三)]枷锁原理">
+<span id="/2017/02/15/[并发锁(四)]加锁原理/"class="leancloud_visitors" data-flag-title="[并发锁(四)]枷锁原理">
          &nbsp;阅读次数
         </span>
 
@@ -3486,7 +3486,127 @@
             ...
           </span>
           <div class="post-more-link text-center">
-            <a class="btn" href="/2017/02/13/[并发锁(三)]加锁原理/#more" rel="contents">
+            <a class="btn" href="/2017/02/15/[并发锁(四)]加锁原理/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2017/02/14/[并发锁(二)]AQS阻塞队列/" itemprop="url">
+                [并发锁(二)]AQS阻塞队列
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2017-02-14T20:07:52+08:00" content="2017-02-14">
+            2017-02-14
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/" itemprop="url" rel="index">
+                  <span itemprop="name">Java</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/并发库/" itemprop="url" rel="index">
+                  <span itemprop="name">并发库</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2017/02/14/[并发锁(二)]AQS阻塞队列/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/14/[并发锁(二)]AQS阻塞队列/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2017/02/14/[并发锁(二)]AQS阻塞队列/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2017/02/14/[并发锁(二)]AQS阻塞队列/"class="leancloud_visitors" data-flag-title="[并发锁(二)]AQS阻塞队列">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            自旋锁我们知道一个线程在尝试获取锁失败后将被阻塞并加入等待队列中，它是一个怎样的队列？又是如何管理此队列？这节聊聊CHL Node FIFO队列。 在谈到CHL Node FIFO队列之前，我们先分析这种队列的几个要素。首先要了解的是自旋锁，所谓自旋锁即是某一线程去尝试获取某个锁时，如果该锁已经被其
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2017/02/14/[并发锁(二)]AQS阻塞队列/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -4476,114 +4596,6 @@
 
 
     
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2016/12/29/Spring源码：核心容器/" itemprop="url">
-                Spring源码：核心容器
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2016-12-29T20:53:14+08:00" content="2016-12-29">
-            2016-12-29
-          </time>
-        </span>
-
-        
-          <span class="post-category" >
-            &nbsp; | &nbsp; 分类于
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/JavaEE框架/" itemprop="url" rel="index">
-                  <span itemprop="name">JavaEE框架</span>
-                </a>
-              </span>
-
-              
-              
-
-            
-          </span>
-        
-
-        
-          
-            <span class="post-comments-count">
-              &nbsp; | &nbsp;
-              <!--
-              <a href="/2016/12/29/Spring源码：核心容器/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2016/12/29/Spring源码：核心容器/" itemprop="commentsCount"></span>
-              </a>
-              -->
-              <a href="/2016/12/29/Spring源码：核心容器/#comments" itemprop="discussionUrl">
-                <span>评论</span>
-              </a>
-            </span>
-          
-        
-
-
-
-
-&nbsp; | &nbsp;
-<span id="/2016/12/29/Spring源码：核心容器/"class="leancloud_visitors" data-flag-title="Spring源码：核心容器">
-         &nbsp;阅读次数
-        </span>
-
-
-	
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            容器概述IoC也被称作依赖注入(DI)。它是一个处理对象依赖项的过程，也就是将他们一起工作的其他的对象，只有通过构造参数、工厂方法参数或者（属性注入）通过构造参数实例化或通过工厂方法返回对象后再设置属性。当创建bean后，IoC容器再将这些依赖项注入进去。这个过程基本上是反转的，因此得名控制反转（I
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2016/12/29/Spring源码：核心容器/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4629,14 +4641,14 @@
 
           <div class="site-state-item site-state-categories">
             <a href="/categories">
-              <span class="site-state-item-count">40</span>
+              <span class="site-state-item-count">39</span>
               <span class="site-state-item-name">分类</span>
               </a>
           </div>
 
           <div class="site-state-item site-state-tags">
             <a href="/tags">
-              <span class="site-state-item-count">74</span>
+              <span class="site-state-item-count">73</span>
               <span class="site-state-item-name">标签</span>
               </a>
           </div>
