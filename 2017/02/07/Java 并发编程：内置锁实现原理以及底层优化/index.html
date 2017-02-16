@@ -40,20 +40,20 @@
   <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
 
 
-<meta name="description" content="Synchronized的基本使用和原理一、synchronized的使用
+<meta name="description" content="内置锁的基本使用和原理一、内置锁的使用
 修饰一个代码块，被修饰的代码块称为同步语句块，其作用的范围是大括号{}括起来的代码，作用的对象是调用这个代码块的对象；
 修饰一个方法，被修饰的方法称为同步方法，其作用的范围是整个方法，作用的对象是调用这个方法的对象；
 修改一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；
-修改一个类，其作用的范围是">
+修改一个类，其作用的范围是synchronized后面括号括起">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Java 并发编程：Synchronized实现原理以及底层优化">
-<meta property="og:url" content="https://fudawei.github.io/2017/02/07/Java 并发编程：Synchronized实现原理以及底层优化/index.html">
+<meta property="og:title" content="Java 并发编程：内置锁实现原理以及底层优化">
+<meta property="og:url" content="https://fudawei.github.io/2017/02/07/Java 并发编程：内置锁实现原理以及底层优化/index.html">
 <meta property="og:site_name" content="冰鸟">
-<meta property="og:description" content="Synchronized的基本使用和原理一、synchronized的使用
+<meta property="og:description" content="内置锁的基本使用和原理一、内置锁的使用
 修饰一个代码块，被修饰的代码块称为同步语句块，其作用的范围是大括号{}括起来的代码，作用的对象是调用这个代码块的对象；
 修饰一个方法，被修饰的方法称为同步方法，其作用的范围是整个方法，作用的对象是调用这个方法的对象；
 修改一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；
-修改一个类，其作用的范围是">
+修改一个类，其作用的范围是synchronized后面括号括起">
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-1.png">
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-2.png">
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-3.png">
@@ -62,14 +62,14 @@
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-6.png">
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-7.png">
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-8.png">
-<meta property="og:updated_time" content="2017-02-12T01:59:35.964Z">
+<meta property="og:updated_time" content="2017-02-16T02:43:18.957Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Java 并发编程：Synchronized实现原理以及底层优化">
-<meta name="twitter:description" content="Synchronized的基本使用和原理一、synchronized的使用
+<meta name="twitter:title" content="Java 并发编程：内置锁实现原理以及底层优化">
+<meta name="twitter:description" content="内置锁的基本使用和原理一、内置锁的使用
 修饰一个代码块，被修饰的代码块称为同步语句块，其作用的范围是大括号{}括起来的代码，作用的对象是调用这个代码块的对象；
 修饰一个方法，被修饰的方法称为同步方法，其作用的范围是整个方法，作用的对象是调用这个方法的对象；
 修改一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；
-修改一个类，其作用的范围是">
+修改一个类，其作用的范围是synchronized后面括号括起">
 <meta name="twitter:image" content="https://fudawei.github.io/img/synchronized/synchronized-1.png">
 
 
@@ -80,7 +80,7 @@
   };
 </script>
 
-  <title> Java 并发编程：Synchronized实现原理以及底层优化 | 冰鸟 </title>
+  <title> Java 并发编程：内置锁实现原理以及底层优化 | 冰鸟 </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -338,7 +338,7 @@
           
           
             
-              Java 并发编程：Synchronized实现原理以及底层优化
+              Java 并发编程：内置锁实现原理以及底层优化
             
           
         </h1>
@@ -386,11 +386,11 @@
             <span class="post-comments-count">
               &nbsp; | &nbsp;
               <!--
-              <a href="/2017/02/07/Java 并发编程：Synchronized实现原理以及底层优化/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/07/Java 并发编程：Synchronized实现原理以及底层优化/" itemprop="commentsCount"></span>
+              <a href="/2017/02/07/Java 并发编程：内置锁实现原理以及底层优化/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/07/Java 并发编程：内置锁实现原理以及底层优化/" itemprop="commentsCount"></span>
               </a>
               -->
-              <a href="/2017/02/07/Java 并发编程：Synchronized实现原理以及底层优化/#comments" itemprop="discussionUrl">
+              <a href="/2017/02/07/Java 并发编程：内置锁实现原理以及底层优化/#comments" itemprop="discussionUrl">
                 <span>评论</span>
               </a>
             </span>
@@ -401,7 +401,7 @@
 
 
 &nbsp; | &nbsp;
-<span id="/2017/02/07/Java 并发编程：Synchronized实现原理以及底层优化/"class="leancloud_visitors" data-flag-title="Java 并发编程：Synchronized实现原理以及底层优化">
+<span id="/2017/02/07/Java 并发编程：内置锁实现原理以及底层优化/"class="leancloud_visitors" data-flag-title="Java 并发编程：内置锁实现原理以及底层优化">
          &nbsp;阅读次数
         </span>
 
@@ -416,15 +416,15 @@
       
 
       
-        <span itemprop="articleBody"><h2 id="Synchronized的基本使用和原理"><a href="#Synchronized的基本使用和原理" class="headerlink" title="Synchronized的基本使用和原理"></a>Synchronized的基本使用和原理</h2><h3 id="一、synchronized的使用"><a href="#一、synchronized的使用" class="headerlink" title="一、synchronized的使用"></a>一、synchronized的使用</h3><ol>
+        <span itemprop="articleBody"><h2 id="内置锁的基本使用和原理"><a href="#内置锁的基本使用和原理" class="headerlink" title="内置锁的基本使用和原理"></a>内置锁的基本使用和原理</h2><h3 id="一、内置锁的使用"><a href="#一、内置锁的使用" class="headerlink" title="一、内置锁的使用"></a>一、内置锁的使用</h3><ol>
 <li>修饰一个代码块，被修饰的代码块称为同步语句块，其作用的范围是大括号{}括起来的代码，作用的对象是调用这个代码块的对象；</li>
 <li>修饰一个方法，被修饰的方法称为同步方法，其作用的范围是整个方法，作用的对象是调用这个方法的对象；</li>
 <li>修改一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；</li>
 <li>修改一个类，其作用的范围是synchronized后面括号括起来的部分，作用主的对象是这个类的所有对象。</li>
 </ol>
-<h3 id="二、Synchronized-原理"><a href="#二、Synchronized-原理" class="headerlink" title="二、Synchronized 原理"></a>二、Synchronized 原理</h3><p>我们先从一个实例来看一下Synchronized原理，代码如下：</p>
+<h3 id="二、内置锁原理"><a href="#二、内置锁原理" class="headerlink" title="二、内置锁原理"></a>二、内置锁原理</h3><p>我们先从一个实例来看一下内置锁原理，代码如下：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">public class SynchronizedDemo &#123;</div><div class="line">     public void method() &#123;</div><div class="line">         synchronized (this) &#123;</div><div class="line">             System.out.println(&quot;Method 1 start&quot;);</div><div class="line">         &#125;</div><div class="line">     &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>我们先通过反编译下面的代码来看看Synchronized是如何实现对代码块进行同步的：<br><img src="/img/synchronized/synchronized-1.png" alt=""></p>
+<p>我们先通过反编译下面的代码来看看内置锁是如何实现对代码块进行同步的：<br><img src="/img/synchronized/synchronized-1.png" alt=""></p>
 <p>关于这两条指令的作用，我们直接参考JVM规范中描述：<br>monitorenter ：</p>
 <blockquote>
 <pre><code>Each object is associated with a monitor. A monitor is locked if and only if it has an owner. The thread that executes monitorenter attempts to gain ownership of the monitor associated with objectref, as follows:
@@ -456,7 +456,7 @@
 <p>　　我们再来看一下同步方法的反编译结果：</p>
 <p>源代码：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">public class SynchronizedMethod &#123;</div><div class="line">    public synchronized void method() &#123;</div><div class="line">        System.out.println(&quot;Hello World!&quot;);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
 <p>反编译结果：<br><img src="/img/synchronized/synchronized-2.png" alt=""><br>　从反编译的结果来看，方法的同步并没有通过指令monitorenter和monitorexit来完成（理论上其实也可以通过这两条指令来实现），不过相对于普通方法，其常量池中多了ACC_SYNCHRONIZED标示符。JVM就是根据该标示符来实现方法的同步的：当方法调用时，调用指令将会检查方法的 ACC_SYNCHRONIZED 访问标志是否被设置，如果设置了，执行线程将先获取monitor，获取成功之后才能执行方法体，方法执行完后再释放monitor。在方法执行期间，其他任何线程都无法再获得同一个monitor对象。 其实本质上没有区别，只是方法的同步是一种隐式的方式来实现，无需通过字节码来完成。</p>
-<h3 id="三、运行结果解释"><a href="#三、运行结果解释" class="headerlink" title="三、运行结果解释"></a>三、运行结果解释</h3><p>　　有了对Synchronized原理的认识，再来看上面的程序就可以迎刃而解了。</p>
+<h3 id="三、运行结果解释"><a href="#三、运行结果解释" class="headerlink" title="三、运行结果解释"></a>三、运行结果解释</h3><p>　　有了对内置锁原理的认识，再来看上面的程序就可以迎刃而解了。</p>
 <p>1、代码段一：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div></pre></td><td class="code"><pre><div class="line"> public class SynchronizedTest &#123;</div><div class="line"></div><div class="line">     public synchronized void method1()&#123;</div><div class="line">         System.out.println(&quot;Method 1 start&quot;);</div><div class="line">         try &#123;</div><div class="line">             System.out.println(&quot;Method 1 execute&quot;);</div><div class="line">             Thread.sleep(3000);</div><div class="line">         &#125; catch (InterruptedException e) &#123;</div><div class="line">             e.printStackTrace();</div><div class="line">         &#125;</div><div class="line">         System.out.println(&quot;Method 1 end&quot;);</div><div class="line">     &#125;</div><div class="line"></div><div class="line">     public synchronized void method2()&#123;</div><div class="line">         System.out.println(&quot;Method 2 start&quot;);</div><div class="line">         try &#123;</div><div class="line">             System.out.println(&quot;Method 2 execute&quot;);</div><div class="line">             Thread.sleep(1000);</div><div class="line">         &#125; catch (InterruptedException e) &#123;</div><div class="line">             e.printStackTrace();</div><div class="line">         &#125;</div><div class="line">         System.out.println(&quot;Method 2 end&quot;);</div><div class="line">     &#125;</div><div class="line"></div><div class="line">     public static void main(String[] args) &#123;</div><div class="line">         final SynchronizedTest test = new SynchronizedTest();</div><div class="line">         new Thread(new Runnable() &#123;</div><div class="line">             @Override</div><div class="line">             public void run() &#123;</div><div class="line">                 test.method1();</div><div class="line">             &#125;</div><div class="line">         &#125;).start();</div><div class="line">        new Thread(new Runnable() &#123;</div><div class="line">            @Override</div><div class="line">            public void run() &#123;</div><div class="line">                test.method2();</div><div class="line">            &#125;</div><div class="line">        &#125;).start();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>　　虽然method1和method2是不同的方法，但是这两个方法都进行了同步，并且是通过同一个对象去调用的，所以调用之前都需要先去竞争同一个对象上的锁（monitor），也就只能互斥的获取到锁，因此，method1和method2只能顺序的执行。</p>
@@ -466,8 +466,8 @@
 <p>3、代码段3：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div></pre></td><td class="code"><pre><div class="line">public class SynchronizedTest &#123;</div><div class="line">    public void method1()&#123;</div><div class="line">        System.out.println(&quot;Method 1 start&quot;);</div><div class="line">        try &#123;</div><div class="line">            synchronized (this) &#123;</div><div class="line">                System.out.println(&quot;Method 1 execute&quot;);</div><div class="line">                Thread.sleep(3000);</div><div class="line">            &#125;</div><div class="line">        &#125; catch (InterruptedException e) &#123;</div><div class="line">            e.printStackTrace();</div><div class="line">        &#125;</div><div class="line">        System.out.println(&quot;Method 1 end&quot;);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void method2()&#123;</div><div class="line">        System.out.println(&quot;Method 2 start&quot;);</div><div class="line">        try &#123;</div><div class="line">            synchronized (this) &#123;</div><div class="line">                System.out.println(&quot;Method 2 execute&quot;);</div><div class="line">                Thread.sleep(1000);</div><div class="line">            &#125;</div><div class="line">        &#125; catch (InterruptedException e) &#123;</div><div class="line">            e.printStackTrace();</div><div class="line">        &#125;</div><div class="line">        System.out.println(&quot;Method 2 end&quot;);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public static void main(String[] args) &#123;</div><div class="line">        final SynchronizedTest test = new SynchronizedTest();</div><div class="line"></div><div class="line">        new Thread(new Runnable() &#123;</div><div class="line">            @Override</div><div class="line">            public void run() &#123;</div><div class="line">                test.method1();</div><div class="line">            &#125;</div><div class="line">        &#125;).start();</div><div class="line"></div><div class="line">        new Thread(new Runnable() &#123;</div><div class="line">            @Override</div><div class="line">            public void run() &#123;</div><div class="line">                test.method2();</div><div class="line">            &#125;</div><div class="line">        &#125;).start();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>　　对于代码块的同步实质上需要获取Synchronized关键字后面括号中对象的monitor，由于这段代码中括号的内容都是this，而method1和method2又是通过同一的对象去调用的，所以进入同步块之前需要去竞争同一个对象上的锁，因此只能顺序执行同步块。</p>
-<h3 id="四-小结"><a href="#四-小结" class="headerlink" title="四 小结"></a>四 小结</h3><p>　　Synchronized是Java并发编程中最常用的用于保证线程安全的方式，其使用相对也比较简单。但是如果能够深入了解其原理，对监视器锁等底层知识有所了解，一方面可以帮助我们正确的使用Synchronized关键字，另一方面也能够帮助我们更好的理解并发编程机制，有助我们在不同的情况下选择更优的并发策略来完成任务。对平时遇到的各种并发问题，也能够从容的应对</p>
-<h2 id="Synchronized的底层优化"><a href="#Synchronized的底层优化" class="headerlink" title="Synchronized的底层优化"></a>Synchronized的底层优化</h2><h3 id="一、重量级锁"><a href="#一、重量级锁" class="headerlink" title="一、重量级锁"></a>一、重量级锁</h3><p>　　上篇文章中向大家介绍了Synchronized的用法及其实现的原理。现在我们应该知道，Synchronized是通过对象内部的一个叫做监视器锁（monitor）来实现的。但是监视器锁本质又是依赖于底层的操作系统的Mutex Lock来实现的。而操作系统实现线程之间的切换这就需要从用户态转换到核心态，这个成本非常高，状态之间的转换需要相对比较长的时间，这就是为什么Synchronized效率低的原因。因此，这种依赖于操作系统Mutex Lock所实现的锁我们称之为“重量级锁”。JDK中对Synchronized做的种种优化，其核心都是为了减少这种重量级锁的使用。JDK1.6以后，为了减少获得锁和释放锁所带来的性能消耗，提高性能，引入了“轻量级锁”和“偏向锁”。</p>
+<h3 id="四-小结"><a href="#四-小结" class="headerlink" title="四 小结"></a>四 小结</h3><p>　　内置锁是Java并发编程中最常用的用于保证线程安全的方式，其使用相对也比较简单。但是如果能够深入了解其原理，对监视器锁等底层知识有所了解，一方面可以帮助我们正确的使用Synchronized关键字，另一方面也能够帮助我们更好的理解并发编程机制，有助我们在不同的情况下选择更优的并发策略来完成任务。对平时遇到的各种并发问题，也能够从容的应对</p>
+<h2 id="Synchronized的底层优化"><a href="#Synchronized的底层优化" class="headerlink" title="Synchronized的底层优化"></a>Synchronized的底层优化</h2><h3 id="一、重量级锁"><a href="#一、重量级锁" class="headerlink" title="一、重量级锁"></a>一、重量级锁</h3><p>　　上篇文章中向大家介绍了内置锁的用法及其实现的原理。现在我们应该知道，Synchronized是通过对象内部的一个叫做监视器锁（monitor）来实现的。但是监视器锁本质又是依赖于底层的操作系统的Mutex Lock来实现的。而操作系统实现线程之间的切换这就需要从用户态转换到核心态，这个成本非常高，状态之间的转换需要相对比较长的时间，这就是为什么Synchronized效率低的原因。因此，这种依赖于操作系统Mutex Lock所实现的锁我们称之为“重量级锁”。JDK中对Synchronized做的种种优化，其核心都是为了减少这种重量级锁的使用。JDK1.6以后，为了减少获得锁和释放锁所带来的性能消耗，提高性能，引入了“轻量级锁”和“偏向锁”。</p>
 <h3 id="二、轻量级锁"><a href="#二、轻量级锁" class="headerlink" title="二、轻量级锁"></a>二、轻量级锁</h3><p>　　锁的状态总共有四种：无锁状态、偏向锁、轻量级锁和重量级锁。随着锁的竞争，锁可以从偏向锁升级到轻量级锁，再升级的重量级锁（但是锁的升级是单向的，也就是说只能从低到高升级，不会出现锁的降级）。JDK 1.6中默认是开启偏向锁和轻量级锁的，我们也可以通过-XX:-UseBiasedLocking来禁用偏向锁。锁的状态保存在对象的头文件中，以32位的JDK为例：<br><img src="/img/synchronized/synchronized-3.png" alt=""><br>“轻量级”是相对于使用操作系统互斥量来实现的传统锁而言的。但是，首先需要强调一点的是，轻量级锁并不是用来代替重量级锁的，它的本意是在没有多线程竞争的前提下，减少传统的重量级锁使用产生的性能消耗。在解释轻量级锁的执行过程之前，先明白一点，轻量级锁所适应的场景是线程交替执行同步块的情况，如果存在同一时间访问同一锁的情况，就会导致轻量级锁膨胀为重量级锁。</p>
 <p>1、轻量级锁的加锁过程</p>
 <p>　　（1）在代码进入同步块的时候，如果同步对象锁状态为无锁状态（锁标志位为“01”状态，是否为偏向锁为“0”），虚拟机首先将在当前线程的栈帧中建立一个名为锁记录（Lock Record）的空间，用于存储锁对象目前的Mark Word的拷贝，官方称之为 Displaced Mark Word。这时候线程堆栈与对象头的状态如图2.1所示。</p>
@@ -703,8 +703,8 @@
         
           <div class="comments" id="comments">
             
-              <div class="ds-thread" data-thread-key="2017/02/07/Java 并发编程：Synchronized实现原理以及底层优化/"
-                   data-title="Java 并发编程：Synchronized实现原理以及底层优化" data-url="https://fudawei.github.io/2017/02/07/Java 并发编程：Synchronized实现原理以及底层优化/">
+              <div class="ds-thread" data-thread-key="2017/02/07/Java 并发编程：内置锁实现原理以及底层优化/"
+                   data-title="Java 并发编程：内置锁实现原理以及底层优化" data-url="https://fudawei.github.io/2017/02/07/Java 并发编程：内置锁实现原理以及底层优化/">
               </div>
             
           </div>
@@ -744,7 +744,7 @@
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">140</span>
+              <span class="site-state-item-count">141</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>
@@ -807,7 +807,7 @@
           <div class="post-toc">
             
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Synchronized的基本使用和原理"><span class="nav-number">1.</span> <span class="nav-text">Synchronized的基本使用和原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#一、synchronized的使用"><span class="nav-number">1.1.</span> <span class="nav-text">一、synchronized的使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二、Synchronized-原理"><span class="nav-number">1.2.</span> <span class="nav-text">二、Synchronized 原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#三、运行结果解释"><span class="nav-number">1.3.</span> <span class="nav-text">三、运行结果解释</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#四-小结"><span class="nav-number">1.4.</span> <span class="nav-text">四 小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Synchronized的底层优化"><span class="nav-number">2.</span> <span class="nav-text">Synchronized的底层优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#一、重量级锁"><span class="nav-number">2.1.</span> <span class="nav-text">一、重量级锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二、轻量级锁"><span class="nav-number">2.2.</span> <span class="nav-text">二、轻量级锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#三、偏向锁"><span class="nav-number">2.3.</span> <span class="nav-text">三、偏向锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#四、其他优化"><span class="nav-number">2.4.</span> <span class="nav-text">四、其他优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#五、总结"><span class="nav-number">2.5.</span> <span class="nav-text">五、总结</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#内置锁的基本使用和原理"><span class="nav-number">1.</span> <span class="nav-text">内置锁的基本使用和原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#一、内置锁的使用"><span class="nav-number">1.1.</span> <span class="nav-text">一、内置锁的使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二、内置锁原理"><span class="nav-number">1.2.</span> <span class="nav-text">二、内置锁原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#三、运行结果解释"><span class="nav-number">1.3.</span> <span class="nav-text">三、运行结果解释</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#四-小结"><span class="nav-number">1.4.</span> <span class="nav-text">四 小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Synchronized的底层优化"><span class="nav-number">2.</span> <span class="nav-text">Synchronized的底层优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#一、重量级锁"><span class="nav-number">2.1.</span> <span class="nav-text">一、重量级锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二、轻量级锁"><span class="nav-number">2.2.</span> <span class="nav-text">二、轻量级锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#三、偏向锁"><span class="nav-number">2.3.</span> <span class="nav-text">三、偏向锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#四、其他优化"><span class="nav-number">2.4.</span> <span class="nav-text">四、其他优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#五、总结"><span class="nav-number">2.5.</span> <span class="nav-text">五、总结</span></a></li></ol></li></ol></div>
             
           </div>
           <div class="post-toc-indicator-bottom post-toc-indicator"></div>
