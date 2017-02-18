@@ -4437,8 +4437,8 @@ Spring作为现在最优秀的框架之一，已被广泛的使用。本系列�
           
           
             
-              <a class="post-title-link" href="/2016/10/19/ubuntu下恢复rm删除的数据/" itemprop="url">
-                ubuntu下恢复rm删除的数据
+              <a class="post-title-link" href="/2016/10/19/Btree/" itemprop="url">
+                Btree
               </a>
             
           
@@ -4458,8 +4458,8 @@ Spring作为现在最优秀的框架之一，已被广泛的使用。本系列�
             &nbsp; | &nbsp; 分类于
             
               <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/Linux/" itemprop="url" rel="index">
-                  <span itemprop="name">Linux</span>
+                <a href="/categories/数据结构/" itemprop="url" rel="index">
+                  <span itemprop="name">数据结构</span>
                 </a>
               </span>
 
@@ -4475,11 +4475,11 @@ Spring作为现在最优秀的框架之一，已被广泛的使用。本系列�
             <span class="post-comments-count">
               &nbsp; | &nbsp;
               <!--
-              <a href="/2016/10/19/ubuntu下恢复rm删除的数据/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2016/10/19/ubuntu下恢复rm删除的数据/" itemprop="commentsCount"></span>
+              <a href="/2016/10/19/Btree/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2016/10/19/Btree/" itemprop="commentsCount"></span>
               </a>
               -->
-              <a href="/2016/10/19/ubuntu下恢复rm删除的数据/#comments" itemprop="discussionUrl">
+              <a href="/2016/10/19/Btree/#comments" itemprop="discussionUrl">
                 <span>评论</span>
               </a>
             </span>
@@ -4490,7 +4490,7 @@ Spring作为现在最优秀的框架之一，已被广泛的使用。本系列�
 
 
 &nbsp; | &nbsp;
-<span id="/2016/10/19/ubuntu下恢复rm删除的数据/"class="leancloud_visitors" data-flag-title="ubuntu下恢复rm删除的数据">
+<span id="/2016/10/19/Btree/"class="leancloud_visitors" data-flag-title="Btree">
          &nbsp;阅读次数
         </span>
 
@@ -4506,11 +4506,13 @@ Spring作为现在最优秀的框架之一，已被广泛的使用。本系列�
 
       
         
-          <h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
-<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
-<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br>
+          <span itemprop="articleBody">
+            
+            1.前言：动态查找树主要有：二叉查找树（Binary Search Tree），平衡二叉查找树（Balanced Binary Search Tree），红黑树 (Red-Black Tree )，B-tree/B+-tree/ B*-tree (B~Tree)。前三者是典型的二叉查找树结构，其查找
+            ...
+          </span>
           <div class="post-more-link text-center">
-            <a class="btn" href="/2016/10/19/ubuntu下恢复rm删除的数据/#more" rel="contents">
+            <a class="btn" href="/2016/10/19/Btree/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
