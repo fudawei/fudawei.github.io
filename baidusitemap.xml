@@ -4,6 +4,29 @@
 
     
   <url>
+    <loc>https://fudawei.github.io/2017/02/08/Java%20%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%9Avolatile%E7%9A%84%E4%BD%BF%E7%94%A8%E5%8F%8A%E5%85%B6%E5%8E%9F%E7%90%86/</loc>
+    <lastmod>2017-02-18T05:17:00.513Z</lastmod>
+    <data>
+        <display>
+        <title>Java 并发编程：volatile的使用及其原理</title>
+        <pubTime>2017-02-08T14:14:22.000Z</pubTime>
+        
+        <tag>多线程</tag>
+         
+         
+           
+             
+              <breadCrumb title="Java" url="https://fudawei.github.io/categories/Java/"/>
+          
+             
+              <breadCrumb title="多线程" url="https://fudawei.github.io/categories/Java/%E5%A4%9A%E7%BA%BF%E7%A8%8B/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
     <loc>https://fudawei.github.io/2017/02/07/Java%20%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%9A%E5%86%85%E7%BD%AE%E9%94%81%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%E4%BB%A5%E5%8F%8A%E5%BA%95%E5%B1%82%E4%BC%98%E5%8C%96/</loc>
     <lastmod>2017-02-18T03:08:34.074Z</lastmod>
     <data>
@@ -3168,29 +3191,6 @@
            
              
               <breadCrumb title="数据结构" url="https://fudawei.github.io/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
-          
-        </display>
-    </data>
-    </url>
-
-    
-  <url>
-    <loc>https://fudawei.github.io/2017/02/08/Java%20%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%9Avolatile%E7%9A%84%E4%BD%BF%E7%94%A8%E5%8F%8A%E5%85%B6%E5%8E%9F%E7%90%86/</loc>
-    <lastmod>2017-02-12T01:59:35.980Z</lastmod>
-    <data>
-        <display>
-        <title>Java 并发编程：volatile的使用及其原理</title>
-        <pubTime>2017-02-08T14:14:22.000Z</pubTime>
-        
-        <tag>多线程</tag>
-         
-         
-           
-             
-              <breadCrumb title="Java" url="https://fudawei.github.io/categories/Java/"/>
-          
-             
-              <breadCrumb title="多线程" url="https://fudawei.github.io/categories/Java/%E5%A4%9A%E7%BA%BF%E7%A8%8B/"/>
           
         </display>
     </data>
