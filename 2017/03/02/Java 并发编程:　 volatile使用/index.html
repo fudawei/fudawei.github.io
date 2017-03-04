@@ -29,7 +29,7 @@
 
 
 
-  <meta name="keywords" content="缓存,Redis," />
+  <meta name="keywords" content="多线程," />
 
 
 
@@ -40,19 +40,19 @@
   <link rel="shorticon icon" type="image/x-icon" href="/favicon.ico?v=0.4.5.1" />
 
 
-<meta name="description" content="简介  字典，简单说就是存储key-value键值数据，与Java的HashMap 实现类似，Redis中的字典不要求有序，因此为了降低编码的难度 使用哈希表作为字典的底层实现。Redis的字典是使用一个桶bucket，通过对key进行hash得到的索引值index，然后将key-value的数 据存在桶的index位置，Redis处理hash碰撞的方式是链表，两个不同的key hash得到相同的">
+<meta name="description" content="Java 语言中的 volatile 变量可以被看作是一种 “程度较轻的 synchronized”；与 synchronized 块相比，volatile 变量所需的编码较少，并且运行时开销也较少，但是它所能实现的功能也仅是 synchronized 的一部分。本文介绍了几种有效使用 volatile 变量的模式，并强调了几种不适合使用 volatile 变量的情形。
+锁提供了两种主要特性：互斥">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Redis数据结构和对象-(二)字典">
-<meta property="og:url" content="https://fudawei.github.io/2016/09/22/Redis数据结构和对象--（二）字典/index.html">
+<meta property="og:title" content="Java 并发编程：volatile使用">
+<meta property="og:url" content="https://fudawei.github.io/2017/03/02/Java 并发编程:　 volatile使用/index.html">
 <meta property="og:site_name" content="冰鸟">
-<meta property="og:description" content="简介  字典，简单说就是存储key-value键值数据，与Java的HashMap 实现类似，Redis中的字典不要求有序，因此为了降低编码的难度 使用哈希表作为字典的底层实现。Redis的字典是使用一个桶bucket，通过对key进行hash得到的索引值index，然后将key-value的数 据存在桶的index位置，Redis处理hash碰撞的方式是链表，两个不同的key hash得到相同的">
-<meta property="og:image" content="https://fudawei.github.io/img/dict.png">
-<meta property="og:image" content="https://fudawei.github.io/img/dict_flow.png">
-<meta property="og:updated_time" content="2017-02-12T01:59:36.296Z">
+<meta property="og:description" content="Java 语言中的 volatile 变量可以被看作是一种 “程度较轻的 synchronized”；与 synchronized 块相比，volatile 变量所需的编码较少，并且运行时开销也较少，但是它所能实现的功能也仅是 synchronized 的一部分。本文介绍了几种有效使用 volatile 变量的模式，并强调了几种不适合使用 volatile 变量的情形。
+锁提供了两种主要特性：互斥">
+<meta property="og:updated_time" content="2017-03-04T09:49:23.236Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Redis数据结构和对象-(二)字典">
-<meta name="twitter:description" content="简介  字典，简单说就是存储key-value键值数据，与Java的HashMap 实现类似，Redis中的字典不要求有序，因此为了降低编码的难度 使用哈希表作为字典的底层实现。Redis的字典是使用一个桶bucket，通过对key进行hash得到的索引值index，然后将key-value的数 据存在桶的index位置，Redis处理hash碰撞的方式是链表，两个不同的key hash得到相同的">
-<meta name="twitter:image" content="https://fudawei.github.io/img/dict.png">
+<meta name="twitter:title" content="Java 并发编程：volatile使用">
+<meta name="twitter:description" content="Java 语言中的 volatile 变量可以被看作是一种 “程度较轻的 synchronized”；与 synchronized 块相比，volatile 变量所需的编码较少，并且运行时开销也较少，但是它所能实现的功能也仅是 synchronized 的一部分。本文介绍了几种有效使用 volatile 变量的模式，并强调了几种不适合使用 volatile 变量的情形。
+锁提供了两种主要特性：互斥">
 
 
 <script type="text/javascript" id="hexo.configuration">
@@ -62,7 +62,7 @@
   };
 </script>
 
-  <title> Redis数据结构和对象-(二)字典 | 冰鸟 </title>
+  <title> Java 并发编程：volatile使用 | 冰鸟 </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -320,7 +320,7 @@
           
           
             
-              Redis数据结构和对象-(二)字典
+              Java 并发编程：volatile使用
             
           
         </h1>
@@ -329,8 +329,8 @@
       <div class="post-meta">
         <span class="post-time">
           发表于
-          <time itemprop="dateCreated" datetime="2016-09-22T18:32:02+08:00" content="2016-09-22">
-            2016-09-22
+          <time itemprop="dateCreated" datetime="2017-03-02T15:14:22+08:00" content="2017-03-02">
+            2017-03-02
           </time>
         </span>
 
@@ -339,8 +339,8 @@
             &nbsp; | &nbsp; 分类于
             
               <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/缓存/" itemprop="url" rel="index">
-                  <span itemprop="name">缓存</span>
+                <a href="/categories/Java/" itemprop="url" rel="index">
+                  <span itemprop="name">Java</span>
                 </a>
               </span>
 
@@ -351,8 +351,8 @@
 
             
               <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/缓存/Redis/" itemprop="url" rel="index">
-                  <span itemprop="name">Redis</span>
+                <a href="/categories/Java/多线程/" itemprop="url" rel="index">
+                  <span itemprop="name">多线程</span>
                 </a>
               </span>
 
@@ -368,11 +368,11 @@
             <span class="post-comments-count">
               &nbsp; | &nbsp;
               <!--
-              <a href="/2016/09/22/Redis数据结构和对象--（二）字典/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2016/09/22/Redis数据结构和对象--（二）字典/" itemprop="commentsCount"></span>
+              <a href="/2017/03/02/Java 并发编程:　 volatile使用/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2017/03/02/Java 并发编程:　 volatile使用/" itemprop="commentsCount"></span>
               </a>
               -->
-              <a href="/2016/09/22/Redis数据结构和对象--（二）字典/#comments" itemprop="discussionUrl">
+              <a href="/2017/03/02/Java 并发编程:　 volatile使用/#comments" itemprop="discussionUrl">
                 <span>评论</span>
               </a>
             </span>
@@ -383,7 +383,7 @@
 
 
 &nbsp; | &nbsp;
-<span id="/2016/09/22/Redis数据结构和对象--（二）字典/"class="leancloud_visitors" data-flag-title="Redis数据结构和对象-(二)字典">
+<span id="/2017/03/02/Java 并发编程:　 volatile使用/"class="leancloud_visitors" data-flag-title="Java 并发编程：volatile使用">
          &nbsp;阅读次数
         </span>
 
@@ -398,31 +398,34 @@
       
 
       
-        <span itemprop="articleBody"><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>  字典，简单说就是存储key-value键值数据，与Java的HashMap 实现类似，Redis中的字典不要求有序，因此为了降低编码的难度 使用哈希表作为字典的底层实现。Redis的字典是使用一个桶bucket，通过对key进行hash得到的索引值index，然后将key-value的数 据存在桶的index位置，Redis处理hash碰撞的方式是链表，两个不同的key hash得到相同的索引值，那么就使用链表解决冲突。使用链表自然当存储的数据巨大的时候，字典不免会退化成多个链表，效率大大降低，Redis采用 rehash的方式对桶进行扩容来解决这种退化。</p>
-<h2 id="1、结构"><a href="#1、结构" class="headerlink" title="1、结构"></a>1、结构</h2><p> <img src="/img/dict.png" alt=""></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">/*</div><div class="line"> * 字典</div><div class="line"> * 每个字典使用两个哈希表，用于实现渐进式 rehash</div><div class="line"> */</div><div class="line">typedef struct dict &#123;</div><div class="line"></div><div class="line">    dictType *type;  // 特定于类型的处理函数</div><div class="line">    void *privdata;   // 类型处理函数的私有数据</div><div class="line">    dictht ht[2];   // 哈希表（2个）</div><div class="line">    int rehashidx;   // 记录 rehash 进度的标志，值为-1 表示 rehash 未进行</div><div class="line">    int iterators;  // 当前正在运作的安全迭代器数量</div><div class="line"></div><div class="line">&#125; dict;</div><div class="line"></div><div class="line">typedef struct dictType &#123;</div><div class="line">    unsigned int (*hashFunction)(const void *key); //hash函数指针</div><div class="line">    void *(*keyDup)(void *privdata, const void *key); //键复制函数指针</div><div class="line">    void *(*valDup)(void *privdata, const void *obj); //值复制函数指针</div><div class="line">    int (*keyCompare)(void *privdata, const void *key1, const void *key2); //键比较函数指针</div><div class="line">    void (*keyDestructor)(void *privdata, void *key); //键构造函数指针</div><div class="line">    void (*valDestructor)(void *privdata, void *obj); //值构造函数指针</div><div class="line">&#125; dictType;</div></pre></td></tr></table></figure>
-<h2 id="2-哈希表"><a href="#2-哈希表" class="headerlink" title="2.哈希表"></a>2.哈希表</h2><p>  字典所使用的哈希表实现由 dict.h/dictht 类型定义：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">/*</div><div class="line"> * 哈希表</div><div class="line"> */</div><div class="line">typedef struct dictht &#123;</div><div class="line">    dictEntry **table;       // 哈希表节点指针数组（俗称桶，bucket）</div><div class="line">    unsigned long size;      // 指针数组的大小</div><div class="line">    unsigned long sizemask;  // 指针数组的长度掩码，用于计算索引值</div><div class="line">    unsigned long used;      // 哈希表现有的节点数量</div><div class="line">&#125; dictht</div></pre></td></tr></table></figure></p>
-<p>table 属性是一个数组， 数组的每个元素都是一个指向 dictEntry 结构的指针。<br>每个 dictEntry 都保存着一个键值对， 以及一个指向另一个 dictEntry 结构的指针：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">/*</div><div class="line"> * 哈希表节点</div><div class="line"> */</div><div class="line">typedef struct dictEntry &#123;</div><div class="line">   void *key;      // 键</div><div class="line">   union &#123;</div><div class="line">       void *val;</div><div class="line">       uint64_t u64;</div><div class="line">       int64_t s64;</div><div class="line">   &#125; v; // 值</div><div class="line">  struct dictEntry *next; // 链往后继节点</div><div class="line">&#125; dictEntry;</div></pre></td></tr></table></figure>
-<p>next 属性指向另一个 dictEntry 结构， 多个 dictEntry 可以通过 next 指针串连成链表， 从这里可以看出， dictht 使用链地址法来处理键碰撞： 当多个不同的键拥有相同的哈希值时，哈希表用一个链表将这些键连接起来。</p>
-<h2 id="3-哈希算法"><a href="#3-哈希算法" class="headerlink" title="3.哈希算法"></a>3.哈希算法</h2><p>使用字典设置的哈希函数，计算键 key的哈希值<br>hash = dict -&gt; type -&gt; hashFunction(key);<br>使用哈希表的sizemask 属性和哈希值，计算出索引值<br>根据情况不同，ht[x] 可以是 ht[0] 或者ht[1]<br>index = hash &amp; dict-&gt;ht[x].sizemask;</p>
-<p>Redis使用的hash算法有以下两种：</p>
-<ol>
-<li>MurmurHash2 32 bit 算法：这种算法的分布率和速度都非常好，具体信息请参考 MurmurHash 的主页：<a href="http://code.google.com/p/smhasher/" target="_blank" rel="external">http://code.google.com/p/smhasher/</a> 。</li>
-<li>基于djb算法实现的一个大小写无关散列算法：</li>
-<li>具体信息请参考<br><a href="http://www.cse.yorku.ca/~oz/hash.html" target="_blank" rel="external">http://www.cse.yorku.ca/~oz/hash.html</a> 。</li>
-</ol>
-<h2 id="4-解决键冲突"><a href="#4-解决键冲突" class="headerlink" title="4.解决键冲突"></a>4.解决键冲突</h2><p>多个建被分配到同一个索引上面时，我们称这些键发生了冲突（collision）。<br>redis哈希表使用 链地址法来解决键冲突，每个哈希表节点都有一个next指指，多个哈希表节点 构成一个单向链表</p>
-<p>字典添加元素<br>根据字典当前的状态，将一个key-value元素添加到字典中可能会引起一系列复制的操作：<br>如果字典未初始化（即字典的0号哈希表ht[0]的table为空），那么需要调用dictExpand函数对它初始化；<br>如果插入的元素key已经存在，那么添加元素失败；<br>如果插入元素时，引起碰撞，需要使用链表来处理碰撞；<br>如果插入元素时，引起程序满足Rehash的条件时，先调用dictExpand函数扩展哈希表的size，然后准备渐进式Rehash操作。<br>字典添加元素的流程图：</p>
-<p><img src="/img/dict_flow.png" alt=""></p>
-<h2 id="字典Rehash解析"><a href="#字典Rehash解析" class="headerlink" title="字典Rehash解析"></a>字典Rehash解析</h2><p>Rehash的触发机制：当每次添加新元素时，都会对工作哈希 表ht[0]进行检查，如果used（哈希表中元素的数目）与size（桶的大小）比率ratio满足以下任一条件，将激活字典的Rehash机 制：ratio=used / size， ratio &gt;= 1并且dict_can_resize 为真；ratio 大 于 变 量 dict_force_resize_ratio 。</p>
-<h2 id="负载因子"><a href="#负载因子" class="headerlink" title="负载因子"></a>负载因子</h2><p>负载因子 = 哈希表已保存节点数量/哈希表大小<br>load_factor = ht[0].used/ht[0].size<br>Rehash执行过程：<br>创建一个比ht[0].used至少两倍的ht[1].table；将原ht[0].table中所有元素迁移到ht[1].table；清空原来ht[0]，将ht[1]替换成ht[0]<br>    扩展操作 那么ht[1]的大小为 第一个大于等于ht[0].used*2的 2的n次方幂  (负载因子 大于等于1  大于等于5)<br>    收缩操作 那么ht[1]的大小为 第一个大于等于ht[0].used的 2的n次方幂  （负载因子 小于0.1时 触发）</p>
-<h2 id="为什么是2的n次方？"><a href="#为什么是2的n次方？" class="headerlink" title="为什么是2的n次方？"></a>为什么是2的n次方？</h2><p>即底层数组的长度总是为2的n次方。<br>当length总是 2 的n次方时，h&amp; (length-1)运算等价于对length取模，也就是h%length，但是&amp;比%具有更高的效率</p>
-<p>渐进式Rehash主要由两个函数来进行：<br>_dictRehashStep:当对字典进行添加、查找、删除、随机获取元素都会执行一次，其每次在开始Rehash后，将ht[0].table的第一个不为空的索引上的所有节点全部迁移到ht[1].table;<br>dictRehashMilliseconds:由Redis服务器常规任务程序(serverCron)执行，以毫秒为单位，在一定时间内，以每次执行100步rehash操作。</p>
-<h2 id="渐进式rehash"><a href="#渐进式rehash" class="headerlink" title="渐进式rehash"></a>渐进式rehash</h2><p>   Rehash的触发机制：当每次添加新元素时，都会对工作哈希表ht[0]进行检查，如果used（哈希表中元素的数目）与size（桶的大小）比率ratio满足以下任一条件，将激活字典的Rehash机制：ratio=used / size， ratio &gt;= 1并且dict_can_resize 为真；ratio 大 于 变 量 dict_force_resize_ratio 。</p>
-<h2 id="Rehash执行过程："><a href="#Rehash执行过程：" class="headerlink" title="Rehash执行过程："></a>Rehash执行过程：</h2><p>创建一个比ht[0].used至少两倍的ht[1].table；将原ht[0].table中所有元素迁移到ht[1].table；清空原来ht[0]，将ht[1]替换成ht[0]<br>渐进式Rehash主要由两个函数来进行：</p>
-<hr>
-<p>dictRehashMilliseconds:由Redis服务器常规任务程序(serverCron)执行，以毫秒为单位，在一定时间内，以每次执行100步rehash操作。</p>
+        <span itemprop="articleBody"><p>Java 语言中的 volatile 变量可以被看作是一种 “程度较轻的 synchronized”；与 synchronized 块相比，volatile 变量所需的编码较少，并且运行时开销也较少，但是它所能实现的功能也仅是 synchronized 的一部分。本文介绍了几种有效使用 volatile 变量的模式，并强调了几种不适合使用 volatile 变量的情形。</p>
+<p>锁提供了两种主要特性：互斥（mutual exclusion） 和可见性（visibility）。互斥即一次只允许一个线程持有某个特定的锁，因此可使用该特性实现对共享数据的协调访问协议，这样，一次就只有一个线程能够使用该共享数据。可见性要更加复杂一些，它必须确保释放锁之前对共享数据做出的更改对于随后获得该锁的另一个线程是可见的 —— 如果没有同步机制提供的这种可见性保证，线程看到的共享变量可能是修改前的值或不一致的值，这将引发许多严重问题。</p>
+<h2 id="volatile-变量"><a href="#volatile-变量" class="headerlink" title="volatile 变量"></a>volatile 变量</h2><p>Volatile 变量具有 synchronized 的可见性特性，但是不具备原子特性。这就是说线程能够自动发现 volatile 变量的最新值。Volatile 变量可用于提供线程安全，但是只能应用于非常有限的一组用例：多个变量之间或者某个变量的当前值与修改后值之间没有约束。因此，单独使用 volatile 还不足以实现计数器、互斥锁或任何具有与多个变量相关的不变式（Invariants）的类（例如 “start &lt;=end”）。<br>出于简易性或可伸缩性的考虑，您可能倾向于使用 volatile 变量而不是锁。当使用 volatile 变量而非锁时，某些习惯用法（idiom）更加易于编码和阅读。此外，volatile 变量不会像锁那样造成线程阻塞，因此也很少造成可伸缩性问题。在某些情况下，如果读操作远远大于写操作，volatile 变量还可以提供优于锁的性能优势。</p>
+<h2 id="正确使用-volatile-变量的条件"><a href="#正确使用-volatile-变量的条件" class="headerlink" title="正确使用 volatile 变量的条件"></a>正确使用 volatile 变量的条件</h2><p>您只能在有限的一些情形下使用 volatile 变量替代锁。要使 volatile 变量提供理想的线程安全，必须同时满足下面两个条件：<br>对变量的写操作不依赖于当前值。<br>该变量没有包含在具有其他变量的不变式中。<br>实际上，这些条件表明，可以被写入 volatile 变量的这些有效值独立于任何程序的状态，包括变量的当前状态。<br>第一个条件的限制使 volatile 变量不能用作线程安全计数器。虽然增量操作（x++）看上去类似一个单独操作，实际上它是一个由读取－修改－写入操作序列组成的组合操作，必须以原子方式执行，而 volatile 不能提供必须的原子特性。实现正确的操作需要使 x 的值在操作期间保持不变，而 volatile 变量无法实现这点。（然而，如果将值调整为只从单个线程写入，那么可以忽略第一个条件。）<br>大多数编程情形都会与这两个条件的其中之一冲突，使得 volatile 变量不能像 synchronized 那样普遍适用于实现线程安全。清单 1 显示了一个非线程安全的数值范围类。它包含了一个不变式 —— 下界总是小于或等于上界。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">@NotThreadSafe</div><div class="line">public class NumberRange &#123;</div><div class="line">    private int lower, upper;</div><div class="line"></div><div class="line">    public int getLower() &#123; return lower; &#125;</div><div class="line">    public int getUpper() &#123; return upper; &#125;</div><div class="line"></div><div class="line">    public void setLower(int value) &#123; </div><div class="line">        if (value &gt; upper) </div><div class="line">            throw new IllegalArgumentException(...);</div><div class="line">        lower = value;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setUpper(int value) &#123; </div><div class="line">        if (value &lt; lower) </div><div class="line">            throw new IllegalArgumentException(...);</div><div class="line">        upper = value;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这种方式限制了范围的状态变量，因此将 lower 和 upper 字段定义为 volatile 类型不能够充分实现类的线程安全；从而仍然需要使用同步。否则，如果凑巧两个线程在同一时间使用不一致的值执行 setLower 和 setUpper 的话，则会使范围处于不一致的状态。例如，如果初始状态是 (0, 5)，同一时间内，线程 A 调用 setLower(4) 并且线程 B 调用 setUpper(3)，显然这两个操作交叉存入的值是不符合条件的，那么两个线程都会通过用于保护不变式的检查，使得最后的范围值是 (4, 3) —— 一个无效值。至于针对范围的其他操作，我们需要使 setLower() 和 setUpper() 操作原子化 —— 而将字段定义为 volatile 类型是无法实现这一目的的。</p>
+<h5 id="性能考虑"><a href="#性能考虑" class="headerlink" title="性能考虑"></a>性能考虑</h5><p>使用 volatile 变量的主要原因是其简易性：在某些情形下，使用 volatile 变量要比使用相应的锁简单得多。使用 volatile 变量次要原因是其性能：某些情况下，volatile 变量同步机制的性能要优于锁。</p>
+<p>很难做出准确、全面的评价，例如 “X 总是比 Y 快”，尤其是对 JVM 内在的操作而言。（例如，某些情况下 VM 也许能够完全删除锁机制，这使得我们难以抽象地比较 volatile 和 synchronized 的开销。）就是说，在目前大多数的处理器架构上，volatile 读操作开销非常低 —— 几乎和非 volatile 读操作一样。而 volatile 写操作的开销要比非 volatile 写操作多很多，因为要保证可见性需要实现内存界定（Memory Fence），即便如此，volatile 的总开销仍然要比锁获取低。</p>
+<p>volatile 操作不会像锁一样造成阻塞，因此，在能够安全使用 volatile 的情况下，volatile 可以提供一些优于锁的可伸缩特性。如果读操作的次数要远远超过写操作，与锁相比，volatile 变量通常能够减少同步的性能开销。</p>
+<h2 id="正确使用-volatile-的模式"><a href="#正确使用-volatile-的模式" class="headerlink" title="正确使用 volatile 的模式"></a>正确使用 volatile 的模式</h2><p>很多并发性专家事实上往往引导用户远离 volatile 变量，因为使用它们要比使用锁更加容易出错。然而，如果谨慎地遵循一些良好定义的模式，就能够在很多场合内安全地使用 volatile 变量。要始终牢记使用 volatile 的限制 —— 只有在状态真正独立于程序内其他内容时才能使用 volatile —— 这条规则能够避免将这些模式扩展到不安全的用例。</p>
+<h4 id="模式-1：状态标志"><a href="#模式-1：状态标志" class="headerlink" title="模式 #1：状态标志"></a>模式 #1：状态标志</h4><p>也许实现 volatile 变量的规范使用仅仅是使用一个布尔状态标志，用于指示发生了一个重要的一次性事件，例如完成初始化或请求停机。<br>很多应用程序包含了一种控制结构，形式为 “在还没有准备好停止程序时再执行一些工作”，如清单 2 所示：<br>清单 2. 将 volatile 变量作为状态标志使用<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">volatile boolean shutdownRequested;</div><div class="line"></div><div class="line">...</div><div class="line"></div><div class="line">public void shutdown() &#123; shutdownRequested = true; &#125;</div><div class="line"></div><div class="line">public void doWork() &#123;</div><div class="line">    while (!shutdownRequested) &#123;</div><div class="line">        // do stuff</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>很可能会从循环外部调用 shutdown() 方法 —— 即在另一个线程中 —— 因此，需要执行某种同步来确保正确实现 shutdownRequested 变量的可见性。（可能会从 JMX 侦听程序、GUI 事件线程中的操作侦听程序、通过 RMI 、通过一个 Web 服务等调用）。然而，使用 synchronized 块编写循环要比使用清单 2 所示的 volatile 状态标志编写麻烦很多。由于 volatile 简化了编码，并且状态标志并不依赖于程序内任何其他状态，因此此处非常适合使用 volatile。<br>这种类型的状态标记的一个公共特性是：通常只有一种状态转换；shutdownRequested 标志从 false 转换为 true，然后程序停止。这种模式可以扩展到来回转换的状态标志，但是只有在转换周期不被察觉的情况下才能扩展（从 false 到 true，再转换到 false）。此外，还需要某些原子状态转换机制，例如原子变量。</p>
+<h4 id="模式-2：一次性安全发布（one-time-safe-publication）"><a href="#模式-2：一次性安全发布（one-time-safe-publication）" class="headerlink" title="模式 #2：一次性安全发布（one-time safe publication）"></a>模式 #2：一次性安全发布（one-time safe publication）</h4><p>缺乏同步会导致无法实现可见性，这使得确定何时写入对象引用而不是原语值变得更加困难。在缺乏同步的情况下，可能会遇到某个对象引用的更新值（由另一个线程写入）和该对象状态的旧值同时存在。（这就是造成著名的双重检查锁定（double-checked-locking）问题的根源，其中对象引用在没有同步的情况下进行读操作，产生的问题是您可能会看到一个更新的引用，但是仍然会通过该引用看到不完全构造的对象）。<br>实现安全发布对象的一种技术就是将对象引用定义为 volatile 类型。清单 3 展示了一个示例，其中后台线程在启动阶段从数据库加载一些数据。其他代码在能够利用这些数据时，在使用之前将检查这些数据是否曾经发布过。<br>清单 3. 将 volatile 变量用于一次性安全发布<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">public class BackgroundFloobleLoader &#123;</div><div class="line">    public volatile Flooble theFlooble;</div><div class="line"></div><div class="line">    public void initInBackground() &#123;</div><div class="line">        // do lots of stuff</div><div class="line">        theFlooble = new Flooble();  // this is the only write to theFlooble</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">public class SomeOtherClass &#123;</div><div class="line">    public void doWork() &#123;</div><div class="line">        while (true) &#123; </div><div class="line">            // do some stuff...</div><div class="line">            // use the Flooble, but only if it is ready</div><div class="line">            if (floobleLoader.theFlooble != null) </div><div class="line">                doSomething(floobleLoader.theFlooble);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>如果 theFlooble 引用不是 volatile 类型，doWork() 中的代码在解除对 theFlooble 的引用时，将会得到一个不完全构造的 Flooble。<br>该模式的一个必要条件是：被发布的对象必须是线程安全的，或者是有效的不可变对象（有效不可变意味着对象的状态在发布之后永远不会被修改）。volatile 类型的引用可以确保对象的发布形式的可见性，但是如果对象的状态在发布后将发生更改，那么就需要额外的同步。</p>
+<h4 id="模式-3：独立观察（independent-observation）"><a href="#模式-3：独立观察（independent-observation）" class="headerlink" title="模式 #3：独立观察（independent observation）"></a>模式 #3：独立观察（independent observation）</h4><p>安全使用 volatile 的另一种简单模式是：定期 “发布” 观察结果供程序内部使用。例如，假设有一种环境传感器能够感觉环境温度。一个后台线程可能会每隔几秒读取一次该传感器，并更新包含当前文档的 volatile 变量。然后，其他线程可以读取这个变量，从而随时能够看到最新的温度值。<br>使用该模式的另一种应用程序就是收集程序的统计信息。清单 4 展示了身份验证机制如何记忆最近一次登录的用户的名字。将反复使用 lastUser 引用来发布值，以供程序的其他部分使用。<br>清单 4. 将 volatile 变量用于多个独立观察结果的发布<br>public class UserManager {<br>    public volatile String lastUser;</p>
+<pre><code>public boolean authenticate(String user, String password) {
+    boolean valid = passwordIsValid(user, password);
+    if (valid) {
+        User u = new User();
+        activeUsers.add(u);
+        lastUser = user;
+    }
+    return valid;
+}
+</code></pre><p>}<br>该模式是前面模式的扩展；将某个值发布以在程序内的其他地方使用，但是与一次性事件的发布不同，这是一系列独立事件。这个模式要求被发布的值是有效不可变的 —— 即值的状态在发布后不会更改。使用该值的代码需要清楚该值可能随时发生变化。</p>
+<h4 id="模式-4：“volatile-bean”-模式"><a href="#模式-4：“volatile-bean”-模式" class="headerlink" title="模式 #4：“volatile bean” 模式"></a>模式 #4：“volatile bean” 模式</h4><p>volatile bean 模式适用于将 JavaBeans 作为“荣誉结构”使用的框架。在 volatile bean 模式中，JavaBean 被用作一组具有 getter 和/或 setter 方法 的独立属性的容器。volatile bean 模式的基本原理是：很多框架为易变数据的持有者（例如 HttpSession）提供了容器，但是放入这些容器中的对象必须是线程安全的。<br>在 volatile bean 模式中，JavaBean 的所有数据成员都是 volatile 类型的，并且 getter 和 setter 方法必须非常普通 —— 除了获取或设置相应的属性外，不能包含任何逻辑。此外，对于对象引用的数据成员，引用的对象必须是有效不可变的。（这将禁止具有数组值的属性，因为当数组引用被声明为 volatile 时，只有引用而不是数组本身具有 volatile 语义）。对于任何 volatile 变量，不变式或约束都不能包含 JavaBean 属性。清单 5 中的示例展示了遵守 volatile bean 模式的 JavaBean：<br>清单 5. 遵守 volatile bean 模式的 Person 对象<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">@ThreadSafe</div><div class="line">public class Person &#123;</div><div class="line">    private volatile String firstName;</div><div class="line">    private volatile String lastName;</div><div class="line">    private volatile int age;</div><div class="line"></div><div class="line">    public String getFirstName() &#123; return firstName; &#125;</div><div class="line">    public String getLastName() &#123; return lastName; &#125;</div><div class="line">    public int getAge() &#123; return age; &#125;</div><div class="line"></div><div class="line">    public void setFirstName(String firstName) &#123; </div><div class="line">        this.firstName = firstName;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setLastName(String lastName) &#123; </div><div class="line">        this.lastName = lastName;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setAge(int age) &#123; </div><div class="line">        this.age = age;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h2 id="volatile-的高级模式"><a href="#volatile-的高级模式" class="headerlink" title="volatile 的高级模式"></a>volatile 的高级模式</h2><p>前面几节介绍的模式涵盖了大部分的基本用例，在这些模式中使用 volatile 非常有用并且简单。这一节将介绍一种更加高级的模式，在该模式中，volatile 将提供性能或可伸缩性优势。<br>volatile 应用的的高级模式非常脆弱。因此，必须对假设的条件仔细证明，并且这些模式被严格地封装了起来，因为即使非常小的更改也会损坏您的代码！同样，使用更高级的 volatile 用例的原因是它能够提升性能，确保在开始应用高级模式之前，真正确定需要实现这种性能获益。需要对这些模式进行权衡，放弃可读性或可维护性来换取可能的性能收益 —— 如果您不需要提升性能（或者不能够通过一个严格的测试程序证明您需要它），那么这很可能是一次糟糕的交易，因为您很可能会得不偿失，换来的东西要比放弃的东西价值更低。</p>
+<h4 id="模式-5：开销较低的读－写锁策略"><a href="#模式-5：开销较低的读－写锁策略" class="headerlink" title="模式 #5：开销较低的读－写锁策略"></a>模式 #5：开销较低的读－写锁策略</h4><p>目前为止，您应该了解了 volatile 的功能还不足以实现计数器。因为 ++x 实际上是三种操作（读、添加、存储）的简单组合，如果多个线程凑巧试图同时对 volatile 计数器执行增量操作，那么它的更新值有可能会丢失。<br>然而，如果读操作远远超过写操作，您可以结合使用内部锁和 volatile 变量来减少公共代码路径的开销。清单 6 中显示的线程安全的计数器使用 synchronized 确保增量操作是原子的，并使用 volatile 保证当前结果的可见性。如果更新不频繁的话，该方法可实现更好的性能，因为读路径的开销仅仅涉及 volatile 读操作，这通常要优于一个无竞争的锁获取的开销。<br>清单 6. 结合使用 volatile 和 synchronized 实现 “开销较低的读－写锁”<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">@ThreadSafe</div><div class="line">public class CheesyCounter &#123;</div><div class="line">    // Employs the cheap read-write lock trick</div><div class="line">    // All mutative operations MUST be done with the &apos;this&apos; lock held</div><div class="line">    @GuardedBy(&quot;this&quot;) private volatile int value;</div><div class="line"></div><div class="line">    public int getValue() &#123; return value; &#125;</div><div class="line"></div><div class="line">    public synchronized int increment() &#123;</div><div class="line">        return value++;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>之所以将这种技术称之为 “开销较低的读－写锁” 是因为您使用了不同的同步机制进行读写操作。因为本例中的写操作违反了使用 volatile 的第一个条件，因此不能使用 volatile 安全地实现计数器 —— 您必须使用锁。然而，您可以在读操作中使用 volatile 确保当前值的可见性，因此可以使用锁进行所有变化的操作，使用 volatile 进行只读操作。其中，锁一次只允许一个线程访问值，volatile 允许多个线程执行读操作，因此当使用 volatile 保证读代码路径时，要比使用锁执行全部代码路径获得更高的共享度 —— 就像读－写操作一样。然而，要随时牢记这种模式的弱点：如果超越了该模式的最基本应用，结合这两个竞争的同步机制将变得非常困难。<br>结束语<br>与锁相比，Volatile 变量是一种非常简单但同时又非常脆弱的同步机制，它在某些情况下将提供优于锁的性能和伸缩性。如果严格遵循 volatile 的使用条件 —— 即变量真正独立于其他变量和自己以前的值 —— 在某些情况下可以使用 volatile 代替 synchronized 来简化代码。然而，使用 volatile 的代码往往比使用锁的代码更加容易出错。本文介绍的模式涵盖了可以使用 volatile 代替 synchronized 的最常见的一些用例。遵循这些模式（注意使用时不要超过各自的限制）可以帮助您安全地实现大多数用例，使用 volatile 变量获得更佳性能。</p>
 </span>
       
     </div>
@@ -431,9 +434,7 @@
       
         <div class="post-tags">
           
-            <a href="/tags/缓存/" rel="tag">#缓存</a>
-          
-            <a href="/tags/Redis/" rel="tag">#Redis</a>
+            <a href="/tags/多线程/" rel="tag">#多线程</a>
           
         </div>
       
@@ -442,13 +443,11 @@
         <div class="post-nav">
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2016/09/24/Redis数据结构和对象--（四）整数集合/" rel="prev">Redis数据结构和对象-(四)整数集合</a>
-            
           </div>
 
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2016/09/05/Dubbo入门/" rel="next">Dubbo入门</a>
+              <a href="/2017/02/16/多线程分享/" rel="next">多线程分享</a>
             
           </div>
         </div>
@@ -632,8 +631,8 @@
         
           <div class="comments" id="comments">
             
-              <div class="ds-thread" data-thread-key="2016/09/22/Redis数据结构和对象--（二）字典/"
-                   data-title="Redis数据结构和对象-(二)字典" data-url="https://fudawei.github.io/2016/09/22/Redis数据结构和对象--（二）字典/">
+              <div class="ds-thread" data-thread-key="2017/03/02/Java 并发编程:　 volatile使用/"
+                   data-title="Java 并发编程：volatile使用" data-url="https://fudawei.github.io/2017/03/02/Java 并发编程:　 volatile使用/">
               </div>
             
           </div>
@@ -736,7 +735,7 @@
           <div class="post-toc">
             
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#简介"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1、结构"><span class="nav-number">2.</span> <span class="nav-text">1、结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-哈希表"><span class="nav-number">3.</span> <span class="nav-text">2.哈希表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-哈希算法"><span class="nav-number">4.</span> <span class="nav-text">3.哈希算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-解决键冲突"><span class="nav-number">5.</span> <span class="nav-text">4.解决键冲突</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#字典Rehash解析"><span class="nav-number">6.</span> <span class="nav-text">字典Rehash解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#负载因子"><span class="nav-number">7.</span> <span class="nav-text">负载因子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#为什么是2的n次方？"><span class="nav-number">8.</span> <span class="nav-text">为什么是2的n次方？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#渐进式rehash"><span class="nav-number">9.</span> <span class="nav-text">渐进式rehash</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Rehash执行过程："><span class="nav-number">10.</span> <span class="nav-text">Rehash执行过程：</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#volatile-变量"><span class="nav-number">1.</span> <span class="nav-text">volatile 变量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#正确使用-volatile-变量的条件"><span class="nav-number">2.</span> <span class="nav-text">正确使用 volatile 变量的条件</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#性能考虑"><span class="nav-number">2.0.0.1.</span> <span class="nav-text">性能考虑</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#正确使用-volatile-的模式"><span class="nav-number">3.</span> <span class="nav-text">正确使用 volatile 的模式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#模式-1：状态标志"><span class="nav-number">3.0.1.</span> <span class="nav-text">模式 #1：状态标志</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#模式-2：一次性安全发布（one-time-safe-publication）"><span class="nav-number">3.0.2.</span> <span class="nav-text">模式 #2：一次性安全发布（one-time safe publication）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#模式-3：独立观察（independent-observation）"><span class="nav-number">3.0.3.</span> <span class="nav-text">模式 #3：独立观察（independent observation）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#模式-4：“volatile-bean”-模式"><span class="nav-number">3.0.4.</span> <span class="nav-text">模式 #4：“volatile bean” 模式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#volatile-的高级模式"><span class="nav-number">4.</span> <span class="nav-text">volatile 的高级模式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#模式-5：开销较低的读－写锁策略"><span class="nav-number">4.0.1.</span> <span class="nav-text">模式 #5：开销较低的读－写锁策略</span></a></li></ol></li></ol></li></ol></div>
             
           </div>
           <div class="post-toc-indicator-bottom post-toc-indicator"></div>

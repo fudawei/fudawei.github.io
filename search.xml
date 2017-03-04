@@ -4,6 +4,40 @@
   
     
     <entry>
+      <title><![CDATA[Java 并发编程：volatile使用]]></title>
+      <url>https://fudawei.github.io/2017/03/02/Java%20%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B:%E3%80%80%20volatile%E4%BD%BF%E7%94%A8/</url>
+      <content type="html"><![CDATA[<p>Java 语言中的 volatile 变量可以被看作是一种 “程度较轻的 synchronized”；与 synchronized 块相比，volatile 变量所需的编码较少，并且运行时开销也较少，但是它所能实现的功能也仅是 synchronized 的一部分。本文介绍了几种有效使用 volatile 变量的模式，并强调了几种不适合使用 volatile 变量的情形。</p>
+<p>锁提供了两种主要特性：互斥（mutual exclusion） 和可见性（visibility）。互斥即一次只允许一个线程持有某个特定的锁，因此可使用该特性实现对共享数据的协调访问协议，这样，一次就只有一个线程能够使用该共享数据。可见性要更加复杂一些，它必须确保释放锁之前对共享数据做出的更改对于随后获得该锁的另一个线程是可见的 —— 如果没有同步机制提供的这种可见性保证，线程看到的共享变量可能是修改前的值或不一致的值，这将引发许多严重问题。</p>
+<h2 id="volatile-变量"><a href="#volatile-变量" class="headerlink" title="volatile 变量"></a>volatile 变量</h2><p>Volatile 变量具有 synchronized 的可见性特性，但是不具备原子特性。这就是说线程能够自动发现 volatile 变量的最新值。Volatile 变量可用于提供线程安全，但是只能应用于非常有限的一组用例：多个变量之间或者某个变量的当前值与修改后值之间没有约束。因此，单独使用 volatile 还不足以实现计数器、互斥锁或任何具有与多个变量相关的不变式（Invariants）的类（例如 “start &lt;=end”）。<br>出于简易性或可伸缩性的考虑，您可能倾向于使用 volatile 变量而不是锁。当使用 volatile 变量而非锁时，某些习惯用法（idiom）更加易于编码和阅读。此外，volatile 变量不会像锁那样造成线程阻塞，因此也很少造成可伸缩性问题。在某些情况下，如果读操作远远大于写操作，volatile 变量还可以提供优于锁的性能优势。</p>
+<h2 id="正确使用-volatile-变量的条件"><a href="#正确使用-volatile-变量的条件" class="headerlink" title="正确使用 volatile 变量的条件"></a>正确使用 volatile 变量的条件</h2><p>您只能在有限的一些情形下使用 volatile 变量替代锁。要使 volatile 变量提供理想的线程安全，必须同时满足下面两个条件：<br>对变量的写操作不依赖于当前值。<br>该变量没有包含在具有其他变量的不变式中。<br>实际上，这些条件表明，可以被写入 volatile 变量的这些有效值独立于任何程序的状态，包括变量的当前状态。<br>第一个条件的限制使 volatile 变量不能用作线程安全计数器。虽然增量操作（x++）看上去类似一个单独操作，实际上它是一个由读取－修改－写入操作序列组成的组合操作，必须以原子方式执行，而 volatile 不能提供必须的原子特性。实现正确的操作需要使 x 的值在操作期间保持不变，而 volatile 变量无法实现这点。（然而，如果将值调整为只从单个线程写入，那么可以忽略第一个条件。）<br>大多数编程情形都会与这两个条件的其中之一冲突，使得 volatile 变量不能像 synchronized 那样普遍适用于实现线程安全。清单 1 显示了一个非线程安全的数值范围类。它包含了一个不变式 —— 下界总是小于或等于上界。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">@NotThreadSafe</div><div class="line">public class NumberRange &#123;</div><div class="line">    private int lower, upper;</div><div class="line"></div><div class="line">    public int getLower() &#123; return lower; &#125;</div><div class="line">    public int getUpper() &#123; return upper; &#125;</div><div class="line"></div><div class="line">    public void setLower(int value) &#123; </div><div class="line">        if (value &gt; upper) </div><div class="line">            throw new IllegalArgumentException(...);</div><div class="line">        lower = value;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setUpper(int value) &#123; </div><div class="line">        if (value &lt; lower) </div><div class="line">            throw new IllegalArgumentException(...);</div><div class="line">        upper = value;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这种方式限制了范围的状态变量，因此将 lower 和 upper 字段定义为 volatile 类型不能够充分实现类的线程安全；从而仍然需要使用同步。否则，如果凑巧两个线程在同一时间使用不一致的值执行 setLower 和 setUpper 的话，则会使范围处于不一致的状态。例如，如果初始状态是 (0, 5)，同一时间内，线程 A 调用 setLower(4) 并且线程 B 调用 setUpper(3)，显然这两个操作交叉存入的值是不符合条件的，那么两个线程都会通过用于保护不变式的检查，使得最后的范围值是 (4, 3) —— 一个无效值。至于针对范围的其他操作，我们需要使 setLower() 和 setUpper() 操作原子化 —— 而将字段定义为 volatile 类型是无法实现这一目的的。</p>
+<h5 id="性能考虑"><a href="#性能考虑" class="headerlink" title="性能考虑"></a>性能考虑</h5><p>使用 volatile 变量的主要原因是其简易性：在某些情形下，使用 volatile 变量要比使用相应的锁简单得多。使用 volatile 变量次要原因是其性能：某些情况下，volatile 变量同步机制的性能要优于锁。</p>
+<p>很难做出准确、全面的评价，例如 “X 总是比 Y 快”，尤其是对 JVM 内在的操作而言。（例如，某些情况下 VM 也许能够完全删除锁机制，这使得我们难以抽象地比较 volatile 和 synchronized 的开销。）就是说，在目前大多数的处理器架构上，volatile 读操作开销非常低 —— 几乎和非 volatile 读操作一样。而 volatile 写操作的开销要比非 volatile 写操作多很多，因为要保证可见性需要实现内存界定（Memory Fence），即便如此，volatile 的总开销仍然要比锁获取低。</p>
+<p>volatile 操作不会像锁一样造成阻塞，因此，在能够安全使用 volatile 的情况下，volatile 可以提供一些优于锁的可伸缩特性。如果读操作的次数要远远超过写操作，与锁相比，volatile 变量通常能够减少同步的性能开销。</p>
+<h2 id="正确使用-volatile-的模式"><a href="#正确使用-volatile-的模式" class="headerlink" title="正确使用 volatile 的模式"></a>正确使用 volatile 的模式</h2><p>很多并发性专家事实上往往引导用户远离 volatile 变量，因为使用它们要比使用锁更加容易出错。然而，如果谨慎地遵循一些良好定义的模式，就能够在很多场合内安全地使用 volatile 变量。要始终牢记使用 volatile 的限制 —— 只有在状态真正独立于程序内其他内容时才能使用 volatile —— 这条规则能够避免将这些模式扩展到不安全的用例。</p>
+<h4 id="模式-1：状态标志"><a href="#模式-1：状态标志" class="headerlink" title="模式 #1：状态标志"></a>模式 #1：状态标志</h4><p>也许实现 volatile 变量的规范使用仅仅是使用一个布尔状态标志，用于指示发生了一个重要的一次性事件，例如完成初始化或请求停机。<br>很多应用程序包含了一种控制结构，形式为 “在还没有准备好停止程序时再执行一些工作”，如清单 2 所示：<br>清单 2. 将 volatile 变量作为状态标志使用<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">volatile boolean shutdownRequested;</div><div class="line"></div><div class="line">...</div><div class="line"></div><div class="line">public void shutdown() &#123; shutdownRequested = true; &#125;</div><div class="line"></div><div class="line">public void doWork() &#123;</div><div class="line">    while (!shutdownRequested) &#123;</div><div class="line">        // do stuff</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>很可能会从循环外部调用 shutdown() 方法 —— 即在另一个线程中 —— 因此，需要执行某种同步来确保正确实现 shutdownRequested 变量的可见性。（可能会从 JMX 侦听程序、GUI 事件线程中的操作侦听程序、通过 RMI 、通过一个 Web 服务等调用）。然而，使用 synchronized 块编写循环要比使用清单 2 所示的 volatile 状态标志编写麻烦很多。由于 volatile 简化了编码，并且状态标志并不依赖于程序内任何其他状态，因此此处非常适合使用 volatile。<br>这种类型的状态标记的一个公共特性是：通常只有一种状态转换；shutdownRequested 标志从 false 转换为 true，然后程序停止。这种模式可以扩展到来回转换的状态标志，但是只有在转换周期不被察觉的情况下才能扩展（从 false 到 true，再转换到 false）。此外，还需要某些原子状态转换机制，例如原子变量。</p>
+<h4 id="模式-2：一次性安全发布（one-time-safe-publication）"><a href="#模式-2：一次性安全发布（one-time-safe-publication）" class="headerlink" title="模式 #2：一次性安全发布（one-time safe publication）"></a>模式 #2：一次性安全发布（one-time safe publication）</h4><p>缺乏同步会导致无法实现可见性，这使得确定何时写入对象引用而不是原语值变得更加困难。在缺乏同步的情况下，可能会遇到某个对象引用的更新值（由另一个线程写入）和该对象状态的旧值同时存在。（这就是造成著名的双重检查锁定（double-checked-locking）问题的根源，其中对象引用在没有同步的情况下进行读操作，产生的问题是您可能会看到一个更新的引用，但是仍然会通过该引用看到不完全构造的对象）。<br>实现安全发布对象的一种技术就是将对象引用定义为 volatile 类型。清单 3 展示了一个示例，其中后台线程在启动阶段从数据库加载一些数据。其他代码在能够利用这些数据时，在使用之前将检查这些数据是否曾经发布过。<br>清单 3. 将 volatile 变量用于一次性安全发布<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">public class BackgroundFloobleLoader &#123;</div><div class="line">    public volatile Flooble theFlooble;</div><div class="line"></div><div class="line">    public void initInBackground() &#123;</div><div class="line">        // do lots of stuff</div><div class="line">        theFlooble = new Flooble();  // this is the only write to theFlooble</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">public class SomeOtherClass &#123;</div><div class="line">    public void doWork() &#123;</div><div class="line">        while (true) &#123; </div><div class="line">            // do some stuff...</div><div class="line">            // use the Flooble, but only if it is ready</div><div class="line">            if (floobleLoader.theFlooble != null) </div><div class="line">                doSomething(floobleLoader.theFlooble);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>如果 theFlooble 引用不是 volatile 类型，doWork() 中的代码在解除对 theFlooble 的引用时，将会得到一个不完全构造的 Flooble。<br>该模式的一个必要条件是：被发布的对象必须是线程安全的，或者是有效的不可变对象（有效不可变意味着对象的状态在发布之后永远不会被修改）。volatile 类型的引用可以确保对象的发布形式的可见性，但是如果对象的状态在发布后将发生更改，那么就需要额外的同步。</p>
+<h4 id="模式-3：独立观察（independent-observation）"><a href="#模式-3：独立观察（independent-observation）" class="headerlink" title="模式 #3：独立观察（independent observation）"></a>模式 #3：独立观察（independent observation）</h4><p>安全使用 volatile 的另一种简单模式是：定期 “发布” 观察结果供程序内部使用。例如，假设有一种环境传感器能够感觉环境温度。一个后台线程可能会每隔几秒读取一次该传感器，并更新包含当前文档的 volatile 变量。然后，其他线程可以读取这个变量，从而随时能够看到最新的温度值。<br>使用该模式的另一种应用程序就是收集程序的统计信息。清单 4 展示了身份验证机制如何记忆最近一次登录的用户的名字。将反复使用 lastUser 引用来发布值，以供程序的其他部分使用。<br>清单 4. 将 volatile 变量用于多个独立观察结果的发布<br>public class UserManager {<br>    public volatile String lastUser;</p>
+<pre><code>public boolean authenticate(String user, String password) {
+    boolean valid = passwordIsValid(user, password);
+    if (valid) {
+        User u = new User();
+        activeUsers.add(u);
+        lastUser = user;
+    }
+    return valid;
+}
+</code></pre><p>}<br>该模式是前面模式的扩展；将某个值发布以在程序内的其他地方使用，但是与一次性事件的发布不同，这是一系列独立事件。这个模式要求被发布的值是有效不可变的 —— 即值的状态在发布后不会更改。使用该值的代码需要清楚该值可能随时发生变化。</p>
+<h4 id="模式-4：“volatile-bean”-模式"><a href="#模式-4：“volatile-bean”-模式" class="headerlink" title="模式 #4：“volatile bean” 模式"></a>模式 #4：“volatile bean” 模式</h4><p>volatile bean 模式适用于将 JavaBeans 作为“荣誉结构”使用的框架。在 volatile bean 模式中，JavaBean 被用作一组具有 getter 和/或 setter 方法 的独立属性的容器。volatile bean 模式的基本原理是：很多框架为易变数据的持有者（例如 HttpSession）提供了容器，但是放入这些容器中的对象必须是线程安全的。<br>在 volatile bean 模式中，JavaBean 的所有数据成员都是 volatile 类型的，并且 getter 和 setter 方法必须非常普通 —— 除了获取或设置相应的属性外，不能包含任何逻辑。此外，对于对象引用的数据成员，引用的对象必须是有效不可变的。（这将禁止具有数组值的属性，因为当数组引用被声明为 volatile 时，只有引用而不是数组本身具有 volatile 语义）。对于任何 volatile 变量，不变式或约束都不能包含 JavaBean 属性。清单 5 中的示例展示了遵守 volatile bean 模式的 JavaBean：<br>清单 5. 遵守 volatile bean 模式的 Person 对象<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">@ThreadSafe</div><div class="line">public class Person &#123;</div><div class="line">    private volatile String firstName;</div><div class="line">    private volatile String lastName;</div><div class="line">    private volatile int age;</div><div class="line"></div><div class="line">    public String getFirstName() &#123; return firstName; &#125;</div><div class="line">    public String getLastName() &#123; return lastName; &#125;</div><div class="line">    public int getAge() &#123; return age; &#125;</div><div class="line"></div><div class="line">    public void setFirstName(String firstName) &#123; </div><div class="line">        this.firstName = firstName;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setLastName(String lastName) &#123; </div><div class="line">        this.lastName = lastName;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setAge(int age) &#123; </div><div class="line">        this.age = age;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h2 id="volatile-的高级模式"><a href="#volatile-的高级模式" class="headerlink" title="volatile 的高级模式"></a>volatile 的高级模式</h2><p>前面几节介绍的模式涵盖了大部分的基本用例，在这些模式中使用 volatile 非常有用并且简单。这一节将介绍一种更加高级的模式，在该模式中，volatile 将提供性能或可伸缩性优势。<br>volatile 应用的的高级模式非常脆弱。因此，必须对假设的条件仔细证明，并且这些模式被严格地封装了起来，因为即使非常小的更改也会损坏您的代码！同样，使用更高级的 volatile 用例的原因是它能够提升性能，确保在开始应用高级模式之前，真正确定需要实现这种性能获益。需要对这些模式进行权衡，放弃可读性或可维护性来换取可能的性能收益 —— 如果您不需要提升性能（或者不能够通过一个严格的测试程序证明您需要它），那么这很可能是一次糟糕的交易，因为您很可能会得不偿失，换来的东西要比放弃的东西价值更低。</p>
+<h4 id="模式-5：开销较低的读－写锁策略"><a href="#模式-5：开销较低的读－写锁策略" class="headerlink" title="模式 #5：开销较低的读－写锁策略"></a>模式 #5：开销较低的读－写锁策略</h4><p>目前为止，您应该了解了 volatile 的功能还不足以实现计数器。因为 ++x 实际上是三种操作（读、添加、存储）的简单组合，如果多个线程凑巧试图同时对 volatile 计数器执行增量操作，那么它的更新值有可能会丢失。<br>然而，如果读操作远远超过写操作，您可以结合使用内部锁和 volatile 变量来减少公共代码路径的开销。清单 6 中显示的线程安全的计数器使用 synchronized 确保增量操作是原子的，并使用 volatile 保证当前结果的可见性。如果更新不频繁的话，该方法可实现更好的性能，因为读路径的开销仅仅涉及 volatile 读操作，这通常要优于一个无竞争的锁获取的开销。<br>清单 6. 结合使用 volatile 和 synchronized 实现 “开销较低的读－写锁”<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">@ThreadSafe</div><div class="line">public class CheesyCounter &#123;</div><div class="line">    // Employs the cheap read-write lock trick</div><div class="line">    // All mutative operations MUST be done with the &apos;this&apos; lock held</div><div class="line">    @GuardedBy(&quot;this&quot;) private volatile int value;</div><div class="line"></div><div class="line">    public int getValue() &#123; return value; &#125;</div><div class="line"></div><div class="line">    public synchronized int increment() &#123;</div><div class="line">        return value++;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>之所以将这种技术称之为 “开销较低的读－写锁” 是因为您使用了不同的同步机制进行读写操作。因为本例中的写操作违反了使用 volatile 的第一个条件，因此不能使用 volatile 安全地实现计数器 —— 您必须使用锁。然而，您可以在读操作中使用 volatile 确保当前值的可见性，因此可以使用锁进行所有变化的操作，使用 volatile 进行只读操作。其中，锁一次只允许一个线程访问值，volatile 允许多个线程执行读操作，因此当使用 volatile 保证读代码路径时，要比使用锁执行全部代码路径获得更高的共享度 —— 就像读－写操作一样。然而，要随时牢记这种模式的弱点：如果超越了该模式的最基本应用，结合这两个竞争的同步机制将变得非常困难。<br>结束语<br>与锁相比，Volatile 变量是一种非常简单但同时又非常脆弱的同步机制，它在某些情况下将提供优于锁的性能和伸缩性。如果严格遵循 volatile 的使用条件 —— 即变量真正独立于其他变量和自己以前的值 —— 在某些情况下可以使用 volatile 代替 synchronized 来简化代码。然而，使用 volatile 的代码往往比使用锁的代码更加容易出错。本文介绍的模式涵盖了可以使用 volatile 代替 synchronized 的最常见的一些用例。遵循这些模式（注意使用时不要超过各自的限制）可以帮助您安全地实现大多数用例，使用 volatile 变量获得更佳性能。</p>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[多线程分享]]></title>
       <url>https://fudawei.github.io/2017/02/16/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%88%86%E4%BA%AB/</url>
       <content type="html"><![CDATA[<h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><ul>
@@ -376,45 +410,6 @@
 <p>　　（2）指令级并行的重排序。现代处理器采用了指令级并行技术（Instruction-Level Parallelism， ILP）来将多条指令重叠执行。如果不存在数据依赖性，处理器可以改变语句对应机器指令的执行顺序。<br>　　（3）内存系统的重排序。由于处理器使用缓存和读/写缓冲区，这使得加载和存储操作看上去可能是在乱序执行。</p>
 <p>　　我们可以直接参考一下JSR 133 中对重排序问题的描述<br><img src="/img/concurrent/concurrent-3.png" alt=""><br>先看上图中的（1）源码部分，从源码来看，要么指令 1 先执行要么指令 3先执行。如果指令 1 先执行，r2不应该能看到指令 4 中写入的值。如果指令 3 先执行，r1不应该能看到指令 2 写的值。但是运行结果却可能出现r2==2，r1==1的情况，这就是“重排序”导致的结果。上图（2）即是一种可能出现的合法的编译结果，编译后，指令1和指令2的顺序可能就互换了。因此，才会出现r2==2，r1==1的结果。Java 中也可通过Synchronized或Volatile来保证顺序性。</p>
 <h3 id="六-总结"><a href="#六-总结" class="headerlink" title="六 总结"></a>六 总结</h3><p>　　本文对Java 并发编程中的理论基础进行了讲解，有些东西在后续的分析中还会做更详细的讨论，如可见性、顺序性等。后续的文章都会以本章内容作为理论基础来讨论。如果大家能够很好的理解上述内容，相信无论是去理解其他并发编程的文章还是在平时的并发编程的工作中，都能够对大家有很好的帮助。</p>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[Java 并发编程：volatile使用]]></title>
-      <url>https://fudawei.github.io/2017/02/05/Java%20%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B:%E3%80%80%20volatile%E4%BD%BF%E7%94%A8/</url>
-      <content type="html"><![CDATA[<p>Java 语言中的 volatile 变量可以被看作是一种 “程度较轻的 synchronized”；与 synchronized 块相比，volatile 变量所需的编码较少，并且运行时开销也较少，但是它所能实现的功能也仅是 synchronized 的一部分。本文介绍了几种有效使用 volatile 变量的模式，并强调了几种不适合使用 volatile 变量的情形。</p>
-<p>锁提供了两种主要特性：互斥（mutual exclusion） 和可见性（visibility）。互斥即一次只允许一个线程持有某个特定的锁，因此可使用该特性实现对共享数据的协调访问协议，这样，一次就只有一个线程能够使用该共享数据。可见性要更加复杂一些，它必须确保释放锁之前对共享数据做出的更改对于随后获得该锁的另一个线程是可见的 —— 如果没有同步机制提供的这种可见性保证，线程看到的共享变量可能是修改前的值或不一致的值，这将引发许多严重问题。</p>
-<h2 id="volatile-变量"><a href="#volatile-变量" class="headerlink" title="volatile 变量"></a>volatile 变量</h2><p>Volatile 变量具有 synchronized 的可见性特性，但是不具备原子特性。这就是说线程能够自动发现 volatile 变量的最新值。Volatile 变量可用于提供线程安全，但是只能应用于非常有限的一组用例：多个变量之间或者某个变量的当前值与修改后值之间没有约束。因此，单独使用 volatile 还不足以实现计数器、互斥锁或任何具有与多个变量相关的不变式（Invariants）的类（例如 “start &lt;=end”）。<br>出于简易性或可伸缩性的考虑，您可能倾向于使用 volatile 变量而不是锁。当使用 volatile 变量而非锁时，某些习惯用法（idiom）更加易于编码和阅读。此外，volatile 变量不会像锁那样造成线程阻塞，因此也很少造成可伸缩性问题。在某些情况下，如果读操作远远大于写操作，volatile 变量还可以提供优于锁的性能优势。</p>
-<h2 id="正确使用-volatile-变量的条件"><a href="#正确使用-volatile-变量的条件" class="headerlink" title="正确使用 volatile 变量的条件"></a>正确使用 volatile 变量的条件</h2><p>您只能在有限的一些情形下使用 volatile 变量替代锁。要使 volatile 变量提供理想的线程安全，必须同时满足下面两个条件：<br>对变量的写操作不依赖于当前值。<br>该变量没有包含在具有其他变量的不变式中。<br>实际上，这些条件表明，可以被写入 volatile 变量的这些有效值独立于任何程序的状态，包括变量的当前状态。<br>第一个条件的限制使 volatile 变量不能用作线程安全计数器。虽然增量操作（x++）看上去类似一个单独操作，实际上它是一个由读取－修改－写入操作序列组成的组合操作，必须以原子方式执行，而 volatile 不能提供必须的原子特性。实现正确的操作需要使 x 的值在操作期间保持不变，而 volatile 变量无法实现这点。（然而，如果将值调整为只从单个线程写入，那么可以忽略第一个条件。）<br>大多数编程情形都会与这两个条件的其中之一冲突，使得 volatile 变量不能像 synchronized 那样普遍适用于实现线程安全。清单 1 显示了一个非线程安全的数值范围类。它包含了一个不变式 —— 下界总是小于或等于上界。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">@NotThreadSafe</div><div class="line">public class NumberRange &#123;</div><div class="line">    private int lower, upper;</div><div class="line"></div><div class="line">    public int getLower() &#123; return lower; &#125;</div><div class="line">    public int getUpper() &#123; return upper; &#125;</div><div class="line"></div><div class="line">    public void setLower(int value) &#123; </div><div class="line">        if (value &gt; upper) </div><div class="line">            throw new IllegalArgumentException(...);</div><div class="line">        lower = value;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setUpper(int value) &#123; </div><div class="line">        if (value &lt; lower) </div><div class="line">            throw new IllegalArgumentException(...);</div><div class="line">        upper = value;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>这种方式限制了范围的状态变量，因此将 lower 和 upper 字段定义为 volatile 类型不能够充分实现类的线程安全；从而仍然需要使用同步。否则，如果凑巧两个线程在同一时间使用不一致的值执行 setLower 和 setUpper 的话，则会使范围处于不一致的状态。例如，如果初始状态是 (0, 5)，同一时间内，线程 A 调用 setLower(4) 并且线程 B 调用 setUpper(3)，显然这两个操作交叉存入的值是不符合条件的，那么两个线程都会通过用于保护不变式的检查，使得最后的范围值是 (4, 3) —— 一个无效值。至于针对范围的其他操作，我们需要使 setLower() 和 setUpper() 操作原子化 —— 而将字段定义为 volatile 类型是无法实现这一目的的。</p>
-<h5 id="性能考虑"><a href="#性能考虑" class="headerlink" title="性能考虑"></a>性能考虑</h5><p>使用 volatile 变量的主要原因是其简易性：在某些情形下，使用 volatile 变量要比使用相应的锁简单得多。使用 volatile 变量次要原因是其性能：某些情况下，volatile 变量同步机制的性能要优于锁。</p>
-<p>很难做出准确、全面的评价，例如 “X 总是比 Y 快”，尤其是对 JVM 内在的操作而言。（例如，某些情况下 VM 也许能够完全删除锁机制，这使得我们难以抽象地比较 volatile 和 synchronized 的开销。）就是说，在目前大多数的处理器架构上，volatile 读操作开销非常低 —— 几乎和非 volatile 读操作一样。而 volatile 写操作的开销要比非 volatile 写操作多很多，因为要保证可见性需要实现内存界定（Memory Fence），即便如此，volatile 的总开销仍然要比锁获取低。</p>
-<p>volatile 操作不会像锁一样造成阻塞，因此，在能够安全使用 volatile 的情况下，volatile 可以提供一些优于锁的可伸缩特性。如果读操作的次数要远远超过写操作，与锁相比，volatile 变量通常能够减少同步的性能开销。</p>
-<h2 id="正确使用-volatile-的模式"><a href="#正确使用-volatile-的模式" class="headerlink" title="正确使用 volatile 的模式"></a>正确使用 volatile 的模式</h2><p>很多并发性专家事实上往往引导用户远离 volatile 变量，因为使用它们要比使用锁更加容易出错。然而，如果谨慎地遵循一些良好定义的模式，就能够在很多场合内安全地使用 volatile 变量。要始终牢记使用 volatile 的限制 —— 只有在状态真正独立于程序内其他内容时才能使用 volatile —— 这条规则能够避免将这些模式扩展到不安全的用例。</p>
-<h4 id="模式-1：状态标志"><a href="#模式-1：状态标志" class="headerlink" title="模式 #1：状态标志"></a>模式 #1：状态标志</h4><p>也许实现 volatile 变量的规范使用仅仅是使用一个布尔状态标志，用于指示发生了一个重要的一次性事件，例如完成初始化或请求停机。<br>很多应用程序包含了一种控制结构，形式为 “在还没有准备好停止程序时再执行一些工作”，如清单 2 所示：<br>清单 2. 将 volatile 变量作为状态标志使用<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">volatile boolean shutdownRequested;</div><div class="line"></div><div class="line">...</div><div class="line"></div><div class="line">public void shutdown() &#123; shutdownRequested = true; &#125;</div><div class="line"></div><div class="line">public void doWork() &#123;</div><div class="line">    while (!shutdownRequested) &#123;</div><div class="line">        // do stuff</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>很可能会从循环外部调用 shutdown() 方法 —— 即在另一个线程中 —— 因此，需要执行某种同步来确保正确实现 shutdownRequested 变量的可见性。（可能会从 JMX 侦听程序、GUI 事件线程中的操作侦听程序、通过 RMI 、通过一个 Web 服务等调用）。然而，使用 synchronized 块编写循环要比使用清单 2 所示的 volatile 状态标志编写麻烦很多。由于 volatile 简化了编码，并且状态标志并不依赖于程序内任何其他状态，因此此处非常适合使用 volatile。<br>这种类型的状态标记的一个公共特性是：通常只有一种状态转换；shutdownRequested 标志从 false 转换为 true，然后程序停止。这种模式可以扩展到来回转换的状态标志，但是只有在转换周期不被察觉的情况下才能扩展（从 false 到 true，再转换到 false）。此外，还需要某些原子状态转换机制，例如原子变量。</p>
-<h4 id="模式-2：一次性安全发布（one-time-safe-publication）"><a href="#模式-2：一次性安全发布（one-time-safe-publication）" class="headerlink" title="模式 #2：一次性安全发布（one-time safe publication）"></a>模式 #2：一次性安全发布（one-time safe publication）</h4><p>缺乏同步会导致无法实现可见性，这使得确定何时写入对象引用而不是原语值变得更加困难。在缺乏同步的情况下，可能会遇到某个对象引用的更新值（由另一个线程写入）和该对象状态的旧值同时存在。（这就是造成著名的双重检查锁定（double-checked-locking）问题的根源，其中对象引用在没有同步的情况下进行读操作，产生的问题是您可能会看到一个更新的引用，但是仍然会通过该引用看到不完全构造的对象）。<br>实现安全发布对象的一种技术就是将对象引用定义为 volatile 类型。清单 3 展示了一个示例，其中后台线程在启动阶段从数据库加载一些数据。其他代码在能够利用这些数据时，在使用之前将检查这些数据是否曾经发布过。<br>清单 3. 将 volatile 变量用于一次性安全发布<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">public class BackgroundFloobleLoader &#123;</div><div class="line">    public volatile Flooble theFlooble;</div><div class="line"></div><div class="line">    public void initInBackground() &#123;</div><div class="line">        // do lots of stuff</div><div class="line">        theFlooble = new Flooble();  // this is the only write to theFlooble</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">public class SomeOtherClass &#123;</div><div class="line">    public void doWork() &#123;</div><div class="line">        while (true) &#123; </div><div class="line">            // do some stuff...</div><div class="line">            // use the Flooble, but only if it is ready</div><div class="line">            if (floobleLoader.theFlooble != null) </div><div class="line">                doSomething(floobleLoader.theFlooble);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>如果 theFlooble 引用不是 volatile 类型，doWork() 中的代码在解除对 theFlooble 的引用时，将会得到一个不完全构造的 Flooble。<br>该模式的一个必要条件是：被发布的对象必须是线程安全的，或者是有效的不可变对象（有效不可变意味着对象的状态在发布之后永远不会被修改）。volatile 类型的引用可以确保对象的发布形式的可见性，但是如果对象的状态在发布后将发生更改，那么就需要额外的同步。</p>
-<h4 id="模式-3：独立观察（independent-observation）"><a href="#模式-3：独立观察（independent-observation）" class="headerlink" title="模式 #3：独立观察（independent observation）"></a>模式 #3：独立观察（independent observation）</h4><p>安全使用 volatile 的另一种简单模式是：定期 “发布” 观察结果供程序内部使用。例如，假设有一种环境传感器能够感觉环境温度。一个后台线程可能会每隔几秒读取一次该传感器，并更新包含当前文档的 volatile 变量。然后，其他线程可以读取这个变量，从而随时能够看到最新的温度值。<br>使用该模式的另一种应用程序就是收集程序的统计信息。清单 4 展示了身份验证机制如何记忆最近一次登录的用户的名字。将反复使用 lastUser 引用来发布值，以供程序的其他部分使用。<br>清单 4. 将 volatile 变量用于多个独立观察结果的发布<br>public class UserManager {<br>    public volatile String lastUser;</p>
-<pre><code>public boolean authenticate(String user, String password) {
-    boolean valid = passwordIsValid(user, password);
-    if (valid) {
-        User u = new User();
-        activeUsers.add(u);
-        lastUser = user;
-    }
-    return valid;
-}
-</code></pre><p>}<br>该模式是前面模式的扩展；将某个值发布以在程序内的其他地方使用，但是与一次性事件的发布不同，这是一系列独立事件。这个模式要求被发布的值是有效不可变的 —— 即值的状态在发布后不会更改。使用该值的代码需要清楚该值可能随时发生变化。</p>
-<h4 id="模式-4：“volatile-bean”-模式"><a href="#模式-4：“volatile-bean”-模式" class="headerlink" title="模式 #4：“volatile bean” 模式"></a>模式 #4：“volatile bean” 模式</h4><p>volatile bean 模式适用于将 JavaBeans 作为“荣誉结构”使用的框架。在 volatile bean 模式中，JavaBean 被用作一组具有 getter 和/或 setter 方法 的独立属性的容器。volatile bean 模式的基本原理是：很多框架为易变数据的持有者（例如 HttpSession）提供了容器，但是放入这些容器中的对象必须是线程安全的。<br>在 volatile bean 模式中，JavaBean 的所有数据成员都是 volatile 类型的，并且 getter 和 setter 方法必须非常普通 —— 除了获取或设置相应的属性外，不能包含任何逻辑。此外，对于对象引用的数据成员，引用的对象必须是有效不可变的。（这将禁止具有数组值的属性，因为当数组引用被声明为 volatile 时，只有引用而不是数组本身具有 volatile 语义）。对于任何 volatile 变量，不变式或约束都不能包含 JavaBean 属性。清单 5 中的示例展示了遵守 volatile bean 模式的 JavaBean：<br>清单 5. 遵守 volatile bean 模式的 Person 对象<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">@ThreadSafe</div><div class="line">public class Person &#123;</div><div class="line">    private volatile String firstName;</div><div class="line">    private volatile String lastName;</div><div class="line">    private volatile int age;</div><div class="line"></div><div class="line">    public String getFirstName() &#123; return firstName; &#125;</div><div class="line">    public String getLastName() &#123; return lastName; &#125;</div><div class="line">    public int getAge() &#123; return age; &#125;</div><div class="line"></div><div class="line">    public void setFirstName(String firstName) &#123; </div><div class="line">        this.firstName = firstName;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setLastName(String lastName) &#123; </div><div class="line">        this.lastName = lastName;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setAge(int age) &#123; </div><div class="line">        this.age = age;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<h2 id="volatile-的高级模式"><a href="#volatile-的高级模式" class="headerlink" title="volatile 的高级模式"></a>volatile 的高级模式</h2><p>前面几节介绍的模式涵盖了大部分的基本用例，在这些模式中使用 volatile 非常有用并且简单。这一节将介绍一种更加高级的模式，在该模式中，volatile 将提供性能或可伸缩性优势。<br>volatile 应用的的高级模式非常脆弱。因此，必须对假设的条件仔细证明，并且这些模式被严格地封装了起来，因为即使非常小的更改也会损坏您的代码！同样，使用更高级的 volatile 用例的原因是它能够提升性能，确保在开始应用高级模式之前，真正确定需要实现这种性能获益。需要对这些模式进行权衡，放弃可读性或可维护性来换取可能的性能收益 —— 如果您不需要提升性能（或者不能够通过一个严格的测试程序证明您需要它），那么这很可能是一次糟糕的交易，因为您很可能会得不偿失，换来的东西要比放弃的东西价值更低。</p>
-<h4 id="模式-5：开销较低的读－写锁策略"><a href="#模式-5：开销较低的读－写锁策略" class="headerlink" title="模式 #5：开销较低的读－写锁策略"></a>模式 #5：开销较低的读－写锁策略</h4><p>目前为止，您应该了解了 volatile 的功能还不足以实现计数器。因为 ++x 实际上是三种操作（读、添加、存储）的简单组合，如果多个线程凑巧试图同时对 volatile 计数器执行增量操作，那么它的更新值有可能会丢失。<br>然而，如果读操作远远超过写操作，您可以结合使用内部锁和 volatile 变量来减少公共代码路径的开销。清单 6 中显示的线程安全的计数器使用 synchronized 确保增量操作是原子的，并使用 volatile 保证当前结果的可见性。如果更新不频繁的话，该方法可实现更好的性能，因为读路径的开销仅仅涉及 volatile 读操作，这通常要优于一个无竞争的锁获取的开销。<br>清单 6. 结合使用 volatile 和 synchronized 实现 “开销较低的读－写锁”<br>@ThreadSafe<br>public class CheesyCounter {<br>    // Employs the cheap read-write lock trick<br>    // All mutative operations MUST be done with the ‘this’ lock held<br>    @GuardedBy(“this”) private volatile int value;</p>
-<pre><code>public int getValue() { return value; }
-
-public synchronized int increment() {
-    return value++;
-}
-</code></pre><p>}<br>之所以将这种技术称之为 “开销较低的读－写锁” 是因为您使用了不同的同步机制进行读写操作。因为本例中的写操作违反了使用 volatile 的第一个条件，因此不能使用 volatile 安全地实现计数器 —— 您必须使用锁。然而，您可以在读操作中使用 volatile 确保当前值的可见性，因此可以使用锁进行所有变化的操作，使用 volatile 进行只读操作。其中，锁一次只允许一个线程访问值，volatile 允许多个线程执行读操作，因此当使用 volatile 保证读代码路径时，要比使用锁执行全部代码路径获得更高的共享度 —— 就像读－写操作一样。然而，要随时牢记这种模式的弱点：如果超越了该模式的最基本应用，结合这两个竞争的同步机制将变得非常困难。<br>结束语<br>与锁相比，Volatile 变量是一种非常简单但同时又非常脆弱的同步机制，它在某些情况下将提供优于锁的性能和伸缩性。如果严格遵循 volatile 的使用条件 —— 即变量真正独立于其他变量和自己以前的值 —— 在某些情况下可以使用 volatile 代替 synchronized 来简化代码。然而，使用 volatile 的代码往往比使用锁的代码更加容易出错。本文介绍的模式涵盖了可以使用 volatile 代替 synchronized 的最常见的一些用例。遵循这些模式（注意使用时不要超过各自的限制）可以帮助您安全地实现大多数用例，使用 volatile 变量获得更佳性能。</p>
 ]]></content>
     </entry>
     
@@ -1219,6 +1214,24 @@ public synchronized int increment() {
     </entry>
     
     <entry>
+      <title><![CDATA[Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系]]></title>
+      <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/</url>
+      <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
+<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
+<p>Spring的总体架构</p>
+<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
+<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
+<p>Spring的设计理念</p>
+<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
+<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
+<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
+<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
+<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
+<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[Spring架构详解：Bean详解和Context组件详解]]></title>
       <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ABean%E8%AF%A6%E8%A7%A3%E5%92%8CContext%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3/</url>
       <content type="html"><![CDATA[<h1 id="Bean详解"><a href="#Bean详解" class="headerlink" title="Bean详解"></a>Bean详解</h1><p>前面已经说明了Bean组件对Spring的重要性，下面看看Bean这个组件式怎么设计的。Bean组件在Spring的org.springframework.beans包下。这个包下的所有类主要解决了三件事：Bean的定义、Bean 的创建以及对Bean的解析。对Spring的使用者来说唯一需要关心的就是Bean的创建，其他两个由Spring在内部帮你完成了，对你来说是透明的。</p>
@@ -1235,24 +1248,6 @@ public synchronized int increment() {
 <p>再往下分就是按照构建Context的文件类型，接着就是访问Context的方式。这样一级一级构成了完整的Context等级层次。</p>
 <p>总体来说ApplicationContext必须要完成以下几件事：</p>
 <p>标识一个应用环境<br>利用BeanFactory创建Bean对象<br>保存对象关系表<br>能够捕获各种事件<br>Context作为Spring的Ioc容器，基本上整合了Spring的大部分功能，或者说是大部分功能的基础。</p>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系]]></title>
-      <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/</url>
-      <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
-<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
-<p>Spring的总体架构</p>
-<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
-<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
-<p>Spring的设计理念</p>
-<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
-<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
-<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
-<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
-<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
-<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
 ]]></content>
     </entry>
     
@@ -1709,6 +1704,48 @@ c)   关键字的个数n必须满足： ceil(m / 2)-1 &lt;= n &lt;= m-1。
     </entry>
     
     <entry>
+      <title><![CDATA[Redis数据结构和对象-(三)跳跃表]]></title>
+      <url>https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E4%B8%89%EF%BC%89%E8%B7%B3%E8%B7%83%E8%A1%A8/</url>
+      <content type="html"><![CDATA[<h2 id="定义"><a href="#定义" class="headerlink" title="定义:"></a>定义:</h2><p>它是一种有序数据结构,通过在每个节点中维持多个 指向其他节点<br>的指针,从而达到快速访问节点的目的。</p>
+<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景:"></a>使用场景:</h2><p>Redis使用跳跃表作为有序集合键的底层实现之一,如果一个有序集合包含的元素数量比较多,又或者有序集合中元素的成(member)是比较长的字符串时,Redis就会使用跳跃表来作为有序集合键的底层实现。<br>另外,在集群节点中跳跃表被用作内部数据结构。除此之外在Redis中在无他用</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现:"></a>实现:</h2><p>跳跃表由zskiplistNode和zskiplist两个结构定义,其中zskiplistNode用<br>于表示跳跃表节点,而zskiplist用于保存跳跃表节点的相关信息。</p>
+<p><img src="/img/skipList-1.png" alt=""></p>
+<p>上图为zskiplist结构,其中</p>
+<ul>
+<li>header指向跳跃表的表头节点。</li>
+<li>tail指向表尾节点。</li>
+<li>level记录层数最大的那个节点的层数(注意:表头节点的层数不计算在内),是1-32之间的一个随机数,越大的数出现的概率越小。</li>
+</ul>
+<p>下图右为zskiplist结构,其中层(level):L1、L2、L3等标记各个节点的层,每个层都有前进指针和跨度,当程序从表头向表尾进行遍历时,访问会沿着层的前进指针进行。</p>
+<p><strong>跨度</strong>:层的跨度(level[i].span属性)用于记录两个节点间的距离,节点间的跨度越大,它们相聚的就越远,指向NULL的所有前进指针的跨度都为0,因为它们没有连向任何节点。跨度跟遍历操作无关,是用来计算排位的(可根据排位获取元素节点),如下图,查找分值为3.0、对象为o3的节点时,只经过了一个层,并且层的跨度为3,所以该节点在跳跃表中的排位为3。</p>
+<p><img src="/img/skipList-2.png" alt=""></p>
+<ul>
+<li><strong>后退(backward)指针</strong>:BW标记节点的后退指针,它指向位于当前节点的前一个节点,后退指针在程序从表尾向表头遍历时使用,与前进指针不同,后退针每次只能后退至前一个节点,因为每个节点只有一个后退指针。</li>
+<li><strong>分值</strong>(score):1.0、2.0和3.0是节点所保存的分值,分值是一个double类型的浮点数,可重复,用于节点排序(分值相同则按在字典中大小排)。</li>
+<li><strong>成员对象</strong>(obj):o1、o2和o3是节点所保存的成员对象,成员对象是一个指针,它指向一个字符串对象,而字符串对象则保存着一个SDS值,并且是唯一的。<br><em>注意:表头节点跟其他节点一样,也有后退指针、分值、成员对象等属性,但都不会被用到,故在图中没有画出。</em></li>
+</ul>
+<h2 id="跳跃表API"><a href="#跳跃表API" class="headerlink" title="跳跃表API"></a>跳跃表API</h2><p><img src="/img/skipList-3.png" alt=""></p>
+<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><p>a.跳表具有如下性质:</p>
+<ol>
+<li>由很多层结构组成</li>
+<li>每一层都是一个有序的链表</li>
+<li>最底层(Level 1)的链表包含所有元素</li>
+<li>如果一个元素出现在 Level i 的链表中,则它在 Level i 之下的链表也都会出现。</li>
+<li>每个节点包含两个指针,一个指向同一链表中的下一个元素,一个指向下面一层的元素。</li>
+</ol>
+<p>b.插入</p>
+<p>先确定该元素要占据的层数 K(采用丢硬币的方式,这完全是随机的)<br>然后在 Level 1 … Level K 各个层的链表都插入元素。<br>例子:插入 119, K = 2<br><img src="/img/skipList-4.png" alt=""></p>
+<p>如果 K 大于链表的层数,则要添加新的层。<br>例子:插入 119, K = 4<br><img src="/img/skipList-5.png" alt=""></p>
+<p>c.删除<br>三个步骤:</p>
+<ol>
+<li>在跳跃表中查找到这个元素的位置(如果未找到,则退出)</li>
+<li>将该元素所在整列从表中删除</li>
+<li>将多余的“空链”删除<br><img src="/img/skipList-6.png" alt=""></li>
+</ol>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[Redis数据结构和对象-(四)整数集合]]></title>
       <url>https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E5%9B%9B%EF%BC%89%E6%95%B4%E6%95%B0%E9%9B%86%E5%90%88/</url>
       <content type="html"><![CDATA[<h1 id="整数集合"><a href="#整数集合" class="headerlink" title="整数集合"></a>整数集合</h1><p>整数集合（intset）是集合键的底层实现之一： 当一个集合只包含整数值元素， 并且这个集合的元素数量不多时， Redis 就会使用整数集合作为集合键的底层实现。</p>
@@ -1781,48 +1818,6 @@ c)   关键字的个数n必须满足： ceil(m / 2)-1 &lt;= n &lt;= m-1。
 <h2 id="降级"><a href="#降级" class="headerlink" title="降级"></a>降级</h2><p>整数集合不支持降级操作， 一旦对数组进行了升级， 编码就会一直保持升级后的状态。</p>
 <p>举个例子， 对于图 6-11 所示的整数集合来说， 即使我们将集合里唯一一个真正需要使用 int64_t 类型来保存的元素 4294967295 删除了， 整数集合的编码仍然会维持 INTSET_ENC_INT64 ， 底层数组也仍然会是 int64_t 类型的， 如图 6-12 所示。</p>
 <p><img src="/img/intlist-11.png" alt=""><br><img src="/img/intlist-12.png" alt=""></p>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[Redis数据结构和对象-(三)跳跃表]]></title>
-      <url>https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E4%B8%89%EF%BC%89%E8%B7%B3%E8%B7%83%E8%A1%A8/</url>
-      <content type="html"><![CDATA[<h2 id="定义"><a href="#定义" class="headerlink" title="定义:"></a>定义:</h2><p>它是一种有序数据结构,通过在每个节点中维持多个 指向其他节点<br>的指针,从而达到快速访问节点的目的。</p>
-<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景:"></a>使用场景:</h2><p>Redis使用跳跃表作为有序集合键的底层实现之一,如果一个有序集合包含的元素数量比较多,又或者有序集合中元素的成(member)是比较长的字符串时,Redis就会使用跳跃表来作为有序集合键的底层实现。<br>另外,在集群节点中跳跃表被用作内部数据结构。除此之外在Redis中在无他用</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现:"></a>实现:</h2><p>跳跃表由zskiplistNode和zskiplist两个结构定义,其中zskiplistNode用<br>于表示跳跃表节点,而zskiplist用于保存跳跃表节点的相关信息。</p>
-<p><img src="/img/skipList-1.png" alt=""></p>
-<p>上图为zskiplist结构,其中</p>
-<ul>
-<li>header指向跳跃表的表头节点。</li>
-<li>tail指向表尾节点。</li>
-<li>level记录层数最大的那个节点的层数(注意:表头节点的层数不计算在内),是1-32之间的一个随机数,越大的数出现的概率越小。</li>
-</ul>
-<p>下图右为zskiplist结构,其中层(level):L1、L2、L3等标记各个节点的层,每个层都有前进指针和跨度,当程序从表头向表尾进行遍历时,访问会沿着层的前进指针进行。</p>
-<p><strong>跨度</strong>:层的跨度(level[i].span属性)用于记录两个节点间的距离,节点间的跨度越大,它们相聚的就越远,指向NULL的所有前进指针的跨度都为0,因为它们没有连向任何节点。跨度跟遍历操作无关,是用来计算排位的(可根据排位获取元素节点),如下图,查找分值为3.0、对象为o3的节点时,只经过了一个层,并且层的跨度为3,所以该节点在跳跃表中的排位为3。</p>
-<p><img src="/img/skipList-2.png" alt=""></p>
-<ul>
-<li><strong>后退(backward)指针</strong>:BW标记节点的后退指针,它指向位于当前节点的前一个节点,后退指针在程序从表尾向表头遍历时使用,与前进指针不同,后退针每次只能后退至前一个节点,因为每个节点只有一个后退指针。</li>
-<li><strong>分值</strong>(score):1.0、2.0和3.0是节点所保存的分值,分值是一个double类型的浮点数,可重复,用于节点排序(分值相同则按在字典中大小排)。</li>
-<li><strong>成员对象</strong>(obj):o1、o2和o3是节点所保存的成员对象,成员对象是一个指针,它指向一个字符串对象,而字符串对象则保存着一个SDS值,并且是唯一的。<br><em>注意:表头节点跟其他节点一样,也有后退指针、分值、成员对象等属性,但都不会被用到,故在图中没有画出。</em></li>
-</ul>
-<h2 id="跳跃表API"><a href="#跳跃表API" class="headerlink" title="跳跃表API"></a>跳跃表API</h2><p><img src="/img/skipList-3.png" alt=""></p>
-<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><p>a.跳表具有如下性质:</p>
-<ol>
-<li>由很多层结构组成</li>
-<li>每一层都是一个有序的链表</li>
-<li>最底层(Level 1)的链表包含所有元素</li>
-<li>如果一个元素出现在 Level i 的链表中,则它在 Level i 之下的链表也都会出现。</li>
-<li>每个节点包含两个指针,一个指向同一链表中的下一个元素,一个指向下面一层的元素。</li>
-</ol>
-<p>b.插入</p>
-<p>先确定该元素要占据的层数 K(采用丢硬币的方式,这完全是随机的)<br>然后在 Level 1 … Level K 各个层的链表都插入元素。<br>例子:插入 119, K = 2<br><img src="/img/skipList-4.png" alt=""></p>
-<p>如果 K 大于链表的层数,则要添加新的层。<br>例子:插入 119, K = 4<br><img src="/img/skipList-5.png" alt=""></p>
-<p>c.删除<br>三个步骤:</p>
-<ol>
-<li>在跳跃表中查找到这个元素的位置(如果未找到,则退出)</li>
-<li>将该元素所在整列从表中删除</li>
-<li>将多余的“空链”删除<br><img src="/img/skipList-6.png" alt=""></li>
-</ol>
 ]]></content>
     </entry>
     
@@ -4679,7 +4674,7 @@ return numbers
     
     <entry>
       <title><![CDATA[海量数据处理]]></title>
-      <url>https://fudawei.github.io/2015/09/06/%E6%B5%B7%E9%87%8F%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86/</url>
+      <url>https://fudawei.github.io/2015/09/06/%E5%A4%A7%E6%95%B0%E6%8D%AE%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
       <content type="html"><![CDATA[<p>作者：July、youwang、yanxionglu。<br>出处：<a href="http://blog.csdn.net/v_JULY_v。" target="_blank" rel="external">http://blog.csdn.net/v_JULY_v。</a></p>
 <h2 id="十道海量数据处理面试题"><a href="#十道海量数据处理面试题" class="headerlink" title="十道海量数据处理面试题"></a>十道海量数据处理面试题</h2><ul>
 <li>提取出某日访问百度次数最多的那个IP。</li>
@@ -4798,7 +4793,7 @@ return numbers
     
     <entry>
       <title><![CDATA[海量数据处理]]></title>
-      <url>https://fudawei.github.io/2015/09/06/%E5%A4%A7%E6%95%B0%E6%8D%AE%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
+      <url>https://fudawei.github.io/2015/09/06/%E6%B5%B7%E9%87%8F%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86/</url>
       <content type="html"><![CDATA[<p>作者：July、youwang、yanxionglu。<br>出处：<a href="http://blog.csdn.net/v_JULY_v。" target="_blank" rel="external">http://blog.csdn.net/v_JULY_v。</a></p>
 <h2 id="十道海量数据处理面试题"><a href="#十道海量数据处理面试题" class="headerlink" title="十道海量数据处理面试题"></a>十道海量数据处理面试题</h2><ul>
 <li>提取出某日访问百度次数最多的那个IP。</li>
