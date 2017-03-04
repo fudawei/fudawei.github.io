@@ -42,7 +42,7 @@
 
 <meta name="description" content="概览
 核心理论
-Synchronized实现原理以及底层优化
+内置锁实现原理以及底层优化
 volatile的使用及其原理
 Executor和ExecutorService
 AQS阻塞队列
@@ -72,14 +72,16 @@ AQS阻塞队列
 
 
 
-Executor和ExecutorServi">
+volatile的使用及其原理
+volatile的作用
+vol">
 <meta property="og:type" content="article">
 <meta property="og:title" content="多线程分享">
 <meta property="og:url" content="https://fudawei.github.io/2017/02/16/多线程分享/index.html">
 <meta property="og:site_name" content="冰鸟">
 <meta property="og:description" content="概览
 核心理论
-Synchronized实现原理以及底层优化
+内置锁实现原理以及底层优化
 volatile的使用及其原理
 Executor和ExecutorService
 AQS阻塞队列
@@ -109,13 +111,15 @@ AQS阻塞队列
 
 
 
-Executor和ExecutorServi">
-<meta property="og:updated_time" content="2017-02-18T01:59:38.821Z">
+volatile的使用及其原理
+volatile的作用
+vol">
+<meta property="og:updated_time" content="2017-02-18T06:47:07.746Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="多线程分享">
 <meta name="twitter:description" content="概览
 核心理论
-Synchronized实现原理以及底层优化
+内置锁实现原理以及底层优化
 volatile的使用及其原理
 Executor和ExecutorService
 AQS阻塞队列
@@ -145,7 +149,9 @@ AQS阻塞队列
 
 
 
-Executor和ExecutorServi">
+volatile的使用及其原理
+volatile的作用
+vol">
 
 
 <script type="text/javascript" id="hexo.configuration">
@@ -493,7 +499,7 @@ Executor和ExecutorServi">
       
         <span itemprop="articleBody"><h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><ul>
 <li>核心理论</li>
-<li>Synchronized实现原理以及底层优化</li>
+<li>内置锁实现原理以及底层优化</li>
 <li>volatile的使用及其原理</li>
 <li>Executor和ExecutorService</li>
 <li>AQS阻塞队列</li>
@@ -522,6 +528,11 @@ Executor和ExecutorServi">
 <li>其他优化</li>
 </ul>
 </li>
+</ul>
+<h2 id="volatile的使用及其原理"><a href="#volatile的使用及其原理" class="headerlink" title="volatile的使用及其原理"></a><a href="https://fudawei.github.io/2017/02/08/Java%20%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%9Avolatile%E7%9A%84%E4%BD%BF%E7%94%A8%E5%8F%8A%E5%85%B6%E5%8E%9F%E7%90%86/" title="volatile的使用及其原理">volatile的使用及其原理</a></h2><ul>
+<li>volatile的作用</li>
+<li>volatile的使用</li>
+<li>volatile的原理</li>
 </ul>
 <h2 id="Executor和ExecutorService接口"><a href="#Executor和ExecutorService接口" class="headerlink" title="Executor和ExecutorService接口"></a><a href="https://fudawei.github.io/2013/08/11/[Java%E5%B9%B6%E5%8F%91%E5%8C%85%E5%AD%A6%E4%B9%A0%E4%B8%80]Executor%E5%92%8CExecutorService/" title="Executor和ExecutorService接口">Executor和ExecutorService接口</a></h2><ul>
 <li><p>Executor接口</p>
@@ -797,7 +808,7 @@ Executor和ExecutorServi">
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">141</span>
+              <span class="site-state-item-count">142</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>
@@ -860,7 +871,7 @@ Executor和ExecutorServi">
           <div class="post-toc">
             
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#概览"><span class="nav-number">1.</span> <span class="nav-text">概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#核心理论"><span class="nav-number">2.</span> <span class="nav-text">核心理论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内置锁原理和优化"><span class="nav-number">3.</span> <span class="nav-text">内置锁原理和优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Executor和ExecutorService接口"><span class="nav-number">4.</span> <span class="nav-text">Executor和ExecutorService接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AQS阻塞队列"><span class="nav-number">5.</span> <span class="nav-text">AQS阻塞队列</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#概览"><span class="nav-number">1.</span> <span class="nav-text">概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#核心理论"><span class="nav-number">2.</span> <span class="nav-text">核心理论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内置锁原理和优化"><span class="nav-number">3.</span> <span class="nav-text">内置锁原理和优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#volatile的使用及其原理"><span class="nav-number">4.</span> <span class="nav-text">volatile的使用及其原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Executor和ExecutorService接口"><span class="nav-number">5.</span> <span class="nav-text">Executor和ExecutorService接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AQS阻塞队列"><span class="nav-number">6.</span> <span class="nav-text">AQS阻塞队列</span></a></li></ol></div>
             
           </div>
           <div class="post-toc-indicator-bottom post-toc-indicator"></div>

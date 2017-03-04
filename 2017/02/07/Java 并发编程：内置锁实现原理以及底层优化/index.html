@@ -43,8 +43,8 @@
 <meta name="description" content="内置锁的基本使用和原理一、内置锁的使用
 修饰一个代码块，被修饰的代码块称为同步语句块，其作用的范围是大括号{}括起来的代码，作用的对象是调用这个代码块的对象；
 修饰一个方法，被修饰的方法称为同步方法，其作用的范围是整个方法，作用的对象是调用这个方法的对象；
-修改一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；
-修改一个类，其作用的范围是synchronized后面括号括起">
+修饰一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；
+修饰一个类，其作用的范围是synchronized后面括号括起">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Java 并发编程：内置锁实现原理以及底层优化">
 <meta property="og:url" content="https://fudawei.github.io/2017/02/07/Java 并发编程：内置锁实现原理以及底层优化/index.html">
@@ -52,8 +52,8 @@
 <meta property="og:description" content="内置锁的基本使用和原理一、内置锁的使用
 修饰一个代码块，被修饰的代码块称为同步语句块，其作用的范围是大括号{}括起来的代码，作用的对象是调用这个代码块的对象；
 修饰一个方法，被修饰的方法称为同步方法，其作用的范围是整个方法，作用的对象是调用这个方法的对象；
-修改一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；
-修改一个类，其作用的范围是synchronized后面括号括起">
+修饰一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；
+修饰一个类，其作用的范围是synchronized后面括号括起">
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-1.png">
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-2.png">
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-9.png">
@@ -63,14 +63,14 @@
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-6.png">
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-7.png">
 <meta property="og:image" content="https://fudawei.github.io/img/synchronized/synchronized-8.png">
-<meta property="og:updated_time" content="2017-02-18T03:08:34.074Z">
+<meta property="og:updated_time" content="2017-02-18T06:46:53.717Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Java 并发编程：内置锁实现原理以及底层优化">
 <meta name="twitter:description" content="内置锁的基本使用和原理一、内置锁的使用
 修饰一个代码块，被修饰的代码块称为同步语句块，其作用的范围是大括号{}括起来的代码，作用的对象是调用这个代码块的对象；
 修饰一个方法，被修饰的方法称为同步方法，其作用的范围是整个方法，作用的对象是调用这个方法的对象；
-修改一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；
-修改一个类，其作用的范围是synchronized后面括号括起">
+修饰一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；
+修饰一个类，其作用的范围是synchronized后面括号括起">
 <meta name="twitter:image" content="https://fudawei.github.io/img/synchronized/synchronized-1.png">
 
 
@@ -420,8 +420,8 @@
         <span itemprop="articleBody"><h2 id="内置锁的基本使用和原理"><a href="#内置锁的基本使用和原理" class="headerlink" title="内置锁的基本使用和原理"></a>内置锁的基本使用和原理</h2><h3 id="一、内置锁的使用"><a href="#一、内置锁的使用" class="headerlink" title="一、内置锁的使用"></a>一、内置锁的使用</h3><ol>
 <li>修饰一个代码块，被修饰的代码块称为同步语句块，其作用的范围是大括号{}括起来的代码，作用的对象是调用这个代码块的对象；</li>
 <li>修饰一个方法，被修饰的方法称为同步方法，其作用的范围是整个方法，作用的对象是调用这个方法的对象；</li>
-<li>修改一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；</li>
-<li>修改一个类，其作用的范围是synchronized后面括号括起来的部分，作用主的对象是这个类的所有对象。</li>
+<li>修饰一个静态的方法，其作用的范围是整个静态方法，作用的对象是这个类的所有对象；</li>
+<li>修饰一个类，其作用的范围是synchronized后面括号括起来的部分，作用主的对象是这个类的所有对象。</li>
 </ol>
 <h3 id="二、内置锁原理"><a href="#二、内置锁原理" class="headerlink" title="二、内置锁原理"></a>二、内置锁原理</h3><p>我们先从一个实例来看一下内置锁原理，代码如下：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">public class SynchronizedDemo &#123;</div><div class="line">     public void method() &#123;</div><div class="line">         synchronized (this) &#123;</div><div class="line">             System.out.println(&quot;Method 1 start&quot;);</div><div class="line">         &#125;</div><div class="line">     &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
@@ -743,7 +743,7 @@
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">141</span>
+              <span class="site-state-item-count">142</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>
