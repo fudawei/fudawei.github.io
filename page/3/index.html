@@ -3398,8 +3398,8 @@
           
           
             
-              <a class="post-title-link" href="/2016/10/25/[Spark源码四]图解作业生命周期/" itemprop="url">
-                [Spark源码四]图解作业生命周期
+              <a class="post-title-link" href="/2016/10/25/[Spark源码三]作业运行过程/" itemprop="url">
+                [Spark源码三】作业运行过程
               </a>
             
           
@@ -3448,11 +3448,11 @@
             <span class="post-comments-count">
               &nbsp; | &nbsp;
               <!--
-              <a href="/2016/10/25/[Spark源码四]图解作业生命周期/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2016/10/25/[Spark源码四]图解作业生命周期/" itemprop="commentsCount"></span>
+              <a href="/2016/10/25/[Spark源码三]作业运行过程/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2016/10/25/[Spark源码三]作业运行过程/" itemprop="commentsCount"></span>
               </a>
               -->
-              <a href="/2016/10/25/[Spark源码四]图解作业生命周期/#comments" itemprop="discussionUrl">
+              <a href="/2016/10/25/[Spark源码三]作业运行过程/#comments" itemprop="discussionUrl">
                 <span>评论</span>
               </a>
             </span>
@@ -3463,7 +3463,7 @@
 
 
 &nbsp; | &nbsp;
-<span id="/2016/10/25/[Spark源码四]图解作业生命周期/"class="leancloud_visitors" data-flag-title="[Spark源码四]图解作业生命周期">
+<span id="/2016/10/25/[Spark源码三]作业运行过程/"class="leancloud_visitors" data-flag-title="[Spark源码三】作业运行过程">
          &nbsp;阅读次数
         </span>
 
@@ -3481,12 +3481,12 @@
         
           <span itemprop="articleBody">
             
-            这一章我们探索了Spark作业的运行过程，但是没把整个过程描绘出来，好，跟着我走吧，let you know！
-
-            
+            官方给的例子里面，一执行collect方法就能出结果，那我们就从collect开始看吧，进入RDD，找到collect方法。
+1234def collect(): Array[T] = &#123;    val results = sc.runJob(this, (iter: Iterator[T
+            ...
           </span>
           <div class="post-more-link text-center">
-            <a class="btn" href="/2016/10/25/[Spark源码四]图解作业生命周期/#more" rel="contents">
+            <a class="btn" href="/2016/10/25/[Spark源码三]作业运行过程/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
