@@ -3398,241 +3398,6 @@
           
           
             
-              <a class="post-title-link" href="/2015/07/22/类加载机制/" itemprop="url">
-                类加载机制
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2015-07-22T21:57:30+08:00" content="2015-07-22">
-            2015-07-22
-          </time>
-        </span>
-
-        
-          <span class="post-category" >
-            &nbsp; | &nbsp; 分类于
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/Java/" itemprop="url" rel="index">
-                  <span itemprop="name">Java</span>
-                </a>
-              </span>
-
-              
-              
-                ， 
-              
-
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/Java/JVM/" itemprop="url" rel="index">
-                  <span itemprop="name">JVM</span>
-                </a>
-              </span>
-
-              
-              
-
-            
-          </span>
-        
-
-        
-          
-            <span class="post-comments-count">
-              &nbsp; | &nbsp;
-              <!--
-              <a href="/2015/07/22/类加载机制/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2015/07/22/类加载机制/" itemprop="commentsCount"></span>
-              </a>
-              -->
-              <a href="/2015/07/22/类加载机制/#comments" itemprop="discussionUrl">
-                <span>评论</span>
-              </a>
-            </span>
-          
-        
-
-
-
-
-&nbsp; | &nbsp;
-<span id="/2015/07/22/类加载机制/"class="leancloud_visitors" data-flag-title="类加载机制">
-         &nbsp;阅读次数
-        </span>
-
-
-	
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <h3 id="类加载过程"><a href="#类加载过程" class="headerlink" title="类加载过程"></a>类加载过程</h3><ul>
-<li>类从被加载到虚拟机内存中开始，到卸载出内存为止，它的整个生命周期包括：加载、验证、准备、解析、初始化、使用和卸载七个阶段。它们开始的顺序如下图所示：<br><br/><br><center><img src="http://o99dg8ap9.bkt.clouddn.com/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6.jpg" alt=""></center><br><br/></li>
-<li><p>其中<strong>类加载的过程包括了加载、验证、准备、解析、初始化五个阶段。</strong>在这五个阶段中，加载、验证、准备和初始化这四个阶段发生的顺序是确定的，而解析阶段则不一定，它在某些情况下可以在初始化阶段之后开始，这是为了支持Java语言的运行时绑定（也成为动态绑定或晚期绑定）。另外注意这里的几个阶段是按顺序<strong>开始</strong>，而不是按顺序<strong>进行</strong>或<strong>完成</strong>，因为这些阶段通常都是互相交叉地混合进行的，通常在一个阶段执行的过程中调用或激活另一个阶段</p>
-<p>这里简要说明下Java中的绑定：绑定指的是把一个方法的调用与方法所在的类(方法主体)关联起来，对java来说，绑定分为静态绑定和动态绑定：</p>
-<ul>
-<li>静态绑定：即前期绑定。在程序执行前方法已经被绑定，此时由编译器或其它连接程序实现。针对java，简单的可以理解为程序编译期的绑定。java当中的方法只有final，static，private和构造方法是前期绑定的</li>
-</ul>
-</li>
-<li><p>动态绑定：即晚期绑定，也叫运行时绑定。在运行时根据具体对象的类型进行绑定。在java中，几乎所有的方法都是后期绑定的</p>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2015/07/22/类加载机制/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2015/06/09/Ubuntu安装小结/" itemprop="url">
-                Ubuntu安装小结
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2015-06-09T22:41:40+08:00" content="2015-06-09">
-            2015-06-09
-          </time>
-        </span>
-
-        
-          <span class="post-category" >
-            &nbsp; | &nbsp; 分类于
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/Linux/" itemprop="url" rel="index">
-                  <span itemprop="name">Linux</span>
-                </a>
-              </span>
-
-              
-              
-
-            
-          </span>
-        
-
-        
-          
-            <span class="post-comments-count">
-              &nbsp; | &nbsp;
-              <!--
-              <a href="/2015/06/09/Ubuntu安装小结/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2015/06/09/Ubuntu安装小结/" itemprop="commentsCount"></span>
-              </a>
-              -->
-              <a href="/2015/06/09/Ubuntu安装小结/#comments" itemprop="discussionUrl">
-                <span>评论</span>
-              </a>
-            </span>
-          
-        
-
-
-
-
-&nbsp; | &nbsp;
-<span id="/2015/06/09/Ubuntu安装小结/"class="leancloud_visitors" data-flag-title="Ubuntu安装小结">
-         &nbsp;阅读次数
-        </span>
-
-
-	
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <span itemprop="articleBody">
-            
-            Ubuntu 中apt-get用法：查找软件命令： apt-cache search keyword
-查询软件状态命令： apt-cache policy softname
-安装软件命令： apt-get install softname1 softname2 softname3……
-卸载软件命令：
-            ...
-          </span>
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2015/06/09/Ubuntu安装小结/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
               <a class="post-title-link" href="/2014/09/15/Java面试题/" itemprop="url">
                 Java面试题
               </a>
@@ -3829,124 +3594,6 @@ HashMap的源码，实现原理，底层结构。
           <h2 id="减少锁持有时间"><a href="#减少锁持有时间" class="headerlink" title="减少锁持有时间"></a>减少锁持有时间</h2><p>如下面的代码：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">public synchronized void test() &#123;</div><div class="line">        executeMethod1();</div><div class="line">        multiThreadExecute();</div><div class="line">        executeMethod2();</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
           <div class="post-more-link text-center">
             <a class="btn" href="/2014/08/01/锁在应用层的优化思路/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-        
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      
-      
-        <h1 class="post-title" itemprop="name headline">
-          
-          
-            
-              <a class="post-title-link" href="/2014/08/01/[Java]虚拟机基本结构/" itemprop="url">
-                [Java]虚拟机基本结构
-              </a>
-            
-          
-        </h1>
-      
-
-      <div class="post-meta">
-        <span class="post-time">
-          发表于
-          <time itemprop="dateCreated" datetime="2014-08-01T03:37:06+08:00" content="2014-08-01">
-            2014-08-01
-          </time>
-        </span>
-
-        
-          <span class="post-category" >
-            &nbsp; | &nbsp; 分类于
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/Java/" itemprop="url" rel="index">
-                  <span itemprop="name">Java</span>
-                </a>
-              </span>
-
-              
-              
-                ， 
-              
-
-            
-              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
-                <a href="/categories/Java/JVM/" itemprop="url" rel="index">
-                  <span itemprop="name">JVM</span>
-                </a>
-              </span>
-
-              
-              
-
-            
-          </span>
-        
-
-        
-          
-            <span class="post-comments-count">
-              &nbsp; | &nbsp;
-              <!--
-              <a href="/2014/08/01/[Java]虚拟机基本结构/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2014/08/01/[Java]虚拟机基本结构/" itemprop="commentsCount"></span>
-              </a>
-              -->
-              <a href="/2014/08/01/[Java]虚拟机基本结构/#comments" itemprop="discussionUrl">
-                <span>评论</span>
-              </a>
-            </span>
-          
-        
-
-
-
-
-&nbsp; | &nbsp;
-<span id="/2014/08/01/[Java]虚拟机基本结构/"class="leancloud_visitors" data-flag-title="[Java]虚拟机基本结构">
-         &nbsp;阅读次数
-        </span>
-
-
-	
-      </div>
-    </header>
-
-    <div class="post-body">
-
-      
-      
-
-      
-        
-          <ul>
-<li>java堆用于存放对象示例，与数据相关，java栈主要与线程的函数调用相关</li>
-<li>函数调用一次出入java栈一次，调用的时候入栈，调用结束（return或者throw）出栈，函数参数和函数局部  变量保存在栈帧中，所以函数调用结束之后栈帧被弹出，相应的局部变量也就失效了。
-          <div class="post-more-link text-center">
-            <a class="btn" href="/2014/08/01/[Java]虚拟机基本结构/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -4593,11 +4240,375 @@ HashMap的源码，实现原理，底层结构。
 
 
     
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2014/06/09/IntelliJ-IDEA工具使用笔记/" itemprop="url">
+                IntelliJ IDEA工具使用笔记
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2014-06-09T22:26:49+08:00" content="2014-06-09">
+            2014-06-09
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/" itemprop="url" rel="index">
+                  <span itemprop="name">Java</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/开发工具/" itemprop="url" rel="index">
+                  <span itemprop="name">开发工具</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2014/06/09/IntelliJ-IDEA工具使用笔记/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2014/06/09/IntelliJ-IDEA工具使用笔记/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2014/06/09/IntelliJ-IDEA工具使用笔记/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2014/06/09/IntelliJ-IDEA工具使用笔记/"class="leancloud_visitors" data-flag-title="IntelliJ IDEA工具使用笔记">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            IntelliJ IDEA 工具使用参考极客学院ctrl+N 输入类名，从下拉列表选择pyCharm Tips -&gt;Open directory -&gt; Open in current window -&gt; Add to currently opended projectsCtrl+s
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2014/06/09/IntelliJ-IDEA工具使用笔记/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2014/06/09/Guava库学习/" itemprop="url">
+                Guava库学习
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2014-06-09T22:26:17+08:00" content="2014-06-09">
+            2014-06-09
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/" itemprop="url" rel="index">
+                  <span itemprop="name">Java</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/Java工具库/" itemprop="url" rel="index">
+                  <span itemprop="name">Java工具库</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2014/06/09/Guava库学习/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2014/06/09/Guava库学习/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2014/06/09/Guava库学习/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2014/06/09/Guava库学习/"class="leancloud_visitors" data-flag-title="Guava库学习">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            Guava库学习
+Junit使用
+在InteliJ中，test目录右键，Mark Directory as -&gt; Test Source Root 然后在里面@Test引入Junit.jar即可编写测试用例
+文件操作
+使用Files类来执行那些基本的任务，比如：移动或复制文件，或读取文件内容到
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2014/06/09/Guava库学习/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      
+      
+        <h1 class="post-title" itemprop="name headline">
+          
+          
+            
+              <a class="post-title-link" href="/2014/05/12/Guava概览/" itemprop="url">
+                Guava概览
+              </a>
+            
+          
+        </h1>
+      
+
+      <div class="post-meta">
+        <span class="post-time">
+          发表于
+          <time itemprop="dateCreated" datetime="2014-05-12T15:37:56+08:00" content="2014-05-12">
+            2014-05-12
+          </time>
+        </span>
+
+        
+          <span class="post-category" >
+            &nbsp; | &nbsp; 分类于
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/" itemprop="url" rel="index">
+                  <span itemprop="name">Java</span>
+                </a>
+              </span>
+
+              
+              
+                ， 
+              
+
+            
+              <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                <a href="/categories/Java/Java工具库/" itemprop="url" rel="index">
+                  <span itemprop="name">Java工具库</span>
+                </a>
+              </span>
+
+              
+              
+
+            
+          </span>
+        
+
+        
+          
+            <span class="post-comments-count">
+              &nbsp; | &nbsp;
+              <!--
+              <a href="/2014/05/12/Guava概览/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2014/05/12/Guava概览/" itemprop="commentsCount"></span>
+              </a>
+              -->
+              <a href="/2014/05/12/Guava概览/#comments" itemprop="discussionUrl">
+                <span>评论</span>
+              </a>
+            </span>
+          
+        
+
+
+
+
+&nbsp; | &nbsp;
+<span id="/2014/05/12/Guava概览/"class="leancloud_visitors" data-flag-title="Guava概览">
+         &nbsp;阅读次数
+        </span>
+
+
+	
+      </div>
+    </header>
+
+    <div class="post-body">
+
+      
+      
+
+      
+        
+          <span itemprop="articleBody">
+            
+            Guava 是一个 Google 的基于java1.6的类库集合的扩展项目，包括 collections, caching, primitives support, concurrency libraries, common annotations, string processing, I/O, 
+            ...
+          </span>
+          <div class="post-more-link text-center">
+            <a class="btn" href="/2014/05/12/Guava概览/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/10/">&laquo;</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><span class="page-number current">11</span><a class="page-number" href="/page/12/">12</a><span class="space">&hellip;</span><a class="page-number" href="/page/15/">15</a><a class="extend next" rel="next" href="/page/12/">&raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/10/">&laquo;</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><span class="page-number current">11</span><a class="page-number" href="/page/12/">12</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/12/">&raquo;</a>
   </nav>
 
  </div>
@@ -4631,21 +4642,21 @@ HashMap的源码，实现原理，底层结构。
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">142</span>
+              <span class="site-state-item-count">137</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>
 
           <div class="site-state-item site-state-categories">
             <a href="/categories">
-              <span class="site-state-item-count">39</span>
+              <span class="site-state-item-count">38</span>
               <span class="site-state-item-name">分类</span>
               </a>
           </div>
 
           <div class="site-state-item site-state-tags">
             <a href="/tags">
-              <span class="site-state-item-count">73</span>
+              <span class="site-state-item-count">71</span>
               <span class="site-state-item-name">标签</span>
               </a>
           </div>

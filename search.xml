@@ -275,7 +275,7 @@
     
     <entry>
       <title><![CDATA[[并发锁(二)]AQS阻塞队列]]></title>
-      <url>https://fudawei.github.io/2017/02/14/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%BA%8C)%5DAQS%E9%98%BB%E5%A1%9E%E9%98%9F%E5%88%97/</url>
+      <url>https://fudawei.github.io/2017/02/14/%5B%E5%B9%B6%E5%8F%91%E9%94%81(%E4%B8%89)%5DAQS%E9%98%BB%E5%A1%9E%E9%98%9F%E5%88%97/</url>
       <content type="html"><![CDATA[<h2 id="自旋锁"><a href="#自旋锁" class="headerlink" title="自旋锁"></a>自旋锁</h2><p>我们知道一个线程在尝试获取锁失败后将被阻塞并加入等待队列中，它是一个怎样的队列？又是如何管理此队列？这节聊聊CHL Node FIFO队列。<br> 在谈到CHL Node FIFO队列之前，我们先分析这种队列的几个要素。首先要了解的是自旋锁，所谓自旋锁即是某一线程去尝试获取某个锁时，如果该锁已经被其他线程占用的话，此线程将不断循环检查该锁是否被释放，而不是让此线程挂起或睡眠。它属于为了保证共享资源而提出的一种锁机制，与互斥锁类似，保证了公共资源在任意时刻最多只能由一条线程获取使用，不同的是互斥锁在获取锁失败后将进入睡眠或阻塞状态。下面利用代码实现一个简单的自旋锁，</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div></pre></td><td class="code"><pre><div class="line">public class SpinLock &#123;</div><div class="line">	private static Unsafe unsafe = null;</div><div class="line">	private static final long valueOffset;</div><div class="line">	private volatile int value = 0;</div><div class="line"></div><div class="line">	static &#123;</div><div class="line">		try &#123;</div><div class="line">			unsafe=getUnsafeInstance();</div><div class="line">			valueOffset = unsafe.objectFieldOffset(SpinLock.class.getDeclaredField(&quot;value&quot;));</div><div class="line">		&#125; catch (Exception ex) &#123;</div><div class="line">			throw new Error(ex);</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	private static Unsafe getUnsafeInstance() throws SecurityException,NoSuchFieldException,IllegalArgumentException,IllegalAccessException &#123;</div><div class="line">		Field theUnsafeInstance = Unsafe.class.getDeclaredField(&quot;theUnsafe&quot;);</div><div class="line">		theUnsafeInstance.setAccessible(true);</div><div class="line">		return (Unsafe) theUnsafeInstance.get(Unsafe.class);</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	public void lock() &#123;</div><div class="line">		for (;;) &#123;</div><div class="line">            int newV = value + 1;</div><div class="line">            if(newV==1)</div><div class="line">                if (unsafe.compareAndSwapInt(this, valueOffset, 0, newV))&#123;</div><div class="line">                	return ;</div><div class="line">                &#125;</div><div class="line">        	&#125;</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">    public void unlock() &#123;</div><div class="line">		unsafe.compareAndSwapInt(this, valueOffset, 1, 0);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>这是一个很简单的自旋锁，主要看加粗加红的两个方法lock和unlock，Unsafe仅仅是为操作提供了硬件级别的原子CAS操作，暂时忽略此类，只要知道它的作用即可，我们将在后面的“原子性如何保证”小节中对此进行更加深入的阐述。对于lock方法，假如有若干线程竞争，能成功通过CAS操作修改value值为newV的线程即是成功获取锁的线程，将直接通过，而其他的线程则不断在循环检测value值是否又改回0，而将value改为0的操作就是获取锁的线程执行完后对该锁进行释放，通过unlock方法释放锁，释放后若干线程又对该锁竞争。如此一来，没获取的锁也不会被挂起或阻塞，而是不断循环检查状态。图2-5-9-3可加深自旋锁的理解，五条线程轮询value变量，t1获取成功后将value置为1，此状态时其他线程无法竞争锁，t1使用完锁后将value置为0，剩下的线程继续竞争锁，以此类推。这样就保证了某个区域块的线程安全性。</p>
@@ -1312,24 +1312,6 @@
     </entry>
     
     <entry>
-      <title><![CDATA[Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系]]></title>
-      <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/</url>
-      <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
-<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
-<p>Spring的总体架构</p>
-<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
-<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
-<p>Spring的设计理念</p>
-<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
-<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
-<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
-<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
-<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
-<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[Spring架构详解：Bean详解和Context组件详解]]></title>
       <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ABean%E8%AF%A6%E8%A7%A3%E5%92%8CContext%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3/</url>
       <content type="html"><![CDATA[<h1 id="Bean详解"><a href="#Bean详解" class="headerlink" title="Bean详解"></a>Bean详解</h1><p>前面已经说明了Bean组件对Spring的重要性，下面看看Bean这个组件式怎么设计的。Bean组件在Spring的org.springframework.beans包下。这个包下的所有类主要解决了三件事：Bean的定义、Bean 的创建以及对Bean的解析。对Spring的使用者来说唯一需要关心的就是Bean的创建，其他两个由Spring在内部帮你完成了，对你来说是透明的。</p>
@@ -1346,6 +1328,24 @@
 <p>再往下分就是按照构建Context的文件类型，接着就是访问Context的方式。这样一级一级构成了完整的Context等级层次。</p>
 <p>总体来说ApplicationContext必须要完成以下几件事：</p>
 <p>标识一个应用环境<br>利用BeanFactory创建Bean对象<br>保存对象关系表<br>能够捕获各种事件<br>Context作为Spring的Ioc容器，基本上整合了Spring的大部分功能，或者说是大部分功能的基础。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系]]></title>
+      <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/</url>
+      <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
+<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
+<p>Spring的总体架构</p>
+<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
+<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
+<p>Spring的设计理念</p>
+<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
+<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
+<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
+<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
+<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
+<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
 ]]></content>
     </entry>
     
@@ -2718,125 +2718,6 @@ public static void main(String[] args) {
     </entry>
     
     <entry>
-      <title><![CDATA[Python学习笔记]]></title>
-      <url>https://fudawei.github.io/2016/05/12/Python%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</url>
-      <content type="html"><![CDATA[<p>You can try out the features described in the tips while this dialog stays open on the screen.</p>
-<p>pyCharm Tips -&gt;<br>Open directory -&gt; Open in current window -&gt; Add to currently opended projects<br>Ctrl+shitf+T 快速打开类</p>
-<p>Ctrl+空格  快速补全<br>ctrl+空格 两次，补全类名无论该类是否被引入<br>Ctrl+G find usages in the popup menu<br>ctrl+shift+空格  View | Quick Document   查看方法文档 （查看外部文档 用 Shift+F2）<br>F3    jump to declarations<br>ctrl+F3   浏览该类大致结构   Navigate  | File Structure<br>alt+shift+R     快速重命名    Refactor | Rename<br>补全的时候使用Tab<br>shift+click 或者 鼠标中键<br>alt+F1<br>ctrl+D  重复所选块<br>ctrl+p   此时，如果光标在括号中间，可以显示所需参数<br>ctrl+q   最后一次修改的地方<br>ctrl+shift+上    移动<br>alt+enter  自动导入包<br>alt+F7  查找该方法在其他地方的使用情况<br>ctrl+o  覆盖基类方法</p>
-<p>pyCharm 中安装模块两种方式：</p>
-<ol>
-<li>FIle - Settings - Project Interpreter</li>
-<li>tar.gz 包安装模块  解压 -&gt; python  setup.py install</li>
-</ol>
-<p>Question</p>
-<ol>
-<li>Non-ASCII character ‘\xe5’ in file ……<h1 id="coding-UTF-8"><a href="#coding-UTF-8" class="headerlink" title="-- coding: UTF-8 --"></a>-<em>- coding: UTF-8 -</em>-</h1>或者<br>#coding=utf-8<br>!# /usr/bin/python</li>
-</ol>
-<h3 id="python语法"><a href="#python语法" class="headerlink" title="python语法"></a>python语法</h3><ol>
-<li>python中的类采用CapWords约定，每个单词的首字母要大写，其他字母小写。</li>
-<li>类的私有属性、私有方法以两个下划线作为前缀，对象铜通过点操作符来访问类中的属性和方法。</li>
-<li>self相当于Java语言中的this关键字，表示本类</li>
-<li>方法名的首字母小写，其后每个单词的首字母要大写<br>行内注释应该至少用两个空格和语句分开，他们以#和单个空格开始</li>
-</ol>
-<p>eg:<br>class MyClass:<br>    <strong>username = ‘’<br>    password = ‘’<br>    def </strong>init<strong>(self,username,password):<br>        self.</strong>username = username<br>        self.password = password</p>
-<pre><code>def getUserName(self):
-    return self.__username + self.password
-</code></pre><p>if <strong>name</strong> == “<strong>main</strong>“:<br>    myclass = MyClass(‘hello’,’pass’)<br>    print myclass.getUserName()</p>
-<p>python中的长整型相当于java的BigInteger类型，数字后面加上“L”,范围为正负 20亿<br>以单下划线开头的(_foo)代表不能直接访问的类属性，需通过类提供的接口进行访问<br>以双下划线开头的(<strong>foo)代表类的私有成员<br>以双下划线开头和结尾(</strong>foo<strong>)代表Python中特殊方法专用的标识，例如 </strong>init__() 代表类的构造函数<br><strong> python不支持C语言中的自增和自减操作 </strong></p>
-<p>str()函数：把值转换为合理形式的字符串，以便用户理解<br>repr()函数：创建一个字符串，以合法的Python表达式形式来表示值<br>eg:<br>print repr(‘my name is max’)   ==&gt;  ‘my name is max’<br>print repr(12345L)   ==&gt;    12345L<br>print str(‘my name is max’)   ==&gt;   my name is max<br>print str(12345L)   ==&gt;    12345</p>
-<p>input()函数是把读入的用户输入数据默认为Python表达式，而raw_input()函数是把读入的数据转换为字符串。</p>
-<p>str1.decode(‘gb2312’)  表示将gb2312编码的字符串str1转换成Unicode编码<br>str2.encode(‘gb2312’)  表示将Unicode编码的字符串str2转换成gb2312编码</p>
-<h1 id="coding-utf-8"><a href="#coding-utf-8" class="headerlink" title="-- coding:utf-8 --"></a>-<em>- coding:utf-8 -</em>-</h1><h1 id="for循环可以迭代字典、字符串、列表、元组"><a href="#for循环可以迭代字典、字符串、列表、元组" class="headerlink" title="for循环可以迭代字典、字符串、列表、元组"></a>for循环可以迭代字典、字符串、列表、元组</h1><p>dict= {<br>    ‘one’ : ‘1’,<br>    ‘two’ : ‘2’,<br>    ‘three’ : ‘3’<br>}<br>for key in dict:<br>    print key+’:’+dict[key]<br>zifu = ‘yang’<br>for zz in zifu:<br>    print zz</p>
-<p>shuzu = [(1,2),(3,4),(5,6)]<br>for (a,b) in shuzu:<br>    print a,b</p>
-<p>for a in shuzu:<br>    print a</p>
-<p>读取文件<br>with open(“ceshi.txt”) as ff:<br>    for readline in ff:<br>        print readline<br>迭代：<br>mys = [‘one’,’two’,’three’,’four’]<br>my = iter(mys)<br>print my.next()<br>print my.next()<br>print my.next()<br>print my.next()</p>
-<p>for my in iter(mys):<br>    print my</p>
-<p>并行迭代 使用zip()或者enumerate()</p>
-<h1 id="coding-utf-8-1"><a href="#coding-utf-8-1" class="headerlink" title="-- coding:utf-8 --"></a>-<em>- coding:utf-8 -</em>-</h1><p>names = [‘one’,’two’,’three’,’four’]<br>ages = [22,23,34,45]<br>for name,age in zip(names,ages):<br>    print name,u’年龄是’,age</p>
-<p>关键字查询(使用enumerate并行迭代)</p>
-<h1 id="coding-utf-8-2"><a href="#coding-utf-8-2" class="headerlink" title="-- coding:utf-8 --"></a>-<em>- coding:utf-8 -</em>-</h1><p>zifu = raw_input(‘please the key:’)<br>list = [‘sun flower’,’red flower’,’blue flower’,’green grass’]<br>for index, lst in enumerate(list):  #index为索引<br>    if zifu in lst:<br>        print lst</p>
-<p>exec语句用来动态的创造Python代码，然后将其作为语句执行<br>eg: exec ‘print “hello world”‘<br>如果没有 <strong>init</strong>.py 文件，python不能识别对应的包。<strong>init</strong>.py文件可以为空，用于标志当前文件夹是一个包</p>
-<h1 id="参数封装为元组传递"><a href="#参数封装为元组传递" class="headerlink" title="参数封装为元组传递"></a>参数封装为元组传递</h1><p>def login(* userpwds):<br>    username = userpwds[0]<br>    password = userpwds[1]<br>    if(username == ‘admin’) and (password == ‘admin’):<br>        print ‘success’<br>    else:<br>        print ‘fail’<br>login(‘admin’,’admin’)</p>
-<h1 id="参数为字典传递"><a href="#参数为字典传递" class="headerlink" title="参数为字典传递"></a>参数为字典传递</h1><p>def login2(<strong> userpwds):<br>    keys = userpwds.keys()<br>    username = ‘’<br>    password = ‘’<br>    for key in keys:<br>        if ‘username’ == key:<br>            username = userpwds[key]<br>        if ‘password’ == key:<br>            password = userpwds[key]<br>    if(username == ‘admin’) and (password == ‘admin’):<br>        print ‘success’<br>    else:<br>        print ‘fail’<br>login2(username=’admin’, password=’admin’)<br>如果函数的参数类型既有元组(形式参数前加*)，又有字典(形式参数钱加</strong>),那么<em>必须写在*</em>的前面。</p>
-<p>返回多个参数<br>def operate(x, y, z):<br>    x = x + 5<br>    y = y + 5<br>    z = z + 5<br>    oper = [x,y,z]<br>    numbers = tuple(oper)</p>
-<pre><code># 打包到元组中
-return numbers
-</code></pre><p>x, y, z = operate(1, 2, 3)  # 解包元组<br>print x, y, z</p>
-<p>创建一个名称为myFirstModule.py的文件，即定义了一个名称为myFirstModule的模块<br>def myFun1():<br>    print ‘myFun1’</p>
-<p>def myFun2():<br>    print ‘myFun2’</p>
-<p>class MyClass:<br>    def myClassFun(self):<br>        print ‘MyClass myClassFun’<br>导入该模块</p>
-<h1 id="coding-utf-8-3"><a href="#coding-utf-8-3" class="headerlink" title="-- coding:utf-8 --"></a>-<em>- coding:utf-8 -</em>-</h1><p>import  myFirstModule<br>myFirstModule.myFun1()<br>myFirstModule.myFun2()<br>myclass = myFirstModule.MyClass()<br>myclass.myClassFun()</p>
-<p>python中的from … import 语句可以将模块中的类或函数导入，从而不需要使用模块名作为前缀<br>eg: from  addPerson import  Person<br>导入一个模块下的所有类和函数，可以使用   from module_name import *<br>global 引用全局变量</p>
-<p>模块内置函数</p>
-<ol>
-<li><p>apply()  把输入参数放入元组或列表传递给函数<br>def login(username, password):<br> msg = ‘’<br> if(username == ‘admin’) and (password == ‘admin’):</p>
-<pre><code>msg = &apos;success&apos;
-</code></pre><p> else:</p>
-<pre><code>msg = &apos;fail&apos;
-</code></pre><p> return msg<br>print apply(login,(‘admin’,’admin’))</p>
-</li>
-<li><p>filter()  返回符合条件的元素<br>def validate(usernames):<br> if(len(usernames) &gt; 4) and (len(usernames) &lt; 12):</p>
-<pre><code>return usernames
-</code></pre><p>print filter(validate,(‘admin’,’maxinaglin’,’mxl’,’adm’,’wangling’))</p>
-</li>
-<li><p>reduce() 实现连续处理功能<br>def operate(x, y):<br> return x*y<br>print reduce(operate,(7,8,9),0)  # 初始值为0,连乘</p>
-</li>
-<li><p>map()  可以对多个序列中的每个元素执行相同的操作<br>def add1(a):<br> return a + 1<br>def add2(a, b):<br> return a + b<br>def add3(a, b, c):<br> return a + b + c</p>
-</li>
-</ol>
-<p>a1 = [1,2,3,4,5]<br>a2 = [1,2,3,4,5]<br>a3 = [1,2,3,4,5]</p>
-<p>b = map(add1, a1)<br>print b<br>b = map(add2, a1, a2)<br>print b<br>b = map(add3, a1, a2, a3)<br>print b</p>
-<ol>
-<li>随机生成四位数并判断奇偶数<br>import random<br>allNums = []<br>for each in range(10):<br> allNums.append(random.randint(1000, 9999))<br>print u’随机从1000-9999生成的四位数’+str(allNums)<br>print u’偶数为:’+str(filter(lambda n : n%2==0, allNums))<br>print u’奇数为:’+str(filter(lambda n : n%2==1,allNums))<br>输出 ==&gt;<br>随机从1000-9999生成的四位数[1382, 7860, 5015, 6757, 7185, 2757, 1802, 8612, 2294, 8688]<br>偶数为:[1382, 7860, 1802, 8612, 2294, 8688]<br>奇数为:[5015, 6757, 7185, 2757]</li>
-</ol>
-<p>分片<br>userList = list(‘python’)<br>print userList<br>userList[2:] = list(‘rite’)<br>print userList<br>输出 ==&gt;<br>[‘p’, ‘y’, ‘t’, ‘h’, ‘o’, ‘n’]<br>[‘p’, ‘y’, ‘r’, ‘i’, ‘t’, ‘e’]</p>
-<p>numbers = [0,6]<br>numbers[1:1] = [1,2,3,4]  # 相当于插入<br>print numbers<br>输出 ==&gt;<br>[0, 1, 2, 3, 4, 6]</p>
-<p>userList = [‘001’,’002’,’003’,’004’,’005’,’006’]<br>subUser1 = userList[-3:-1]<br>subUser2 = userList[0:-2]<br>输出 ==&gt;<br>[‘004’, ‘005’]<br>[‘001’, ‘002’, ‘003’, ‘004’]</p>
-<p>userList1 = [‘001’,’002’,’003’,’004’,’005’,’006’]<br>userList2 = [‘aaa’,’bbb’]<br>userList = [userList1,userList2]<br>print userList<br>print userList[0][1]<br>print userList[1][1]<br>输出 ==&gt;<br>[[‘001’, ‘002’, ‘003’, ‘004’, ‘005’, ‘006’], [‘aaa’, ‘bbb’]]<br>002<br>bbb<br>利用for遍历<br>for i in range(len(userList)):<br>    for j in range(len(userList[i])):<br>        print userList[i][j]</p>
-<p>列表的连接<br>使用extend()或者+运算符<br>userList1.extend(userList2)   extend修改了被扩展的列表，并非真正连接两个列表返回一个全新的列表<br>userList1 = userList1 + userList2</p>
-<p>列表去重<br>checked = []<br>def fruitFun(fruitList):<br>    global  checked<br>    for e in fruitList:<br>        if e not in checked:<br>            checked.append(e)<br>fruitList = [‘apple’,’banana’,’apple’,’strawberry’,’pear’,’banana’]<br>fruitFun(fruitList)<br>print checked</p>
-<p>迭代字符串<br>zifu=’yang’<br>for zi in zifu:<br>    print zi<br>‘y’,’a’,’n’,’g’</p>
-<p>ctrl+E   最近的文件<br>双击shift   搜索<br>ctrl+shift+N  找某一个文件</p>
-<p>更新&amp;&amp;迭代<br>userDic = [(‘002’,’June’), (‘003’,’Tom’)]<br>dic_userDic = dict(userDic)<br>print dic_userDic<br>dic_userDic[‘004’] = ‘hello’<br>print dic_userDic<br>del(dic_userDic[‘002’])</p>
-<p>print dic_userDic</p>
-<p>for key in dic_userDic:<br>    print ‘userDic[%s] = ‘ % key ,dic_userDic[key]<br>for (key,value) in dic_userDic.items():<br>    print ‘userDic[%s] = ‘ %key,value<br>for key in dic_userDic.itervalues():<br>    print key<br>for (key,value) in zip(dic_userDic.iterkeys(), dic_userDic.itervalues()):<br>    print ‘userDic[%s]=’ % key,value<br>print dic_userDic.has_key(‘003’)</p>
-<p>newDIc={‘003’:’new’}<br>dic_userDic.update(newDIc)<br>print dic_userDic</p>
-<p>letter1 = [‘a’,’b’,’c’,’d’]<br>sep = ‘-‘<br>print sep.join(letter1)<br>print ‘/‘.join(letter1)<br>输出 ==&gt;<br>a-b-c-d<br>a/b/c/d</p>
-<p>内置方法<br>class Person:<br>    def <strong>init</strong>(self, name):<br>        self.name = name<br>        self.age = 11<br>    def sayHi(self):<br>        print ‘hello,my name is ‘,self.name<br>        print ‘\nage is ‘,self.age<br>p = Person(‘yuchuan’)<br>p.sayHi()<br><strong>init</strong>方法是构造函数，在程序中起到初始化对象的作用</p>
-<p>copyfile()和move()使用shutil模块</p>
-<p>凡是可以序列化的对象都可以持久化<br>python中主要使用一些模块（例如dbhash、anydbm和shelve）完成持久化操作</p>
-<p>2.<br>代码片段</p>
-<p>#coding=utf-8</p>
-<ol>
-<li><p>比较文件的不同</p>
-<h1 id="coding-UTF-8-1"><a href="#coding-UTF-8-1" class="headerlink" title="-- coding: UTF-8 --"></a>-<em>- coding: UTF-8 -</em>-</h1><p>import difflib<br>text1=”””text1:  ###定义字符串1<br>hello world<br>add String”””<br>text1_line = text1.splitlines()<br>text2=”””text2:  ###定义字符串2<br>hello<br>add string”””<br>text2_line = text2.splitlines()<br>d = difflib.Differ()<br>diff = d.compare(text1_line,text2_line)<br>print ‘\n’.join(list(diff))</p>
-<h3 id="后面三行换成如下，可以输出html美观页面"><a href="#后面三行换成如下，可以输出html美观页面" class="headerlink" title="后面三行换成如下，可以输出html美观页面"></a>后面三行换成如下，可以输出html美观页面</h3><p>d = difflib.HtmlDiff()<br>print d.make_file(text1_line,text2_line)</p>
-</li>
-<li><p>根据输入的IP或子网返回网络、掩码、广播、反向解析、子网数、IP类型等信息<br>from IPy import IP<br>ip_s = raw_input(‘Please input an IP or net-range’)<br>ips=IP(ip_s)<br>if len(ips) &gt; 1:<br> print(‘net: %s’ % ips.net())<br> print(‘netmask: %s’ % ips.netmask())<br> print(‘broadcast: %s’ % ips.broadcast())<br> print(‘reverse address: %s’ % ips.reverseName())<br> print(‘subnet: %s’ % len(ips))<br>else:<br> print(‘reverse address %s’ % ips.reverseName()[0])<br>print(‘hexadecimal: %s’ % ips.strHex())<br>print(‘binary ip: %s’ % ips.strBin())<br>print(‘iptype: %s’ % ips.iptype())</p>
-</li>
-<li><p>发送邮件</p>
-<h1 id="coding-utf-8-4"><a href="#coding-utf-8-4" class="headerlink" title="-- coding:utf-8 --"></a>-<em>- coding:utf-8 -</em>-</h1><p>import smtplib<br>import string<br>from smtplib import SMTP_SSL<br>HOST=”smtp.163.com”<br>SUBJECT=”Test email from Python”<br>TO=”735699812@qq.com”<br>FROM=”yuchuan512@163.com”<br>text=”Python rules them all”<br>BODY=string.join((“FROM: %s” % FROM,</p>
-<pre><code>&quot;To: %s&quot; % TO,
-&quot;SUBJECT: %s&quot; % SUBJECT,
-&quot;&quot;,text),&quot;\r\n&quot;)
-</code></pre><p>server = SMTP_SSL(HOST)<br>server.login(“yuchuan512@163.com”,”Yu**2”)<br>server.sendmail(FROM,TO,BODY)<br>server.quit()</p>
-</li>
-</ol>
-<p>3.1 邮件发送html网页</p>
-<h1 id="coding-utf-8-5"><a href="#coding-utf-8-5" class="headerlink" title="-- coding:utf-8 --"></a>-<em>- coding:utf-8 -</em>-</h1><p>import smtplib<br>from smtplib import SMTP_SSL<br>from email.mime.text import MIMEText<br>HOST = “smtp.163.com”<br>SUBJECT = u”流量数据报表”<br>TO = “735699812@qq.com”<br>FROM=”yuchuan512@163.com”<br>msg=MIMEText(“””<table width="800" border="0" cellspacing="0" cellpadding="4"><br>    <tr><br>        <td bgcolor="#CECFAD" height="20" style="font-size:14px">官网数据<a href=""></a></td><br>    </tr>&lt;/table”””, “html”, “utf-8”)<br>msg[‘Subject’] = SUBJECT<br>msg[‘From’] = FROM<br>msg[‘To’] = TO<br>server = SMTP_SSL(HOST)<br>server.login(“yuchuan512@163.com”, “Yu**2”)<br>server.sendmail(FROM, TO, msg.as_string())<br>server.quit()<br>3.2 发送带图片附件的邮件</table></p>
-<h1 id="coding-utf-8-6"><a href="#coding-utf-8-6" class="headerlink" title="-- coding:utf-8 --"></a>-<em>- coding:utf-8 -</em>-</h1><p>import smtplib<br>from email.mime.image import MIMEImage<br>from email.mime.multipart import MIMEMultipart<br>from smtplib import SMTP_SSL<br>from email.mime.text import MIMEText<br>HOST = “smtp.163.com”<br>SUBJECT = u”流量数据报表”</p>
-<p>##TO = “735699812@qq.com”<br>TO = “yuchuan512@163.com”<br>FROM=”yuchuan512@163.com”</p>
-<p>def addimg(src, imgid):<br>    fp = open(src,’rb’)<br>    msgImage = MIMEImage(fp.read())<br>    fp.close()<br>    msgImage.add_header(‘Content-ID’, imgid)<br>    return msgImage</p>
-<p>msg = MIMEMultipart(‘related’)</p>
-<p>msgText=MIMEText(“””<table width="800" border="0" cellspacing="0" cellpadding="4"><br>    <tr><br>        <td bgcolor="#CECFAD" height="20" style="font-size:14px">官网数据<a href=""></a></td><br>    </tr><br>    <tr><br>        <td><img src="cid:a1"></td><br>        <td><img src="cid:a2"></td><br>    </tr><br>    <tr><br>        <td><img src="cid:a3"></td><br>        <td><img src="cid:a4"></td><br>    </tr></table></p>
-<pre><code>&lt;/table&quot;&quot;&quot;, &quot;html&quot;, &quot;utf-8&quot;)
-</code></pre><p>msg.attach(msgText)</p>
-<p>msg.attach(addimg(“../img/a1.png”, “a1”))<br>msg.attach(addimg(“../img/a2.png”, “a2”))<br>msg.attach(addimg(“../img/a3.png”, “a3”))<br>msg.attach(addimg(“../img/a4.png”, “a4”))</p>
-<p>try:<br>    msg[‘Subject’] = SUBJECT<br>    msg[‘From’] = FROM<br>    msg[‘To’] = TO<br>    server = SMTP_SSL(HOST)<br>    server.login(“yuchuan512@163.com”, “Yu**12”)<br>    server.sendmail(FROM, TO, msg.as_string())<br>    server.quit()<br>    print ‘success’<br>except Exception,  e:<br>    print ‘失败’+str(e)</p>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[Mysql学习笔记]]></title>
       <url>https://fudawei.github.io/2016/05/12/Mysql%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</url>
       <content type="html"><![CDATA[<ol>
@@ -3723,225 +3604,6 @@ return numbers
 <p>015﻿﻿</p>
 <p>不要让你的爱太过高耸﻿</p>
 <p>如无法触及的悬崖峭壁</p>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[Python笔记]]></title>
-      <url>https://fudawei.github.io/2015/10/24/Python%E7%AC%94%E8%AE%B0/</url>
-      <content type="html"><![CDATA[<p>import Image<br>def test():<br>im = Image.open(‘D:\111.png’)<br>(w,h)= im.size<br>im.thumbnail((w//2,h//2))<br>im.save(‘D:\thumbnail.jpg’,’jpeg’)<br>if name == ‘main‘:<br>test()</p>
-<p>round(1.15,2) ===&gt; 1.2<br>ord(‘a’) ===&gt; 97 #### 字母和数字相互转换<br>chr(65) ===&gt; ‘A’<br>divmod(15,6) ===&gt;(2,3)</p>
-<p>‘-‘*40 ===&gt; ‘———————————————-’<br>‘an’ in ‘Django’ ===&gt;True<br>‘xyz’ not in ‘Django’ ===&gt; True<br>字符串拼接用 join “;”.join[‘list1’,’list2’]<br>列表扩充 list1.extend(list2)</p>
-<p>u’ABC’.encode(‘utf-8’) ####把unicode转为utf-8<br>‘abc’.decode(‘utf-8’) ####把utf-8转为unicode</p>
-<p>保存python文件时，保存为utf-8格式</p>
-<p>！/usr/bin/env python</p>
-<p>–coding:utf-8 –</p>
-<p>List列表 =[‘jack’,’mike’]<br>list.append(‘marry’)<br>list[0] list[1] ####根据下标访问制定元素<br>list.insert(1,’Jack’) ####插入<br>list.pop() ####弹出最后一个元素<br>list.pop(1) ####弹出制定元素<br>list[1]=’Sarah’ ####赋值<br>list 列表 =[‘jack’,’mike’,’marry’]<br>s = [‘python’,’java’,list,’scheme’] ####list元素也可以是另一个list<br>这样如果要取mike的值， s[2][1]</p>
-<p>在序列中循环时，索引位置和对应值可以使用enumerate()函数同时得到<br>for i,v in enumerate([‘tic’,’tac’,’tom’]):<br>print i,v<br>同时循环两个或更多序列，可以使用zip()整体打包<br>questions = [‘name’,’quesst’,’favorite’]<br>answers = [‘lance’,’the’,’only’]<br>for q,a in zip(questions,answers):<br>print ‘what is your {0}?it is {1}’.format(q,a)<br>pass 语句</p>
-<p>def fib(n):<br>result = []<br>a,b = 0,1<br>while a &lt; n:<br>result.append(b)<br>a,b = b,a+b<br>return result #### 返回一个包含数列的链表<br>f100 = fib(100)</p>
-<p>tuple 元组的值不能变，更安全<br>tuple 当只有一个元素的时候定义： t=(1,)<br>当 tuple 中包含list时候，list的值是可以变化的<br>eg: t=(‘a’,’b’,[‘A’,’B’])<br>t[2][0]=’x’ t[2][1]=’y’</p>
-<p>循环 for 语句<br>names = [‘mike’,’marry’,’java’]<br>for name in names:<br>print name<br>for x in [1,2,3,4,5]:<br>sum = sum+x<br>range(5) ===&gt; 0,1,2,3,4<br>1到100的和：<br>for x in range(101):<br>sum = sum+x</p>
-<p>birth = raw_input(‘birth:’)</p>
-<p>dict 和 set<br>d ={‘mick’:98,’Bob’:93,’marry’:88}<br>d[‘mick’]<br>d[‘mick’] = 90<br>d.pop(‘Bob’)</p>
-<p>重复元素在 set 中自动被过滤<br>s = set([1,1,2,2,3,3])<br>s ===&gt; set([1,2,3])<br>s.add(4)<br>s.remove(4)<br>a = set(‘abc’) b = set(‘deab’)<br>a - b<br>a | b<br>a ^ b<br>a &amp; b</p>
-<p>list 内容可变 比如： a = [‘c’,’b’,’a’]<br>a.sort() a===&gt; [‘a’,’b’,’c’] #### 值改变<br>tuple　内容不可变　比如：a = ‘abc’<br>b = a.replace(‘a’,’A’) b===&gt;’Abc’ a===&gt;’abc’ ####值不变</p>
-<p>import math<br>def move(x, y, step, angle=0):<br>nx = x + step <em> math.cos(angle)<br>ny = y - step </em> math.sin(angle)<br>return nx, ny ####返回多个值，实质是返回一个tuple<br>x,y = move(100,100,60,math.pi/6)<br>print x,y</p>
-<p>def add_end(L=None):<br>if L is None:<br>L = []<br>L.append(‘END’)<br>return L #### 默认参数必须指向不变对象</p>
-<p>def calc(<em>numbers):<br>sum = 0<br>for n in numbers:<br>sum = sum + n </em> n<br>return sum #### 把函数参数变为可变参数</p>
-<p>可变参数允许你传入0个或任意个参数，这些可变参数在函数调用时自动组装为一个tuple。<br>而关键字参数允许你传入0个或任意个含参数名的参数，这些关键字参数在函数内部自动组装为一个dict</p>
-<p>在Python中定义函数，可以用必选参数、默认参数、可变参数和关键字参数<br><em>args是可变参数，args接收的是一个tuple<br>*</em>kw是关键字参数，kw接收的是一个dict</p>
-<p>使用递归函数需要注意防止栈溢出。在计算机中，函数调用是通过栈（stack）这种数据结构实现的，<br>每当进入一个函数调用，栈就会加一层栈帧，每当函数返回，栈就会减一层栈帧。<br>由于栈的大小不是无限的，所以，递归调用的次数过多，会导致栈溢出<br>解决递归调用栈溢出的方法是通过尾递归优化</p>
-<p>切片特性：<br>L=[‘mick’,’java’,’marry’,’hello’]<br>L[:3] L[-3:]<br>L = range(100)<br>L[:10:2] ####到10为止，步长为2<br>eg: ‘ABCDEFG’[::2]</p>
-<p>Python的for循环抽象程度要高于Java的for循环<br>因为Python的for循环不仅可以用在list或tuple上，还可以作用在其他可迭代对象上</p>
-<p>如何判断一个对象是可迭代对象呢？方法是通过collections模块的Iterable类型判断<br>from collections import Iterable<br>isinstance(‘abc’, Iterable) ####str是否可迭代<br>True<br>isinstance([1,2,3], Iterable) #### list是否可迭代<br>True<br>isinstance(123, Iterable) #### 整数是否可迭代<br>False</p>
-<p>Python内置的enumerate函数可以把一个list变成索引-元素对<br>这样就可以在for循环中同时迭代索引和元素本身<br>for i, value in enumerate([‘A’, ‘B’, ‘C’]):<br>print i, value</p>
-<p>列表生成式 ：<br>[x<em>x for x in range(1,11) if x % 2]<br>[m + n for m in ‘ABC’ for n in ‘XYZ’]<br>squares = map(lambda x:x*</em>2,range(10))<br>[(x,y) for x in [1,2,3] for y in [2,3,1] if x != y]</p>
-<p>列出当前目录下的所有文件和目录名<br>import os #### 导入os模块，模块的概念后面讲到<br>[d for d in os.listdir(‘.’)] #### os.listdir可以列出文件和目录</p>
-<p>for循环其实可以同时使用两个甚至多个变量，比如dict的iteritems()可以同时迭代key和value<br>d = {‘x’:’A’,’y’:’B’,’z’:’C’}<br>for k,v in d.iteritems(): #### 或者[k+’=’+v for k,v in d.iteritems()]<br>print k,’=’,v<br>L = [‘Hello’,’World’,’IBM’,’Apple’]<br>[s.lower() for s in L]<br>isinstance(x, str) ####判断是否字符串</p>
-<p>生成器：<br>g = (x * x for x in range(10))</p>
-<p>函数式编程的一个特点就是，允许把函数本身作为参数传入另一个函数，还允许返回一个函数！</p>
-<p>Python对函数式编程提供部分支持。由于Python允许使用变量，因此，Python不是纯函数式编程语言<br>变量可以指向函数<br>如 f = abs<br>def add(x,y,f):<br>return f(x)+f(y)</p>
-<p>Python 内建了 map() 和 reduce() 函数 函数式编程工具 filter(),map(),reduce()<br>map()函数接收两个参数，一个是函数，一个是序列，map将传入的函数依次作用到序列的每个元素，并把结果作为新的list返回<br>educe把一个函数作用在一个序列[x1, x2, x3…]上，这个函数必须接收两个参数，<br>reduce把结果继续和序列的下一个元素做累积计算，其效果就是： reduce(f, [x1, x2, x3, x4]) = f(f(f(x1, x2), x3), x4)</p>
-<p>str 类型转化成 int 类型：<br>def fn(x, y):<br>return x <em> 10 + y<br>def char2num(s):<br>return {‘0’: 0, ‘1’: 1, ‘2’: 2, ‘3’: 3, ‘4’: 4, ‘5’: 5, ‘6’: 6, ‘7’: 7, ‘8’: 8, ‘9’: 9}[s]<br>reduce(fn, map(char2num, ‘13579’))<br>13579<br>def str2int(s):<br>return reduce(lambda x,y: x</em>10+y, map(char2num, s)) ####编写str–&gt;int 函数</p>
-<p>和map()类似，filter()也接收一个函数和一个序列。和 map()不同的时，filter()把传入的函数依次作用于每个元素<br>eg:<br>def is_odd(n):<br>return n % 2 == 1<br>filter(is_odd, [1, 2, 4, 5, 6, 9, 10, 15]) ==&gt;1,5,9,15</p>
-<p>def not_empty(s):<br>return s and s.strip()<br>filter(not_empty, [‘A’, ”, ‘B’, None, ‘C’, ’ ‘])</p>
-<p>[‘A’, ‘B’, ‘C’]</p>
-<p>seq = range(8)<br>def add(x,y):<br>return x+y<br>map(add,seq,seq)<br>reduce(add,ra nge(1,11))</p>
-<p>sorted([12,32,39,45])<br>sorted()函数也是一个高阶函数，它还可以接收一个比较函数来实现自定义的排序<br>eg： sorted([12,34,24,54],reversed_sort)<br>def reversed_sort(x,y):<br>if x &gt;y :<br>return -1<br>if x &lt; y:<br>return 1<br>return 0</p>
-<p>sorted([‘bob’,’about’,’zo’,’bac’],cmp_ignore_cast)</p>
-<p>字典：<br>cleese = {} 或者 palin = dict() 都可以创建字典，第二个属于工厂模式</p>
-<p>默认字典排序<br>def cmp_ignore_case(s1,s2):<br>u1 = s1.upper()<br>u2 = s2.upper()<br>if u1 &lt; u2:<br>return -1<br>if u1 &gt; u2:<br>return 1<br>return 0;</p>
-<p>在函数调用前后自动打印日志，但又不希望修改now()函数的定义，</p>
-<p>这种在代码运行期间动态增加功能的方式，称之为“装饰器”（Decorator）。</p>
-<p>字典： tel = {‘jack’:3089,’merry’:2309}<br>tel[‘jack’]<br>del tel[‘jack’]<br>tel.keys()<br>‘jack’ in tel</p>
-<p>偏函数就是把某些参数固定<br>import functools<br>int2 = functools.partial(int,base = 2)</p>
-<p>面向对象编程——Object Oriented Programming，简称OOP<br>“测试驱动开发”（TDD：Test-Driven Development）</p>
-<p>我5分钟后到，如果没到，请再读一遍此短信…</p>
-<p>os.path.abspath(‘.’)<br>‘D:\green\python’ ####得到当前目录</p>
-<p>对文件重命名:</p>
-<p>os.rename(‘test.txt’, ‘test.py’) </p>
-<h4 id="删掉文件"><a href="#删掉文件" class="headerlink" title="删掉文件:"></a>删掉文件:</h4><p>os.remove(‘test.py’)</p>
-<p>os.path.splitext()可以直接让你得到文件扩展名</p>
-<p>os.path.splitext(‘/path/to/file.txt’)<br>(‘/path/to/file’, ‘.txt’)</p>
-<p>把一个路径拆分为两部分，后一部分总是最后级别的目录或文件名</p>
-<p>os.path.split(‘/Users/michael/testdir/file.txt’)<br>(‘/Users/michael/testdir’, ‘file.txt’)</p>
-<p>在某个目录下创建一个新目录，</p>
-<p>首先把新目录的完整路径表示出来:</p>
-<p>os.path.join(‘/Users/michael’, ‘testdir’)<br>‘/Users/michael/testdir’</p>
-<p>然后创建一个目录:</p>
-<p>os.mkdir(‘/Users/michael/testdir’)</p>
-<p>删掉一个目录:</p>
-<p>os.rmdir(‘/Users/michael/testdir’)</p>
-<p>序列化：</p>
-<p>序列化之后，就可以把序列化后的内容写入磁盘，或者通过网络传输到别的机器上。</p>
-<p>反过来，把变量内容从序列化的对象重新读到内存里称之为反序列化，即unpickling。</p>
-<p>区别在于cPickle是C语言写的，速度快</p>
-<p>pickle是纯Python写的，速度慢，跟cStringIO和StringIO一个道理</p>
-<p>先尝试导入cPickle，如果失败，再导入pickle：</p>
-<p>try:<br>import cPickle as pickle<br>except ImportError:<br>import pickle<br>d = dict(name = ‘Bob’,age = 20,score = 80)<br>f = open(‘dump.txt’,’wb’)</p>
-<p>pickle.dump(d,f) 直接把对象序列化后写入一个file-like Object</p>
-<p>pickle.dump(d,f)<br>f.close()</p>
-<p>把任意对象序列化成一个str，然后可以把这个str写入文件</p>
-<p>pickle.dumps(d)</p>
-<p>import pickle<br>with open(‘mydata.pick1’,’wb’) as mysave: #### 以二进制文件打开写入<br>pickle.dump([1,2,’three’],mysave)<br>with open(‘mydata.pick1’,’rb’) as myread: #### 以二进制文件打开读取<br>a_list = pickle.load(myread) #### 腌制数据出现问题PickleError</p>
-<p>with open(‘man.pick1’,’wb’) as mysave:<br>pickle.dump(man,mysave) </p>
-<p>####包含写入内容和文件名<br>except IOError as err:<br>print(‘File error’+str(err))</p>
-<p>with open(‘www.txt’,’rb’) as mysave:<br>data = mysave.readline()<br>dd = data.strip().split(‘,’) ####去除字符串的空格，且以“，”分割，存入列表中</p>
-<p>list.sort() 改变列表<br>sorted(list) 不改变列表</p>
-<p>强烈建议使用Python的r前缀，就不用考虑转义<br>s = r’ABC-001’ 、</p>
-<p>对应的正则表达式字符串不变：</p>
-<p>‘ABC-001’</p>
-<p>正则表达式切分</p>
-<p>如果用户输入了一组标签，下次记得用正则表达式来把不规范的输入转化成正确的数组。</p>
-<p>re.split(r’\s+’, ‘a b c’)<br>[‘a’, ‘b’, ‘c’]<br>re.split(r’[\s,]+’, ‘a,b, c d’)<br>[‘a’, ‘b’, ‘c’, ‘d’]<br>re.split(r’[\s,\;]+’, ‘a,b;; c d’)<br>[‘a’, ‘b’, ‘c’, ‘d’]<br>分组<br>m = re.match(r’^(\d{3})-(\d{3,8})$’, ‘010-12345’)<br>-&gt; m </p>
-<p><_sre.sre_match object="" at="" 0x1026fb3e8=""><br>-&gt; m.group(0)<br>‘010-12345’<br>-&gt; m.group(1)<br>‘010’<br>-&gt; m.group(2)<br>‘12345’</_sre.sre_match></p>
-<p>正则表达式默认采用贪婪匹配</p>
-<p>eg: re.match(r’^(\d+)(0*)′,‘102300′).groups()===&gt;(‘102300′,”)贪婪匹配re.match(r′(\d+?)(0∗)’, ‘102300’).groups() ===&gt; (‘1023’, ‘00’) ####非贪婪匹配</p>
-<p>正则表达式编译优化：</p>
-<p>如果一个正则表达式要重复使用几千次，出于效率的考虑，我们可以预编译该正则表达式</p>
-<p>import re</p>
-<p>编译:</p>
-<p>-&gt; re_telephone = re.compile(r’^(\d{3})-(\d{3,8})$’)</p>
-<p>使用：</p>
-<p>-&gt; re_telephone.match(‘010-12345’).groups()<br>(‘010’, ‘12345’)<br>-&gt; re_telephone.match(‘010-8086’).groups()<br>(‘010’, ‘8086’)<br>re_telephone.match(‘010-8086’).group(i) #### group(1)取得第一个</p>
-<p>内建模块：<br>collections ==&gt; namedtuple deque OrderedDict<br>namedtuple 一个点的二维坐标<br>from collections import namedtuple<br>-&gt; Point = namedtuple(‘Point’, [‘x’, ‘y’])<br>-&gt; p = Point(1, 2)<br>-&gt; p.x<br>1</p>
-<p>isinstance(p, Point)<br>Circle = namedtuple(‘Circle’, [‘x’, ‘y’, ‘r’])</p>
-<p>deque<br>deque是为了高效实现插入和删除操作的双向列表，适合用于队列和栈</p>
-<p>from collections import deque ####要用到collection.deque<br>-&gt; q = deque([‘a’, ‘b’, ‘c’])<br>-&gt; q.append(‘x’)<br>-&gt; q.appendleft(‘y’)<br>-&gt; q<br>deque([‘y’, ‘a’, ‘b’, ‘c’, ‘x’])<br>deque除了实现list的append()和pop()外，还支持appendleft()和popleft()<br>这样就可以非常高效地往头部添加或删除元素。</p>
-<p>OrderedDict 在对dict做迭代时，我们无法确定Key的顺序。<br>如果要保持Key的顺序，可以用OrderedDict<br>od = OrderedDict()<br>-&gt; od[‘z’] = 1<br>-&gt; od[‘y’] = 2<br>-&gt; od[‘x’] = 3<br>-&gt; od.keys() #### 按照插入的Key的顺序返回<br>[‘z’, ‘y’, ‘x’]</p>
-<p>hashlib</p>
-<p>摘要算法之所以能指出数据是否被篡改过，就是因为摘要函数是一个单向函数</p>
-<p>计算f(data)很容易，但通过digest反推data却非常困难</p>
-<p>import hashlib<br>md5 = hashlib.md5()<br>md5.update(‘how to use’) ####多次调用md5.update()<br>md5.update(’ python’)<br>a = md5.hexdigest()</p>
-<p>md5 = hashlib.md5()<br>md5.update(‘how to use python’) ####单次调用md5.update()<br>b = md5.hexdigest()<br>print a == b #### 计算出md5的值<br>from math import pi<br>[str(round(pi,i)) for i in range(1,6)]</p>
-<p>sha1 用法类似于md5<br>与 C++ 语言不通，python中没有定义构造函数new的概念。python会为你完成对象构建<br>然后你可以使用init()方法定制对象的初始状态<br>目标标识符赋值至self参数</p>
-<p>好的web应用应当遵循 模型-试图-控制器(Model-View-Controller) 模式</p>
-<p>eg:交换变量<br>x = 6<br>y = 7<br>x, y = y,x</p>
-<p>eg:if语句在行内<br>print ‘hello’ if True else ‘world’<br>eg:连接<br>print str(1) + ‘world’<br>eg:两个列表同时迭代<br>nfc = [‘packet’,’hello’]<br>afc = [‘River’,’world’]<br>for teama,teamb in zip(nfc,afc):<br>print teama,teamb<br>eg:索引迭代<br>for index,team in enumerate(nfc):<br>print index,team<br>eg:筛选出偶数：<br>even=[num for num in nums if num % 2 == 0]<br>eg:字典推导：<br>teams = [‘packet’,’www’,’river’]<br>print {key:value for value,key in enumerate(teams)}<br>{‘www’:1,’river’:2,’packet’:0}<br>eg:将列表转换成字符串：<br>print “,”.join(teams)<br>eg:从字典中获取元素：<br>data = {‘user’:1,’name’:2,’three’:4}<br>print data.get(‘user’,False)<br>eg:<br>若是3的倍数则打印”Fizz”替换3的倍数，5的倍数打印”Buzz”,既是3的倍数又是5的倍数打印”FizzBuzz”<br>for x in range(101):<br>print ‘Fizz’[x%3<em>4:] + ‘Buzz’[x%5</em>4:] or x</p>
-<p>eg：统计次数 Counter库<br>from collections import Counter<br>print Counter(‘hello’)<br>-&gt;Counter({‘l’:2,’h’:1,’e’:1,’o’:1})<br>select top(3) with ties * from tablename order by name desc</p>
-<p>遍历目录方法：<br>import os<br>fileList = []<br>rootdir = “/data”<br>for root, subFolders, files in os.walk(rootdir):<br>if ‘.svn’ in subFolders: subFolders.remove(‘.svn’)<br>for file in files:<br>if file.find(“.t2t”) != -1:#### 查找特定扩展名的文件<br>file_dir_path = os.path.join(root,file)<br>fileList.append(file_dir_path)<br>print fileList<br>print “;”.join(fileList)</p>
-<p>列表按列排序<br>a = [(‘2011-03-17’, ‘2.26’, 6429600, ‘0.0’), (‘2011-03-16’, ‘2.26’, 12036900, ‘-3.0’),<br>(‘2011-03-15’, ‘2.33’, 15615500,’-19.1’)]<br>-&gt; print a[0][0]<br>2011-03-17<br>-&gt; b = sorted(a, key=lambda result: result[1],reverse=True) //第二列排序<br>-&gt; print b<br>[(‘2011-03-15’, ‘2.33’, 15615500, ‘-19.1’), (‘2011-03-17’, ‘2.26’, 6429600, ‘0.0’),<br>(‘2011-03-16’, ‘2.26’, 12036900, ‘-3.0’)]<br>-&gt; c = sorted(a, key=lambda result: result[2],reverse=True) //同理，第三列排序</p>
-<p>列表去重(list uniq)<br>-&gt; lst= [(1,’sss’),(2,’fsdf’),(1,’sss’),(3,’fd’)] //列表里面是元组<br>-&gt; set(lst)<br>set([(2, ‘fsdf’), (3, ‘fd’), (1, ‘sss’)])<br>-&gt; lst = [1, 1, 3, 4, 4, 5, 6, 7, 6] //列表里面是基本类型<br>-&gt; set(lst)<br>set([1, 3, 4, 5, 6, 7])</p>
-<p>字典,列表,字符串互转<br>字典转化为字符串<br>-&gt; params = {“server”:”mpilgrim”, “database”:”master”, “uid”:”sa”, “pwd”:”secret”}<br>-&gt; [“%s=%s” % (k, v) for k, v in params.items()]<br>[‘server=mpilgrim’, ‘uid=sa’, ‘database=master’, ‘pwd=secret’]<br>-&gt; “;”.join([“%s=%s” % (k, v) for k, v in params.items()])<br>‘server=mpilgrim;uid=sa;database=master;pwd=secret’</p>
-<p>字符串转化为字典<br>-&gt; a = ‘server=mpilgrim;uid=sa;database=master;pwd=secret’<br>-&gt; aa = {}<br>-&gt; for i in a.split(‘;’):aa[i.split(‘=’,1)[0]] = i.split(‘=’,1)[1]<br>-&gt; aa<br>{‘pwd’: ‘secret’, ‘database’: ‘master’, ‘uid’: ‘sa’, ‘server’: ‘mpilgrim’}</p>
-<p>Python调用系统命令或者脚本<br>使用 os.system() 调用系统命令 , 程序中无法获得到输出和返回值<br>-&gt; import os<br>-&gt; os.system(‘ls -l /proc/cpuinfo’)<br>-&gt; os.system(“ls -l /proc/cpuinfo”)<br>-r–r–r– 1 root root 0 3月 29 16:53 /proc/cpuinfo<br>使用 os.popen() 调用系统命令, 程序中可以获得命令输出，但是不能得到执行的返回值<br>-&gt; out = os.popen(“ls -l /proc/cpuinfo”)<br>-&gt; print out.read()<br>-r–r–r– 1 root root 0 3月 29 16:59 /proc/cpuinfo<br>使用 commands.getstatusoutput() 调用系统命令, 程序中可以获得命令输出和执行的返回值<br>-&gt; import commands<br>-&gt; commands.getstatusoutput(‘ls /bin/ls’)<br>(0, ‘/bin/ls’)<br>Python读写文件<br>一次性读入文件到列表，速度较快，适用文件比较小的情况下<br>track_file = “track_stock.conf”<br>fd = open(track_file)<br>content_list = fd.readlines()<br>fd.close()<br>for line in content_list:<br>print line<br>逐行读入，速度较慢,适用没有足够内存读取整个文件(文件太大)<br>fd = open(file_path)<br>fd.seek(0)<br>title = fd.readline()<br>keyword = fd.readline()<br>uuid = fd.readline()<br>fd.close()</p>
-<p>写文件 write 与 writelines 的区别<br>Fd.write(str) : 把str写到文件中，write()并不会在str后加上一个换行符<br>Fd.writelines(content) : 把content的内容全部写到文件中,原样写入，不会在每行后面加上任何东西</p>
-<p>import math<br>dir(math) 列出math模块包含的函数<br>dir(builtins)列出python内置函数<br>查询字符串都包含哪些函数 dir(”)<br>print(math.tanh.doc) 打印模块函数的说明文档<br>将整数和字符串转换为浮点数 float(3) float(‘3.3’)<br>将整数和浮点数转换为字符串 str(88) str(9.7)<br>字符串转换为整数 int(‘5’)<br>全局变量 局部变量<br>在函数里面改变全局变量，需要先 global name 声明当前引用的是全局变量</p>
-<p>默认值：<br>def great(name,greeting = ‘hello’)<br>关键字参数<br>def shop(where = ‘store’,what = ‘pasta’,howmuch=’10 pounds’)<br>shop() shop(what = ‘towels’) shop(howmuch = ‘a ton’,what = ‘towels’,where = ‘bakery’)</p>
-<p>模块 引入模块后，import shapes 使用 dir(shapes) 来列出其中的函数</p>
-<p>返回文件名的扩展名：<br>dot = fname.rfind(‘.’)<br>if dot == -1:<br>return ”<br>else:<br>return fname[dot+1:]</p>
-<p>字符串函数<br>ss.find(‘ee’)<br>ss.rfind(‘.’) 从右往左搜索<br>ss.index(‘ee’)<br>ss.rindex(‘ee’)<br>设置格式的函数：<br>‘{0} like {1}’.format(‘Jack’,’Ice Cream’) ==&gt;’Jack like Ice Cream’<br>‘{who} {pet} has fleas’.format(pet=’dog’,who=’my’) ==&gt; ‘my dog has fleas’</p>
-<p>strip函数<br>s.strip(ch) 从s开头和末尾删除在ch中出现的字符<br>s.lstrip(ch) 从左侧<br>s.rstrip(ch) 从右侧<br>name.lstrip()<br>name.strip(‘_- ‘)</p>
-<p>拆分函数：<br>s.partition(t) 将s拆分成3个字符串，head,t,tail<br>s.rpartition(t)<br>url = ‘www.google.com’<br>url.partition(‘.’)<br>(‘www’, ‘.’, ‘google.com’)<br>url.rpartition(‘.’)<br>(‘www.google’, ‘.’, ‘com’)</p>
-<p>s.split() 以t为分隔符，将s划分为一系列字符串，并返回由这些字符串组成的列表。<br>s.rsplit()<br>s.splitlines()<br>url.split(‘.’)<br>[‘www’, ‘google’, ‘com’]<br>ss = ‘a long time ago, princess ate an apple’<br>ss.split </p>
-<p>ss.split()<br>[‘a’, ‘long’, ‘time’, ‘ago,’, ‘princess’, ‘ate’, ‘an’, ‘apple’]</p>
-<p>替换函数：<br>s = ‘up,up and away’<br>s.replace(‘up’,’down’)<br>s.replace(old,new) 将S中的每个old替换为new<br>s.expandtabs(n) 将 s中的每个制表符号替换为n个空格</p>
-<p>正则表达式<br>def is_done(s):<br>return re.match(‘done|quit’,s)!=None<br>re.match(regex,s)不匹配时返回None，否则返回一个特殊的正则表达式匹配对象</p>
-<p>列表函数：<br>s.append(x)<br>s.count(x)<br>s.extend(lst)<br>s.insert(i,x)<br>s.pop(i)<br>s.remove(x)<br>s.reverse() 就地反转<br>s.sort() 就地排序<br>还可以为包含元组的列表进行排序，自然排序<br>pst = [(1,2),(1,-1),(2,5),(4,1)]<br>pst.sort()</p>
-<p>使用列表解析<br>cap_name = [n.capitalize() for n in name]<br>使用列表解析进行筛选<br>result = [n for n in nums if n &gt; 0]</p>
-<p>字典中键是唯一的，否则会产生覆盖</p>
-<p>字典函数：<br>d.items()<br>d.keys()<br>d.values()<br>d.get(key) 获取key对应的value<br>d.pop(key) 删除键key并返回与之相关联的值<br>d.clear()<br>d.copy() d = dict.copy()<br>d.fromkeys(s,t)<br>d.setdefault(key,v) 如果键包含在字典中，则返回其值；否则返回V并将(key,v)添加到字典中<br>d.update(e) 将e中的键值对添加到字典中，e可能是字典，也可能是键值对序列</p>
-<p>设置字符串格式：<br>print(‘value %.2f’ % x) 如果要在字符串中包含%,必须使用%%。<br>格式化字符串<br>‘My {pet} has {prob}’.format(pet=’dog’,prob=’fleas’)<br>‘My{0} has {1}’.format(‘dog’,’fleas’)<br>‘1/81={x}’.format(x=1/81)<br>‘1/81={x:.3f}’.format(x=1/81)</p>
-<p>os.getcwd() 返回当前目录<br>os.lilstdir(p) 返回一个字符串列表，其中包括p指定的文件夹中所有的文件和文件夹的名称<br>os.chdir(p) 将当前工作目录设置为p<br>os.path.isfile(p) 当p指向一个文件名称是，返回True<br>os.path.isdir(p) 目录时，返回True<br>os.stat(fname) 返回有关fname的信息，如大小和最后一次修改时间</p>
-<p>若提示找不到模块 sys.path.append() 将包含py文件的路径加入到path中即可<br>若提示找不到函数 则 使用 模块.函数的方式执行函数<br>调用f.read()之后，文件指针指向文件末尾，通过调用f.seek(0),让文件指针重新指向了文件开头，这样写入f时，从开头开始。</p>
-<p>若输入年龄不符合要求一直循环，符合要求则返回<br>def getAge():<br>while True:<br>try:<br>n = int(raw_input(‘how old are you’))<br>return n<br>except ValueError:<br>print(‘please input an integer’)<br>if name == ‘main‘:<br>getAge()</p>
-<p>注意int()讲一个书转化为整数 int(‘12’,16) –&gt; 18 意思是把16进制的12转换为10进制的数字</p>
-<p>把字符串中单词的出现频次转化为字典####3</p>
-<p>keep = {‘a’,’b’,’c’,’d’,”,’-‘,”’”}<br>def normalize(s):<br>result = ”<br>for c in s.lower():<br>if c in keep:<br>result += c<br>return result</p>
-<p>def make_dict(s):<br>s = normalize(s)<br>words = s.split()<br>d = {}<br>for w in words:<br>if w in d:<br>d[w] += 1<br>else:<br>d[w] = 1<br>return d</p>
-<p>计算字典的value的和<br>num = sum(d[w] for w in d)</p>
-<p>s.swapcase() #####大小写变换<br>s.upper() s.lower()<br>s.capitalize() #####句首大写<br>s.title() #####首字母大写<br>print s1.ljust(20)<br>print s1.rjust(20,’t’) #####以t填充<br>print s1.center(20,’*’)</p>
-<p>s1.find(‘of’) #####返回第一次出现的位置<br>s1.find(‘of’,6,len(s1))</p>
-<p>print s1.rfind(‘of’)<br>print rindex(‘of’)<br>print s1.count(‘of’)<br>print s1.replace(‘of’,’new’)</p>
-<p>print s1.strip() #####去除字符串前后空格<br>print s1.lstrip()<br>print s1.rstrip()</p>
-<p>s1.split() ##### 把字符串分开存到列表中<br>print s1.split()[2] ##### 访问列表中下标为2的项<br>s1.splitlines() #####把一行作为列表中的一个元素</p>
-<p>list = [‘mick’,’jerry’,’hello’]<br>print ‘+’.join(list)</p>
-<p>print s2.startswith(’ ‘) ##### 以某些字符开始<br>print s2.endswith(’ ‘) ##### 以某些字符结束</p>
-<p>help(‘sys’) #####查看sys模块内置函数<br>s4.isalnum() ##### 检查字符串是否由字母和数字组成<br>s4.isalpha() #####检查字符串是否只由字母组成<br>s4.isdigit() #####检查字符串是否只由数字组成<br>s4.isapace()<br>s4.isupper()<br>s4.islower()</p>
-<p>list 不能直接赋值，可以通过列表元素赋值<br>eg: list[1:3]=[22,34]</p>
-<p>n = [(‘tom’,12,170),(‘jerry’,11,180)]<br>for name,age,high in n:<br>print ‘name is:’,name</p>
-<p>for i in ‘happy’:<br>list1.append(ord(i))<br>print list1 &lt;===&gt; list1 = [ord(x) for x in ‘happy’]</p>
-<p>tt = [x*y for x in range(10) for y in range(10)]<br>str1 = [x+y for x in ‘happy’ for y in ‘good’]<br>tuple1 = [(x,y) for x in range(4) for y in range(3)]</p>
-<p>访问字典：<br>print ‘the is %(a)s,%(b)s’ % {‘a’:123,’b’:456}<br>d.clear() #####删除全部元素<br>del d[‘a’] #####根据键删除相应值</p>
-<p>三种方法：<br>for k in d:<br>print ‘d[%s]=’%k,d[k] ##### 访问字典的键值<br>for(k,v) in d.items():<br>print ‘d[%s]=’%k,v ##### 访问字典的键值<br>for (k,v) in zip(d.iterkeys(),d.itervalues()):<br>print ‘d[%s]=’%k,v ##### 访问字典的键值</p>
-<p>复杂的字典</p>
-<p>dict2 = {‘a’:’aa’,’b’:(‘apple’,’orange’),’c’:{‘d’:’dd’,’f’:’ff’}}<br>里面嵌套元组，字典<br>print dict2[‘c’][‘d’]<br>print dict2[‘b’][0]</p>
-<p>dict.keys()<br>dict.values()<br>dict.get(‘a’) #####根据键得到值<br>dict2.get(‘f’,’exitst’) ##### 不存在则返回’exitst’</p>
-<p>dict1 = {‘a’:’bpp’,’b’:’cpp’,’c’:’app’}<br>print sorted(dict1.items(),key = lambda d:d[0]) ##### 以键排序<br>print sorted(dict1.items(),key = lambda d:d[1]) ##### 以值排序</p>
-<p>import copy<br>dict2 = {‘a’:123,’b’:456}<br>dict3 = copy.deepcopy(dict2) ##### dict3改变不改变dict2的值<br>dict4 = copy.copy(dict2) ##### dict4改变会改变dict2的值</p>
-<p>import os<br>os.getcwd() ##### 当前工作目录<br>os.chdir(‘../python’) ##### 改变工作目录</p>
-<p>data = open(‘sketch.txt’)<br>print(data.readline(),end = ’ ‘)<br>data.seek(0) ##### 使用seek方法返回到文件起始位置<br>data.close()</p>
-<p>print x, 在变量后面加逗号可以使得print不换行</p>
-<p>help(s.split) 查询split()的用法，或者help–&gt;python DOCS</p>
-<p>import os<br>if os.path.exitst(‘www.txt’)</p>
-<p>out = open(‘data.out’,’w’)<br>print (‘Norwegian Blues ‘,file = out)<br>out.close() ##### 刷新输出</p>
-<p>w模式会清除已有内容<br>a模式不清除已有内容，追加文件<br>w+ 读写，不清除<br>若文件不存在，则创建，再进行读写</p>
-<p>import os<br>def test():<br>man= []<br>other = []<br>try:<br>data = open(‘www.txt’)<br>for each_line in data:<br>try:<br>(role,line) = each_line.split(‘:’,1)<br>line = line.strip()<br>if role == ‘man’:<br>man.append(line)<br>else:<br>other.append(line)<br>except ValueError:<br>pass<br>data.close()<br>except IOError as err2:<br>print (‘{0}’.format(err2))<br>try:<br>man_file = open(‘man_data.txt’,’w’)<br>other_file = open(‘other_data.txt’,’w’) </p>
-<h5 id="print-man-file-man-file"><a href="#print-man-file-man-file" class="headerlink" title="print(man,file=man_file)"></a>print(man,file=man_file)</h5><h5 id="print-other-file-other-file"><a href="#print-other-file-other-file" class="headerlink" title="print(other,file=other_file)"></a>print(other,file=other_file)</h5><p>man_file.writelines(‘%s’% x for x in man)<br>other_file.writelines(‘%s’ % y for y in other)<br>except IOError as err:<br>print(‘File open error{0}’ % str(err))<br>finally:<br>man_file.close()<br>other_file.close()<br>if name == ‘main‘:<br>print(os.getcwd())<br>test()</p>
-<p>with语句利用了一种名为上下文管理协议的python技术<br>try:<br>with open(‘its.txt’,’w’) as data:<br>print (‘it\’s ..’,file = data)<br>except IOError as err:<br>print (‘file error’+str(err))</p>
-<p>except IOError as err2:<br>print(‘error’+str(err2))<br>print(‘error{0}’.format(err2))</p>
-<p>def santi(time_string):<br>if ‘:’ in time_string:<br>sep = ‘:’<br>elif ‘-’ in time_string:<br>sep = ‘-’<br>else:<br>return time_string<br>(mins,seconds) = time_string.split(sep)<br>return mins+’.’+seconds<br>def test():<br>data = [‘2.13’,’2:38’,’2-23’]<br>list = [santi(ti) for ti in data]<br>list.sort()<br>print list ##### 对不规则数据进行统一变换</p>
-<p>sorted(list2,reverse=True) ##### 逆序排列<br>sorted(set(list2),reverse = True)[2:7] ##### 去除重复数据，逆序排列，取2-7个数据</p>
-<p>类：<br>def santi(time_string):<br>if ‘:’ in time_string:<br>sep = ‘:’<br>elif ‘-’ in time_string:<br>sep = ‘-’<br>else:<br>return time_string<br>(mins,seconds) = time_string.split(sep)<br>return mins+’,’+seconds<br>def get_coach_data(filename):<br>try:<br>with open(filename) as f:<br>data = f.readline()<br>temp = data.strip().split(‘,’)<br>return Athlete(temp.pop(0),temp.pop(0),temp)<br>except IOError as ioerr:<br>print (‘File error:’+str(ioerr))<br>class Athlete:<br>def init(self,a_name,a_dob=None,a_time=[]):<br>self.name = a_name<br>self.dob = a_dob<br>self.times = a_time<br>def top3(self):<br>return (sorted(set([santi(t) for t in self.times]))[0:3])<br>if name == ‘main‘:<br>james = get_coach_data(‘james.txt’)<br>print(james.name+“‘s fastest times are:”+str(james.top3()))</p>
-<p>.pyc 文件的内容是平台独立的，所以 Python 模块目录可以在不同架构的机器之间共享。</p>
-<p>import sys<br>sys.path.append(‘utf/guido/lib/python’)</p>
-<p>内置函数 dir() 用于按模块名搜索模块定义，返回一个字符串类型的存储列表</p>
-<p>对齐方式，rjust(n) n位右对齐，同理 ljust(n)</p>
-<p>print str(x).rjust(4),repr(x<em>x).rjust(4),repr(x</em>x*x).rjust(4)</p>
-<p>str.zfill(6) 向字符串左侧添加0<br>eg ‘12’.zfill(5) ===&gt; ‘00012’</p>
-<p>str.format() 用法</p>
-<p>print ‘{0} and {1}’ . format(‘spam’ , ‘eggs’ )</p>
-<p>JPEG 或 EXE 这样的二进制文件，在操作这些文件时一定要记得以二进制模式打开</p>
-<p>import os<br>os.getcwd() ##### 返回当前工作目录</p>
-<p>os.chdir(‘../xx’) ##### 改变当前工作目录<br>os.system(‘mkdir today’) ##### 执行命令</p>
-<p>应该用 import os 风格而非 from os import * 。这样可以保证随操作系统不</p>
-<p>同而有所变化的 os.open() 不会覆盖内置函数 open()</p>
-<p>针对日常的文件和目录管理任务， shutil 模块提供了一个易于使用的高级接口</p>
-<p>-&gt; import shutil<br>-&gt; shutil. copyfile(‘data.db’ , ‘archive.db’ )<br>-&gt; shutil. move(‘/build/executables’ , ‘installdir’ )</p>
-<p>glob 模块提供了一个函数用于从目录通配符搜索中生成文件列表</p>
-<p>import glob<br>-&gt; glob. glob(‘*.py’ )<br>[‘primes.py’, ‘random.py’, ‘quote.py’]</p>
-<p>在命令行中执行</p>
-<p>python demo.py one two three 后可以得到以下输出结果<br>-&gt; import sys<br>-&gt; print sys. argv<br>[‘demo.py’, ‘one’, ‘two’, ‘three’]</p>
-<p>import re<br>re. findall(r’ \bf[a-z]*’ , ‘which foot or hand fell fastest’ )<br>[‘foot’, ‘fell’, ‘fastest’]<br>re. sub(r’(\b[a-z]+) \1’ , r’ \1’ , ‘cat in the the hat’ )<br>‘cat in the hat’</p>
-<p>相对于 timeit 的细粒度， profile 和 pstats 模块提供了针对更大代码块的时间度量工具。</p>
-<p>使用元组封装和拆封来交换元素看起来要比使用传统的方法要诱人的多</p>
-<p>def f(a,L= []):<br>L.append(a)<br>return L<br>print f(1)<br>print f(2)<br>print f(3) #####会累积</p>
-<p>python fibo.py 50<br>if name ==’main‘:<br>import sys<br>fib(int(sys.argv[1]))</p>
-<p>以同样的方式，可以使用<strong>操作符分拆关键字参数为字典<br>def parrot(voltage,state=’a stiff’,action=’voom’):<br>print ‘this parrot’,action,<br>print ‘if you put’,voltage,’hello’,<br>print ‘eswe would’,state<br>d={‘voltage’:’four mill’,’state’:’Blues’,’action’:’acc’}<br>parrot(</strong>d)</p>
-<p>python文件操作：<br>chmod+x hello.py 为文件添加执行权限 ./hello.py<br>文件读取方式<br>read([size) 读取size个字节<br>readline([size]) 读取一行<br>readlines([sizes]) 读取完文件（受buffer大小限制），返回每一行组成的列表；一定要读完的话可以用迭代器<br>文件写入方式<br>write(str) 将字符串写入文件<br>writelines(sequence_of_string) 写多行到文件</p>
-<p>mode:<br>r 只读方式，文件必须存在<br>w 只写方式，文件不存在则创建；存在则清空文件内容<br>a 追加方式，文件不存在则创建<br>r+/w+ 读写方式打开<br>a+ 追加和读写方式打开</p>
-<p>type(f) 查看f属性 help(file) 查看file所有方法 help(f.tell) 查看f的tell方法<br>f. tab 补齐命令 查看f可以使用哪些命令<br>vim yy -》 1000p 产生足够大的数据量<br>f = open(‘imooc.txt’)<br>itedr_f = iter(f) //使用迭代器对文件进行操作，不消耗大量内存的情况下对文件进行遍历<br>lines = 0<br>for line in iter_f:<br>lines += 1<br>python写磁盘时机：<br>1.主动调用close()或者flush方法，写缓存同步到磁盘 f.close() f.flush()<br>2.写入数据量大于或者等于写缓存，写缓存同步到磁盘<br>eg:<br>f = open(‘yuchuan.txt’,’w’)<br>for i in range(10000):<br>f.writelines(‘test write’ + str(i) + ‘\n’)<br>此时调到后台执行<br>vim yuchuan.txt<br>f.close()<br>vim yuchuan.txt</p>
-<p>python文件为什么要关闭：<br>1.将写缓存同步到磁盘<br>2.linux系统中每个进程打开文件的个数是有限的<br>3.如果打开文件数到了系统限制，在打开文件就会失败</p>
-<p>linux下，ps得到PID之后， cat /proc/20384(PID) 列出该进程详细信息<br>for i in range(1025):<br>list_f.append(open(‘imooc.txt’,’w’))<br>print “%d:%d” % (i,list_f[i].fileno()) //提示打开文件过多<br>Seek<br>os.SEEK_SET 相对文件起始位置<br>os.SEEK_CUR 相对文件当前位置<br>os.SEEK_END 相对文件结尾位置</p>
-<p>f.read(3) 读入三个字节<br>f.tell() 返回当前相对于文件头的偏移位置<br>f.seek(0.os.SEEK_SET) 返回文件头<br>f.seek(0,os.SEEK_END) 返回文件尾<br>f.seek(-5,os.SEEK_CUR) 从当前位置前5个开始读取</p>
-<p>python标准文件：<br>标准输入： sys.stdin<br>标准输出：sys.stdout<br>标准错误：sys.stderr</p>
-<p>sys模块提供sys.argv属性，通过该属性可以得到命令行参数； sys.argv:字符串组成的列表</p>
-<p>f.encoding //查看文件编码<br>import codec<br>//创建指定编码格式文件<br>f = codec.open(‘test.txt’,’w’,’utf-8’,errors,buffering)</p>
-<p>使用os模块对文件进行操作<br>os.read(fd,buffersize)<br>os.write(fd,string)<br>os.lseek(fd,pos,how) 文件指针操作<br>os.close(fd)</p>
-<p>fd = os.open(‘imooc.txt’,os.O_CREAT | os.O_RDWR)<br>n = os.write(fd,’imooc’)<br>l = os.lseek(fd,0,os.SEEK_SET)<br>str1 = os.read(fd,5)<br>os.close(fd)<br>OS模块常用方法介绍：<br>access(path,mode) 判断该文件权限 eg: os.access(‘imooc.txt’,os.F_OK) os.R_OK os.W_OK os.X_OR<br>listdir(path) 返回当前目录下所有文件组成的列表 eg: os.listdir(‘./’)<br>remove(path) eg: os.remove(‘imooc.txt’)<br>rename(old,new) eg: os.rename(‘test/’,’test1’)<br>mkdir(path[,mode]) 创建目录 eg:<br>mkdirs(path[,mode]) 创建多级目录<br>removedirs(path)<br>rmdir(path)</p>
-<p>os.path 模块方法介绍：<br>exists(path) 当前路径是否存在<br>isdir(s) 是否是一个目录<br>isfile(path) 是否是一个文件<br>getsize(filename) 返回文件大小<br>dirname(p) 返回路径的目录<br>basename(p) 返回路径的文件名</p>
-<p>练习<br>import ConfigParser<br>cfg = ConfigParser.ConfigParser()<br>help(cfg.read)<br>cfg.read(‘study.txt’)<br>help(cfg.sections)<br>cfg.sections()<br>help(cfg.items)<br>for se in cfg.sections():<br>print se<br>print cfg.items(se)<br>cfg.set(‘userinfo’,’email’,’user@163.com’)<br>cfg.set(‘userinfo’,’pwd’,’123456’)<br>cfg.remove_option(‘userinfo’,’email’)</p>
-<p>Case:<br>import os<br>import os.path<br>import ConfigParser<br>”’<br>dump ini<br>del section<br>del item<br>modify item<br>add section<br>save modify<br>”’<br>class student_info(object):<br>def init(self,recordfile):<br>self.logfile = recordfile<br>self.cfg = ConfigParser.ConfigParser()<br>def cfg_load(self):<br>self.cfg.read(self.logfile)<br>def cfg_dump(self):<br>se_list = self.cfg.sections()<br>print “—-&gt;”<br>for se in se_list:<br>print se<br>print self.cfg.items(se)<br>print “&lt;—-”<br>def delete_item(self,section,key):<br>self.cfg.remove_option(section,key)<br>def delete_section(self,section):<br>self.cfg.remove_section(section)<br>def add_section(self,section):<br>self.cfg.add_section(section)<br>def set_item(self,section,key,value):<br>self.cfg.set(section,key,value)<br>def save(self):<br>fp = open(logfile,’w’)<br>self.cfg.write(fp)<br>fp.close()<br>if name ==’main‘:<br>info = student_info(‘study.txt’)<br>info.cfg_load()<br>info.cfg_dump()<br>info.set_item(‘userinfo’,’pwd’,’123456’)<br>info.cfg_dump()<br>info.add_section(‘login’)<br>info.set_item(‘login’,’2015-7-14’,’20’)<br>info.cfg_dump()<br>info.save()</p>
 ]]></content>
     </entry>
     
@@ -6070,21 +5732,6 @@ return numbers
     </entry>
     
     <entry>
-      <title><![CDATA[[Java]虚拟机基本结构]]></title>
-      <url>https://fudawei.github.io/2014/08/01/%5BJava%5D%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%9F%BA%E6%9C%AC%E7%BB%93%E6%9E%84/</url>
-      <content type="html"><![CDATA[<ul>
-<li>java堆用于存放对象示例，与数据相关，java栈主要与线程的函数调用相关</li>
-<li>函数调用一次出入java栈一次，调用的时候入栈，调用结束（return或者throw）出栈，函数参数和函数局部  变量保存在栈帧中，所以函数调用结束之后栈帧被弹出，相应的局部变量也就失效了。<a id="more"></a></li>
-<li>函数参数和局部变量越多，需要栈帧中保存的局部变量表就越大，函数调用的层次就会越少。</li>
-<li>局部变量是垃圾回收的很重要的根节点，任何被局部变量直接或者间接引用的对象都不会被回收。</li>
-<li>对已非逃逸对象，虚拟机可以进行内存分配优化，将这些对象分配在栈上。</li>
-<li>栈上分配依赖逃逸分析和变量替换的实现。</li>
-<li>方法区所有线程共享，用于保存类，类的方法，类的变量等，在JDK1.6和JDK1.7中，方法区就是永久区，在JDK1.8中，永久区已经被彻底移除，取而代之的是元数据区。</li>
-</ul>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[Java圾收集机制]]></title>
       <url>https://fudawei.github.io/2014/07/23/Java%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E6%9C%BA%E5%88%B6/</url>
       <content type="html"><![CDATA[<h3 id="对象引用"><a href="#对象引用" class="headerlink" title="对象引用"></a>对象引用</h3><p> Java中的垃圾回收一般是在Java堆中进行，因为堆中几乎存放了Java中所有的对象实例。谈到Java堆中的垃圾回收，自然要谈到引用。在JDK1.2之前，Java中的引用定义很很纯粹：如果reference类型的数据中存储的数值代表的是另外一块内存的起始地址，就称这块内存代表着一个引用。但在JDK1.2之后，Java对引用的概念进行了扩充，将其分为<strong>强引用（Strong Reference）、软引用（Soft Reference）、弱引用（Weak Reference）、虚引用（Phantom Reference）四种</strong>，引用强度依次减弱</p>
@@ -7236,24 +6883,6 @@ return numbers
     </entry>
     
     <entry>
-      <title><![CDATA[CocurrentHashMap源码理解]]></title>
-      <url>https://fudawei.github.io/2014/04/06/CocurrentHashMap%E6%BA%90%E7%A0%81%E7%90%86%E8%A7%A3/</url>
-      <content type="html"><![CDATA[<h3 id="CurrentHashMap-笔记"><a href="#CurrentHashMap-笔记" class="headerlink" title="CurrentHashMap 笔记"></a>CurrentHashMap 笔记</h3><ol>
-<li>ConcurrentHashMap可以做到读取数据不加锁，并且其内部的结构可以让其在进行写操作的时候能够将锁的粒度保持地尽量地小，不用对整个ConcurrentHashMap加锁。<br><img src="http://7xrkr6.com1.z0.glb.clouddn.com/nuEZ0.png" alt="CurrentHashMap"></li>
-<li>ConcurrentHashMap定位一个元素的过程需要进行两次Hash操作，第一次Hash定位到Segment，第二次Hash定位到元素所在的链表的头部，因此，这一种结构的带来的副作用是Hash的过程要比普通的HashMap要长，但是带来的好处是写操作的时候可以只对元素所在的Segment进行加锁即可，不会影响到其他的Segment，这样，在最理想的情况下，ConcurrentHashMap可以最高同时支持Segment数量大小的写操作（刚好这些写操作都非常平均地分布在所有的Segment上），所以，通过这一种结构，ConcurrentHashMap的并发能力可以大大的提高。</li>
-<li>Segment的数据结构<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">static final class Segment&lt;K,V&gt; extends ReentrantLock implements Serializable &#123;</div><div class="line">    transient volatile int count;</div><div class="line">    transient int modCount;</div><div class="line">    transient int threshold;</div><div class="line">    transient volatile HashEntry&lt;K,V&gt;[] table;</div><div class="line">    final float loadFactor;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-</li>
-</ol>
-<p>segment成员变量意义<br>count：Segment中元素的数量<br>modCount：对table的大小造成影响的操作的数量（比如put或者remove操作）<br>threshold：阈值，Segment里面元素的数量超过这个值依旧就会对Segment进行扩容<br>table：链表数组，数组中的每一个元素代表了一个链表的头部<br>loadFactor：负载因子，用于确定threshold</p>
-<p><strong>HashEntry</strong><br>Segment中的元素是以HashEntry的形式存放在链表数组中的<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">static final class HashEntry&lt;K,V&gt; &#123;</div><div class="line">    final K key;</div><div class="line">    final int hash;</div><div class="line">    volatile V value;</div><div class="line">    final HashEntry&lt;K,V&gt; next;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>除了value以外，其他的几个变量都是final的，这样做是为了防止链表结构被破坏，出现ConcurrentModification的情况。</p>
-<blockquote>
-<p>注意： 初始化中的concurrentLevel，代表ConcurrentHashMap内部的Segment的数量，ConcurrentLevel一经指定，不可改变，后续如果ConcurrentHashMap的元素数量增加导致ConrruentHashMap需要扩容，ConcurrentHashMap不会增加Segment的数量，而只会增加Segment中链表数组的容量大小，这样的好处是扩容过程不需要对整个ConcurrentHashMap做rehash，而只需要对Segment里面的元素做一次rehash就可以了。<br>之所以进行再散列，目的是减少三列冲突，使元素能够均匀的分别在不同的Segment上，从而提高容器的存取效率。<br><strong>ConcurrentHashMap的get操作</strong><br>get操作不加锁因为get方法里将要使用的共享变量都定义成volatile类型。</p>
-</blockquote>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[Java线程池]]></title>
       <url>https://fudawei.github.io/2014/03/08/Java%E7%BA%BF%E7%A8%8B%E6%B1%A0/</url>
       <content type="html"><![CDATA[<p>1、线程池简介：<br>多线程技术主要解决处理器单元内多个线程执行的问题，它可以显著减少处理器单元的闲置时间，增加处理器单元的吞吐能力。<br>假设一个服务器完成一项任务所需时间为：T1 创建线程时间，T2 在线程中执行任务的时间，T3 销毁线程时间。<br>如果：T1 + T3 远大于 T2，则可以采用线程池，以提高服务器性能。<br>一个线程池包括以下四个基本组成部分：<br>1、线程池管理器（ThreadPool）：用于创建并管理线程池，包括 创建线程池，销毁线程池，添加新任务；<br>2、工作线程（PoolWorker）：线程池中线程，在没有任务时处于等待状态，可以循环的执行任务；<br>3、任务接口（Task）：每个任务必须实现的接口，以供工作线程调度任务的执行，它主要规定了任务的入口，任务执行完后的收尾工作，任务的执行状态<br>4、任务队列（taskQueue）：用于存放没有处理的任务。提供一种缓冲机制。<br>线程池技术正是关注如何缩短或调整T1,T3时间的技术，从而提高服务器程序性能的。它把T1，T3分别安排在服务器程序的启动和结束的时间段或者一些空闲的时间段，这样在服务器程序处理客户请求时，不会有T1，T3的开销了。<br>线程池不仅调整T1,T3产生的时间段，而且它还显著减少了创建线程的数目，看一个例子：<br>假设一个服务器一天要处理50000个请求，并且每个请求需要一个单独的线程完成。在线程池中，线程数一般是固定的，所以产生线程总数不会超过线程池中线程的数目，而如果服务器不利用线程池来处理这些请求则线程总数为50000。一般线程池大小是远小于50000。所以利用线程池的服务器程序不会为了创建50000而在处理请求时浪费时间，从而提高效率。</p>
@@ -7305,65 +6934,6 @@ return numbers
 <li><a href="http://javarevisited.blogspot.com/2011/03/10-interview-questions-on-singleton.html" target="_blank" rel="external">10 Singleton Pattern Interview questions in Java</a></li>
 </ul>
 <p>由于作者这篇文章写的非常好，我也就没有重写 <a href="http://wuchong.me/blog/2014/08/28/how-to-correctly-write-singleton-pattern/#from=biezhi.me" target="_blank" rel="external">原文出处</a></p>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[面试题]]></title>
-      <url>https://fudawei.github.io/2014/03/02/Java%E9%9D%A2%E8%AF%95%E5%9F%BA%E7%A1%80/</url>
-      <content type="html"><![CDATA[<p>判断一块内存空间是否符合垃圾收集器标准是：</p>
-<ol>
-<li>给对象赋予了控制null，以后再也没掉用过</li>
-<li>给对象赋予了新值，即重新分配了内存空间<h3 id="Object-基类方法包含"><a href="#Object-基类方法包含" class="headerlink" title="Object 基类方法包含"></a>Object 基类方法包含</h3>clone()  创建并返回对象的一个副本<br>equals()  notify()  notifyAll()   wait()  toString()<br>finalize()   当垃圾回收器确定不存在对该对象的更多引用时，由对象的垃圾回收器调用此方法<br>hashCode()   返回该对象的哈希值</li>
-</ol>
-<h3 id="不通过构造函数能创建对象吗？"><a href="#不通过构造函数能创建对象吗？" class="headerlink" title="不通过构造函数能创建对象吗？"></a>不通过构造函数能创建对象吗？</h3><p>1.用new语句创建<br>2.运用反射，调用java.lang.Class 或者  java.lang.reflect.ConStruct 类的newInstance()实例方法<br>3.调用对象的clone() 方法<br>4.运用反序列手段，调用java.io.ObjectInputStream 对象的readObject() 方法</p>
-<h3 id="有哪几种存储结构？"><a href="#有哪几种存储结构？" class="headerlink" title="有哪几种存储结构？"></a>有哪几种存储结构？</h3><p>1.随机存取。可以任意存取任意一个元素<br>2.顺序存取。只能从前到后逐个访问，比如链表结构<br>3.索引存取。索引存取是为某个关键字建立索引表，从所有的表中得到地址，在直接访问<br>4.散列存取。建立散列表，根据key计算出存储位置，相当于一种索引</p>
-<p>百度或淘宝搜索时，出现搜索建议，采用什么数据结构实现？<br>字典树，是一种噶洗漱的变种，一种用于快速检索的多叉树结构。用于统计和排序大量的字符串，经常被搜索引擎用于文本词频<br>统计。核心思想是空间换时间。利用该字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。</p>
-<p>String s = “a”+”b”+”c”+”d”+”e”  产生了一个对象，因为赋值符号右边的字母都是常量，对于常量，编译时就直接存储他们<br>的字面值，而不是他们的引用。在编译时就把他们连接的结果提取出来变成了”abcde”<br>new String(“jinder”) 实际创建了2个对象，一个是”jinder”通过””双引号创建的，另一个是通过new创建的，只不过他们创建<br>的时期不同，一个是编译期，一个是运行期。<br>运行期调用String类型的intern()方法可以向StringPool中动态添加对象</p>
-<p>简述 synchronized 和 java.util.concurrent.locks.Lock 的异同？<br>Lock 能完成synchronized所实现的所有功能。主要不同点是，Lock 有比synchronized更精确的线程语义和更好的性能。synchronized<br>会自动释放锁，而Lock一定要求程序员手工释放，并且必须在finally从句中释放。</p>
-<p>只要当前JVM实例尚存在任何一个非守护线程没有结束，守护线程就全部工作;只有当最后一个非守护线程结束时，守护线程随着JVM一同<br>结束任务。守护线程最典型的应用就是GC。</p>
-<h3 id="存储过程和函数的区别是什么？"><a href="#存储过程和函数的区别是什么？" class="headerlink" title="存储过程和函数的区别是什么？"></a>存储过程和函数的区别是什么？</h3><p>存储过程是用户定义的一系列SQL语句的集合，设计特定表或其他对象的任务，用户可以调用存储过程，而函数通常是数据库已经定义的<br>方法，它接受参数并返回某种类型的值，而且不涉及特定用户表。<br>游标作用是什么？怎样判断游标到了最后？<br>游标用来定位结果集中的行，通过判断@@FETCH_STATUS，可以判断游标是否到了最后，通常此变量不等于0表示出错或者到了最后。<br>行级触发器在所影响的每一行触发一次。</p>
-<h3 id="数据库查询优化"><a href="#数据库查询优化" class="headerlink" title="数据库查询优化"></a>数据库查询优化</h3><p>执行数据库查询时，如果要查询的数据有很多，假设1000万，用什么办法可以提高查询效率？在数据库方面或java代码方面优化 ？<br>1.在数据库方面<br>建立索引   分区（MySQL，比如按时间分区）   尽量使用固定长度的字段    限制字段长度<br>2.在数据库 I/O 方面<br>增加缓冲区    如果涉及表的级联，不同的表存储在不同的磁盘上，以增加IO速度<br>3.在SQL方面<br>优化sql语句，减少比较次数     限制返回的条目数（MySQL 里面用limit）<br>4.在java方面<br>对于反复查询使用的查询，使用PreparedStatement 减少查询次数</p>
-<p>unique 约束能够约束一列保证该列值唯一，但允许有空值</p>
-<h3 id="NAT技术"><a href="#NAT技术" class="headerlink" title="NAT技术"></a>NAT技术</h3><p>NAT 技术（网络地址转换）是一种将一个IP地址域映射到另一个IP地址域的技术，从而为终端主机提供透明路由。NAT 包括静态网络地址<br>转换、动态网络地址转换、端口映射等。NAT 常用语私有地址域与工友地址的转换，解决IP地址匮乏的问题、在防火墙上实现了NAT以后<br>可以隐藏受保护网络的内部拓扑结构，在一定程度上提高网络的安全性。</p>
-<h3 id="IP-地址分配"><a href="#IP-地址分配" class="headerlink" title="IP 地址分配"></a>IP 地址分配</h3><p>A 类地址 １-127      0<br>B 类地址 128 - 191   10<br>C 类地址 192-223     110<br>FTP 是有连接的服务，必须基于TCP协议</p>
-<h3 id="TCP-的三次握手"><a href="#TCP-的三次握手" class="headerlink" title="TCP 的三次握手"></a>TCP 的三次握手</h3><p>第一次握手：建立连接时，客户端发送SYN包到服务器，并进入SYN_SEND状态，等待服务器确认。<br>第二次握手：服务器收到SYN包，必须确认客户的SYN（ack=j+1），同时自己也发送一个SYN包（SYN=k），即SYN+ACK包，此时服务器<br>进入SYN_RECV状态。<br>第三次握手：客户端收到服务器的SYN+ACK包，向服务器发送确认宝ACK（ack=k+1）,此包发送完毕，客户端和服务器进入ESTABLISHED<br>状态，完成三次握手。<br>完成三次握手后，客户端和服务器开始传送数据。<br>未连接队列：在三次握手协议中，服务器维护一个未连接队列，该队列未每个客户端的SYN包开设一个条目，该条目表明服务器已收到SYN<br>包，并向客户发出确认，正在等待客户的确认包。这些条目所标识的连接在服务器处于SYN_RECV状态，当服务器收到客户端的确认包，<br>删除该条目，服务器进入ESTABLISHED状态。</p>
-<h3 id="ping命令基于什么协议？"><a href="#ping命令基于什么协议？" class="headerlink" title="ping命令基于什么协议？"></a>ping命令基于什么协议？</h3><p>ICMP Internet 控制消息协议是TCP/IP 协议族的一个自协议，用于在IP主机、路由器之间传递控制消息，控制消息是指网路通不通，<br>主机是否可达，路由是否可用等网络本身的消息。ping命令向指定的IP地址发送一定长度的数据包，按照约定，若指定的IP存在的话，<br>会返回同样大小的数据包，若在特定的时间没有返回，超时，则认为IP不存在。</p>
-<p>子网掩码是用来判断任意两台计算机的IP地址是否属于同一子网络的根据。两台计算机各自的IP地址域子网掩码进行AND运算之后，<br>如果得出的结果是相同的额，则说明两台计算机是处于同一个子网络的，可以进行直接的通信。</p>
-<h3 id="什么是迭代器-Iterator-？"><a href="#什么是迭代器-Iterator-？" class="headerlink" title="什么是迭代器(Iterator)？"></a>什么是迭代器(Iterator)？</h3><p>Iterator 接口提供了很多对集合元素进行迭代的方法。每一个集合类都包含了可以返回迭代器实例的迭代方法。迭代器可以在迭代的<br>过程中删除底层集合的元素,但是不可以直接调用集合的remove(Object Obj)删除，可以通过迭代器的remove()方法删除。<br>如何确保N个线程可以访问N个资源同时又不导致死锁？<br>指定获取锁的顺序，并强制线程按照指定的顺序获取锁。</p>
-<h3 id="在监视器-Monitor-内部，是如何做线程同步的？"><a href="#在监视器-Monitor-内部，是如何做线程同步的？" class="headerlink" title="在监视器(Monitor)内部，是如何做线程同步的？"></a>在监视器(Monitor)内部，是如何做线程同步的？</h3><p>监视器和锁在Java虚拟机中是一块使用的。监视器监视一块同步代码块，确保一次只有一个线程执行同步代码块。每一个监视器都和一个<br>对象引用相关联。线程在获取锁之前不允许执行同步代码。</p>
-<h3 id="同步方法和同步代码块的区别？"><a href="#同步方法和同步代码块的区别？" class="headerlink" title="同步方法和同步代码块的区别？"></a>同步方法和同步代码块的区别？</h3><p>同步方法默认用this或者当前类class对象作为锁；<br>同步代码块可以选择以什么来加锁，比同步方法要更细颗粒度，我们可以选择只同步会发生同步问题的部分代码而不是整个方法；</p>
-<p>应用程序可以使用Executor框架来创建线程池 (创建线程的方式还有 继承Thread类，实现Runnable接口 )</p>
-<h3 id="重载和重写"><a href="#重载和重写" class="headerlink" title="重载和重写"></a>重载和重写</h3><p>重载发生在同一个类里面，多个方法名相同但是形参列表不同的情况，返回类型可以相同也可以不同。<br>重写发生在父类子类里面，子类重新定义了父类方法，方法重写（覆盖）必须有相同的方法名、形参列表和返回类型。</p>
-<h3 id="接口和抽象类的区别是什么？"><a href="#接口和抽象类的区别是什么？" class="headerlink" title="接口和抽象类的区别是什么？"></a>接口和抽象类的区别是什么？</h3><p>Java 提供和支持创建抽象类和接口。它们的实现有共同点，不同点在于：<br>接口中所有的方法隐含的都是抽象的。而抽象类则可以同时包含抽象和非抽象的方法。<br>类可以实现很多个接口，但是只能继承一个抽象类<br>类可以不实现抽象类和接口声明的所有方法，当然，在这种情况下，类也必须得声明成是抽象的。<br>抽象类可以在不提供接口方法实现的情况下实现接口。<br>Java 接口中声明的变量默认都是final的。抽象类可以包含非final的变量。<br>Java 接口中的成员函数默认是public的。抽象类的成员函数可以是private，protected或者是public。<br>接口是绝对抽象的，不可以被实例化。抽象类也不可以被实例化，但是，如果它包含main方法的话是可以被调用的。<br>也可以参考JDK8中抽象类和接口的区别</p>
-<h3 id="HashMap和Hashtable区别？"><a href="#HashMap和Hashtable区别？" class="headerlink" title="HashMap和Hashtable区别？"></a>HashMap和Hashtable区别？</h3><p>HashMap和Hashtable都实现了Map接口，因此很多特性非常相似。但是，他们有以下不同点：<br>HashMap允许键和值是null，而Hashtable不允许键或者值是null。<br>Hashtable是同步的，而HashMap不是。因此，HashMap更适合于单线程环境，而Hashtable适合于多线程环境。</p>
-<h3 id="Java中的HashMap的工作原理？"><a href="#Java中的HashMap的工作原理？" class="headerlink" title="Java中的HashMap的工作原理？"></a>Java中的HashMap的工作原理？</h3><p>Java中的HashMap是以键值对(key-value)的形式存储元素的。HashMap需要一个hash函数，它使用hashCode()和equals()方法来向集合<br>/从集合添加和检索元素。当调用put()方法的时候，HashMap会计算key的hash值，然后把键值对存储在集合中合适的索引上。如果key<br>已经存在了，value会被更新成新值;若计算出来的索引位置相同，形成Entry链。</p>
-<p>快速失败(fail-fast)和安全失败(fail-safe)的区别是什么？<br>Iterator的安全失败是基于对底层集合做拷贝，因此，它不受源集合上修改的影响。java.util包下面的所有的集合类都是快速失败的，<br>而java.util.concurrent包下面的所有的类都是安全失败的。快速失败的迭代器会抛出ConcurrentModificationException异常，而安全<br>失败的迭代器永远不会抛出这样的异常。</p>
-<h3 id="ArrayList和LinkedList区别？"><a href="#ArrayList和LinkedList区别？" class="headerlink" title="ArrayList和LinkedList区别？"></a>ArrayList和LinkedList区别？</h3><p>ArrayList和LinkedList都实现了List接口，他们有以下的不同点：<br>ArrayList是基于索引的数据接口，它的底层是数组。它可以以O(1)时间复杂度对元素进行随机访问。与此对应，LinkedList是以元素列表的形式存储它的数据，每一个元素都和它的前一个和后一个元素链接在一起，在这种情况下，查找某个元素的时间复杂度是O(n)。<br>相对于ArrayList，LinkedList的插入，添加，删除操作速度更快，因为当元素被添加到集合任意位置的时候，不需要像数组那样重新计算大小或者是更新索引。<br>LinkedList比ArrayList更占内存，因为LinkedList为每一个节点存储了两个引用，一个指向前一个元素，一个指向下一个元素。</p>
-<h3 id="Array和ArrayList区别？"><a href="#Array和ArrayList区别？" class="headerlink" title="Array和ArrayList区别？"></a>Array和ArrayList区别？</h3><p>Array可以包含基本类型和对象类型，ArrayList只能包含对象类型。<br>Array大小是固定的，ArrayList的大小是动态变化的。<br>ArrayList提供了更多的方法和特性，比如：addAll()，removeAll()，iterator()等等。</p>
-<h3 id="Iterator和ListIterator的区别？"><a href="#Iterator和ListIterator的区别？" class="headerlink" title="Iterator和ListIterator的区别？"></a>Iterator和ListIterator的区别？</h3><p>Iterator可用来遍历Set和List集合，但是ListIterator只能用来遍历List。<br>Iterator对集合只能是前向遍历，ListIterator既可以前向也可以后向。<br>ListIterator实现了Iterator接口，并包含其他的功能，比如：增加元素，替换元素，获取前一个和后一个元素的索引</p>
-<h3 id="Comparable和Comparator接口"><a href="#Comparable和Comparator接口" class="headerlink" title="Comparable和Comparator接口"></a>Comparable和Comparator接口</h3><p>Java提供了只包含一个compareTo()方法的Comparable接口。这个方法可以个给两个对象排序。<br>Java提供了包含compare()和equals()两个方法的Comparator接口。compare()方法用来给两个输入参数排序。</p>
-<h3 id="Java优先级队列-Priority-Queue-？"><a href="#Java优先级队列-Priority-Queue-？" class="headerlink" title="Java优先级队列(Priority Queue)？"></a>Java优先级队列(Priority Queue)？</h3><p>PriorityQueue是一个基于优先级堆的无界队列，它的元素是按照自然顺序(natural order)排序的。在创建的时候，我们可以给它提供<br>一个负责给元素排序的比较器。PriorityQueue不允许null值，因为他们没有自然顺序，或者说他们没有任何的相关联的比较器。最后，<br>riorityQueue不是线程安全的，入队和出队的时间复杂度是O(log(n))。</p>
-<p>什么时候使用CallableStatement？用来准备CallableStatement的方法是什么？<br>CallableStatement用来执行存储过程。存储过程是由数据库存储和提供的。存储过程可以接受输入参数，也可以有返回结果。非常鼓励<br>用存储过程，因为它提供了安全性和模块化。准备一个CallableStatement的方法是：CallableStament.prepareCall();</p>
-<p>PreparedStatement比Statement有什么优势？<br>PreparedStatements是预编译的，因此，性能会更好。同时，不同的查询参数值，PreparedStatement可以重用。</p>
-<h3 id="URL编码和URL解码？"><a href="#URL编码和URL解码？" class="headerlink" title="URL编码和URL解码？"></a>URL编码和URL解码？</h3><p>URL编码是负责把URL里面的空格和其他的特殊字符替换成对应的十六进制表示，反之就是解码。</p>
-<h3 id="doGet-方法和doPost-方法区别？"><a href="#doGet-方法和doPost-方法区别？" class="headerlink" title="doGet()方法和doPost()方法区别？"></a>doGet()方法和doPost()方法区别？</h3><p>doGet: GET 方法会把键值对追加在请求的URL后面。因为URL对字符数目有限制， 限制了用在客户端请求的参数值的数目。并且请求中<br>的参数值是可见的 ，不够安全。<br>doPOST：POST方法通过把请求参数值放在请求体中来克服GET方法的限制，因此，可以发送的参数的数目是没有限制的。<br>最后，通过POST请求传递的敏感信息对外部客户端是不可见的。</p>
-<h3 id="解释下Servlet的生命周期。"><a href="#解释下Servlet的生命周期。" class="headerlink" title="解释下Servlet的生命周期。"></a>解释下Servlet的生命周期。</h3><p>对每一个客户端的请求，Servlet引擎 载入Servlet，调用它的init()方法，完成Servlet的初始化。然后，Servlet 对象通过为每一个<br>请求单独调用service()方法来处理所有随后来自客户端的请求，最后，调用Servlet的destroy()方法把Servlet卸载掉。</p>
-<h3 id="什么是Servlet？"><a href="#什么是Servlet？" class="headerlink" title="什么是Servlet？"></a>什么是Servlet？</h3><p>Servlet 是用来处理客户端请求并产生动态网页内容的Java类。Servlet 主要是用来处理或者是存储HTML表单提交的数据，产生动态内容</p>
-<h3 id="什么是反射？"><a href="#什么是反射？" class="headerlink" title="什么是反射？"></a>什么是反射？</h3><p>Java 程序可以加载一个运行时才得知名称的 class，获悉其完整构造（但不包括methods定义），并生成其对象实体、<br>或对其fields设值、或唤起其methods。</p>
-<h3 id="匿名内部类的变量必须final修饰？"><a href="#匿名内部类的变量必须final修饰？" class="headerlink" title="匿名内部类的变量必须final修饰？"></a>匿名内部类的变量必须final修饰？</h3><p>首先内部类的生命周期是成员级别的，而局部变量的生命周期是在方法体之类，当mRun方法执行，new<br>的线程运行，新线程里面会睡一秒。主线程会继续执行，mRun执行完毕，name属性生命周期结束，Java就是为了杜绝这种错误，严格要求<br>内部类中方位局部变量，必须使用final关键字修饰。局部变量被final修饰之后，此时会在内存中保有一份局部变得的复制品，当内部类<br>访问的时候其实访问的是这个复制品。</p>
-<h3 id="小知识"><a href="#小知识" class="headerlink" title="小知识"></a>小知识</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">@Test</div><div class="line">public void test() &#123;</div><div class="line">	Integer a = new Integer(1000) ; int b = 1000;</div><div class="line">	Integer c = new Integer(10); Integer d = new Integer(10);</div><div class="line">	System.out.println(a == b);    //true   自动拆箱为int</div><div class="line">	System.out.println(c == d);    //false</div><div class="line">&#125;</div><div class="line">//Integer.java valueOf 方法中把-128-127 缓存了下来。官方解释是小的数字使用的频率比较高， 为了优化性能，把这之间的数缓存了下来</div><div class="line">@Test</div><div class="line">public void testInteger()&#123;</div><div class="line">	Integer a = 1000,b=1000;</div><div class="line">	Integer c = 100,d=100;</div><div class="line">	System.out.println(a==b);   //false  new出来的</div><div class="line">	System.out.println(c==d);   //true   缓存中的</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>[reference] <a href="http://www.imooc.com/article/2964" target="_blank" rel="external">http://www.imooc.com/article/2964</a></p>
-<h3 id="调用三种方式"><a href="#调用三种方式" class="headerlink" title="调用三种方式"></a>调用三种方式</h3><p>模块之间都存在一定的调用关系，从调用方式上看，可以分为三类同步调用、异步调用和回调。同步调用是一种阻塞式调用，异步调用是一种<br>类似消息或事件的机制解决了同步阻塞的问题，回调是一种双向的调用模式，也就是说，被调用的接口被调用时也会调用对方的接口，例如A<br>要调用B,B在执行完又要调用A。<br>public interface FileNameFilter{<br>    boolean accept(File dir,String name);<br>}</p>
-<h3 id="标记接口"><a href="#标记接口" class="headerlink" title="标记接口"></a>标记接口</h3><p>如果实现接口的类是抽象类，那么就没必要实现该接口的方法。<br>一个接口能继承另一个接口，这和类之间的继承比较相似。也就是说实现某一个接口之后，可能要实现的方法不是直接接口定义的方法，<br>可能是该接口继承于另外一个接口的方法。<br>没有任何方法的接口被称为标记接口。标记接口主要用于以下两种目的：<br>1.建立一个公共的父接口<br>2.向一个类添加数据类型</p>
-<h3 id="SQL三范式"><a href="#SQL三范式" class="headerlink" title="SQL三范式"></a>SQL三范式</h3><p>SQL语言支持关系数据库的三级模式结构，其中，视图对应外模式，基本表对应模式，存储文件对应内模式。<br>通过分解，可以将一个低一级别的关系模式转换成若干个高一级范式的关系模式，这种过程叫做规范化。<br>eg: FIRST(Sno,Sname,Status,City,Pno,Qty)<br>依赖关系： F={ Sno-&gt; Sname,Sno-&gt;Status,Status-&gt;City,(Sno,Pno)-&gt;Qty}</p>
-<ul>
-<li>1NF(第一范式)<br>定义：若关系模式R的每一个分量是不可再分的数据项，则关系模式R属于第一范式<br>FIRST属于第一范式，但1NF存在4个问题：<br>冗余度大，每个Sno,Sname,Status,City 要与其供应的零件的种类一样多<br>引起修改操作的不一致性<br>插入异常，若某个供应者某些信息没有提供(比如没有Pno)则不能进行插入操作</li>
-<li>2NF(第二范式)<br>定义：若关系模式R属于1NF,且每一个非主属性完全依赖于码，则关系模式R属于2NF<br>也就是说，当1NF消除了非主属性对码的部分函数依赖，则成为2NF<br>将FIRST分解为 FIRST1(Sno,Sname,Status,City) 和 FIRST2(Sno,Pno,Qty) 分解后，FIRST1 的 非主属性 Sname,Status,City 完全依赖<br>于码 Sno,FIRST2的非主属性 Qty 完全依赖于码 Sno,Pno,所以属于2NF</li>
-<li>3NF(第三范式)<br>若关系模式中不存在这样的码X，属性组Y以及非主属性Z，使得X-&gt;Y,Y-Z成立，则关系模式R属于3NF<br>即当2NF消除了非主属性对码的传递函数依赖，则成为3NF<br>分解为 FIRST1(Sno,Sname,Status)  FIRST2(Status,City)   FIRST3(Sno,Pno,Qty)<br>3NF的模式肯定是2NF,产生冗余和异常的两个重要原因是部分依赖和传递依赖，因为3NF模式中不存在非主属性对码的部分函数依赖和<br>传递函数依赖，所以具有较高的性能，通常变换为3NF或更高级别的凡是，这种变化过程成为“关系模式的规范化处理”<h3 id="Webservice"><a href="#Webservice" class="headerlink" title="Webservice"></a>Webservice</h3>W  ebService是一种跨编程语言和跨操作系统平台的远程调用技术。<br>远程调用，就是一台计算机a上的一个程序可以调用到另外一台计算机b上的一个对象的方法，譬如，银联提供给商场的pos刷卡系统，<br>商场的POS机转账调用的转账方法的代码其实是跑在银行服务器上。再比如，amazon，天气预报系统，淘宝网，校内网，百度等把自己的<br>系统服务以webservice服务的形式暴露出来，让第三方网站和程序可以调用这些服务功能，这样扩展了自己系统的市场占有率，就是<br>所谓的SOA应用。<br> WebService是建立可互操作的分布式应用程序的新平台，是一个平台，是一套标准。它定义了应用程序如何在Web上实现互操作性<br>Web service平台必须提供一种标准来描述Web service，让客户可以得到足够的信息来调用这个Web service<br>XML+XSD,SOAP和WSDL就是构成WebService平台的三大技术。<br>WebService采用HTTP协议传输数据，采用XML格式封装数据（即XML中说明调用远程服务对象的哪个方法，传递的参数是什么，以及服务<br>对象的返回结果是什么）。XML是WebService平台中表示数据的格式。<br>SOAP协议 = HTTP协议 + XML数据格式<br>WSDL(Web Services Description Language)就是这样一个基于XML的语言，用于描述Web Service及其函数、参数和返回值。<br>它是WebService客户端和服务器端都能理解的标准格式。<h3 id="Java-String-split-用法"><a href="#Java-String-split-用法" class="headerlink" title="Java String.split()用法"></a>Java String.split()用法</h3>String.split(“\.”) //用 . 分割字符串<br>acount=?and uu =? or n=?”,把三个都分隔出来可以用String.split(“and|or”); //分割多个</li>
-</ul>
-<p>需要在程序中存储许多字符串常量，所以就想到了枚举</p>
-<h3 id="获取用户IP"><a href="#获取用户IP" class="headerlink" title="获取用户IP"></a>获取用户IP</h3><p>public static String getIpAddr(HttpServletRequest request) {<br>        String ip = request.getHeader(“x-forwarded-for”);<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“WL-Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getRemoteAddr();<br>        }<br>        return ip;<br>    }</p>
 ]]></content>
     </entry>
     
@@ -7552,6 +7122,65 @@ return numbers
 <h3 id="线程池的好处-2"><a href="#线程池的好处-2" class="headerlink" title="线程池的好处"></a>线程池的好处</h3><p>1.降低资源消耗，重用已经创建好的线程，降低创建和销毁的开销<br>2.提高响应速度，不用等待创建线程就能立即执行<br>3.提高线程的可管理性，统一分配、调优和监控<br>4.防止服务器过载，防止内存溢出或者CPU耗尽</p>
 <h3 id="对象引用的类型-2"><a href="#对象引用的类型-2" class="headerlink" title="对象引用的类型"></a>对象引用的类型</h3><p>Reference(or named Strong Reference)（ 强引用）：普通类型的引用。<br>SoftReference（ 软引用）：被这种引用指向的对象，如果此对象没要再被其他Strong Reference引用的话，可能在任何时候被GC。虽然是可能在任何时候被GC，但是通常是在可用内存数比较低的时候，并且在程序抛出OutOfMemoryError之前才发生对此对象的GC。SoftReference通常被用作实现Cache的对象引用，如果这个对象被GC了，那么他可以在任何时候再重新被创建。另外，根据JDK文档中介绍，实际JVM的实现是鼓励不回收最近创建和最近使用的对象。SoftReference 类的一个典型用途就是用于内存敏感的高速缓存。<br>WeakReference（弱引用）：如果一个被WeakReference引用的对象，当没要任何SoftReference和StrongReference引用时，立即会被GC。和SoftReference的区别是：WeakReference对象是被eagerly collected，即一旦没要任何SoftReference和StrongReference引用，立即被清楚；而只被SoftReference引用的对象，不回立即被清楚，只有当内存不够，即将发生OutOfMemoryError时才被清除，而且是先清除不常用的。SoftReference适合实现Cache用。WeakReference 类的一个典型用途就是规范化映射（ canonicalized mapping ）<br>PhantomReference（虚引用）：当没有StrongReference，SoftReference和WeakReference引用时，随时可被GC。通常和ReferenceQueue联合使用，管理和清除与被引用对象（没有finalize方法）相关的本地资源。</p>
 <h3 id="简单工厂-工厂方法-抽象工厂-2"><a href="#简单工厂-工厂方法-抽象工厂-2" class="headerlink" title="简单工厂 工厂方法 抽象工厂"></a>简单工厂 工厂方法 抽象工厂</h3><p>简单工厂: 抽象了同一类型(比如不同品牌的笔记本电脑)产品的生产过程,通过工厂类来实现对不同产品生产过程的选择<br>工厂方法: 不仅抽象了产品类的生产过程,还抽象了工厂类本身. 将特定的产品的生产过程和特定的工厂相对应. 将原先工厂类中的选择提升到工程类以上的层级—即客户层级. 通过选择特定的工厂,来选择生产特定的产品.<br>抽象工厂: 在工厂方法的基础上,将特定的产品生产过程和特定的工厂类之间的对应关系解除,使得工厂类和产品类之间能够产生更多灵活的组合方式.</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[面试题]]></title>
+      <url>https://fudawei.github.io/2014/03/02/Java%E9%9D%A2%E8%AF%95%E5%9F%BA%E7%A1%80/</url>
+      <content type="html"><![CDATA[<p>判断一块内存空间是否符合垃圾收集器标准是：</p>
+<ol>
+<li>给对象赋予了控制null，以后再也没掉用过</li>
+<li>给对象赋予了新值，即重新分配了内存空间<h3 id="Object-基类方法包含"><a href="#Object-基类方法包含" class="headerlink" title="Object 基类方法包含"></a>Object 基类方法包含</h3>clone()  创建并返回对象的一个副本<br>equals()  notify()  notifyAll()   wait()  toString()<br>finalize()   当垃圾回收器确定不存在对该对象的更多引用时，由对象的垃圾回收器调用此方法<br>hashCode()   返回该对象的哈希值</li>
+</ol>
+<h3 id="不通过构造函数能创建对象吗？"><a href="#不通过构造函数能创建对象吗？" class="headerlink" title="不通过构造函数能创建对象吗？"></a>不通过构造函数能创建对象吗？</h3><p>1.用new语句创建<br>2.运用反射，调用java.lang.Class 或者  java.lang.reflect.ConStruct 类的newInstance()实例方法<br>3.调用对象的clone() 方法<br>4.运用反序列手段，调用java.io.ObjectInputStream 对象的readObject() 方法</p>
+<h3 id="有哪几种存储结构？"><a href="#有哪几种存储结构？" class="headerlink" title="有哪几种存储结构？"></a>有哪几种存储结构？</h3><p>1.随机存取。可以任意存取任意一个元素<br>2.顺序存取。只能从前到后逐个访问，比如链表结构<br>3.索引存取。索引存取是为某个关键字建立索引表，从所有的表中得到地址，在直接访问<br>4.散列存取。建立散列表，根据key计算出存储位置，相当于一种索引</p>
+<p>百度或淘宝搜索时，出现搜索建议，采用什么数据结构实现？<br>字典树，是一种噶洗漱的变种，一种用于快速检索的多叉树结构。用于统计和排序大量的字符串，经常被搜索引擎用于文本词频<br>统计。核心思想是空间换时间。利用该字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。</p>
+<p>String s = “a”+”b”+”c”+”d”+”e”  产生了一个对象，因为赋值符号右边的字母都是常量，对于常量，编译时就直接存储他们<br>的字面值，而不是他们的引用。在编译时就把他们连接的结果提取出来变成了”abcde”<br>new String(“jinder”) 实际创建了2个对象，一个是”jinder”通过””双引号创建的，另一个是通过new创建的，只不过他们创建<br>的时期不同，一个是编译期，一个是运行期。<br>运行期调用String类型的intern()方法可以向StringPool中动态添加对象</p>
+<p>简述 synchronized 和 java.util.concurrent.locks.Lock 的异同？<br>Lock 能完成synchronized所实现的所有功能。主要不同点是，Lock 有比synchronized更精确的线程语义和更好的性能。synchronized<br>会自动释放锁，而Lock一定要求程序员手工释放，并且必须在finally从句中释放。</p>
+<p>只要当前JVM实例尚存在任何一个非守护线程没有结束，守护线程就全部工作;只有当最后一个非守护线程结束时，守护线程随着JVM一同<br>结束任务。守护线程最典型的应用就是GC。</p>
+<h3 id="存储过程和函数的区别是什么？"><a href="#存储过程和函数的区别是什么？" class="headerlink" title="存储过程和函数的区别是什么？"></a>存储过程和函数的区别是什么？</h3><p>存储过程是用户定义的一系列SQL语句的集合，设计特定表或其他对象的任务，用户可以调用存储过程，而函数通常是数据库已经定义的<br>方法，它接受参数并返回某种类型的值，而且不涉及特定用户表。<br>游标作用是什么？怎样判断游标到了最后？<br>游标用来定位结果集中的行，通过判断@@FETCH_STATUS，可以判断游标是否到了最后，通常此变量不等于0表示出错或者到了最后。<br>行级触发器在所影响的每一行触发一次。</p>
+<h3 id="数据库查询优化"><a href="#数据库查询优化" class="headerlink" title="数据库查询优化"></a>数据库查询优化</h3><p>执行数据库查询时，如果要查询的数据有很多，假设1000万，用什么办法可以提高查询效率？在数据库方面或java代码方面优化 ？<br>1.在数据库方面<br>建立索引   分区（MySQL，比如按时间分区）   尽量使用固定长度的字段    限制字段长度<br>2.在数据库 I/O 方面<br>增加缓冲区    如果涉及表的级联，不同的表存储在不同的磁盘上，以增加IO速度<br>3.在SQL方面<br>优化sql语句，减少比较次数     限制返回的条目数（MySQL 里面用limit）<br>4.在java方面<br>对于反复查询使用的查询，使用PreparedStatement 减少查询次数</p>
+<p>unique 约束能够约束一列保证该列值唯一，但允许有空值</p>
+<h3 id="NAT技术"><a href="#NAT技术" class="headerlink" title="NAT技术"></a>NAT技术</h3><p>NAT 技术（网络地址转换）是一种将一个IP地址域映射到另一个IP地址域的技术，从而为终端主机提供透明路由。NAT 包括静态网络地址<br>转换、动态网络地址转换、端口映射等。NAT 常用语私有地址域与工友地址的转换，解决IP地址匮乏的问题、在防火墙上实现了NAT以后<br>可以隐藏受保护网络的内部拓扑结构，在一定程度上提高网络的安全性。</p>
+<h3 id="IP-地址分配"><a href="#IP-地址分配" class="headerlink" title="IP 地址分配"></a>IP 地址分配</h3><p>A 类地址 １-127      0<br>B 类地址 128 - 191   10<br>C 类地址 192-223     110<br>FTP 是有连接的服务，必须基于TCP协议</p>
+<h3 id="TCP-的三次握手"><a href="#TCP-的三次握手" class="headerlink" title="TCP 的三次握手"></a>TCP 的三次握手</h3><p>第一次握手：建立连接时，客户端发送SYN包到服务器，并进入SYN_SEND状态，等待服务器确认。<br>第二次握手：服务器收到SYN包，必须确认客户的SYN（ack=j+1），同时自己也发送一个SYN包（SYN=k），即SYN+ACK包，此时服务器<br>进入SYN_RECV状态。<br>第三次握手：客户端收到服务器的SYN+ACK包，向服务器发送确认宝ACK（ack=k+1）,此包发送完毕，客户端和服务器进入ESTABLISHED<br>状态，完成三次握手。<br>完成三次握手后，客户端和服务器开始传送数据。<br>未连接队列：在三次握手协议中，服务器维护一个未连接队列，该队列未每个客户端的SYN包开设一个条目，该条目表明服务器已收到SYN<br>包，并向客户发出确认，正在等待客户的确认包。这些条目所标识的连接在服务器处于SYN_RECV状态，当服务器收到客户端的确认包，<br>删除该条目，服务器进入ESTABLISHED状态。</p>
+<h3 id="ping命令基于什么协议？"><a href="#ping命令基于什么协议？" class="headerlink" title="ping命令基于什么协议？"></a>ping命令基于什么协议？</h3><p>ICMP Internet 控制消息协议是TCP/IP 协议族的一个自协议，用于在IP主机、路由器之间传递控制消息，控制消息是指网路通不通，<br>主机是否可达，路由是否可用等网络本身的消息。ping命令向指定的IP地址发送一定长度的数据包，按照约定，若指定的IP存在的话，<br>会返回同样大小的数据包，若在特定的时间没有返回，超时，则认为IP不存在。</p>
+<p>子网掩码是用来判断任意两台计算机的IP地址是否属于同一子网络的根据。两台计算机各自的IP地址域子网掩码进行AND运算之后，<br>如果得出的结果是相同的额，则说明两台计算机是处于同一个子网络的，可以进行直接的通信。</p>
+<h3 id="什么是迭代器-Iterator-？"><a href="#什么是迭代器-Iterator-？" class="headerlink" title="什么是迭代器(Iterator)？"></a>什么是迭代器(Iterator)？</h3><p>Iterator 接口提供了很多对集合元素进行迭代的方法。每一个集合类都包含了可以返回迭代器实例的迭代方法。迭代器可以在迭代的<br>过程中删除底层集合的元素,但是不可以直接调用集合的remove(Object Obj)删除，可以通过迭代器的remove()方法删除。<br>如何确保N个线程可以访问N个资源同时又不导致死锁？<br>指定获取锁的顺序，并强制线程按照指定的顺序获取锁。</p>
+<h3 id="在监视器-Monitor-内部，是如何做线程同步的？"><a href="#在监视器-Monitor-内部，是如何做线程同步的？" class="headerlink" title="在监视器(Monitor)内部，是如何做线程同步的？"></a>在监视器(Monitor)内部，是如何做线程同步的？</h3><p>监视器和锁在Java虚拟机中是一块使用的。监视器监视一块同步代码块，确保一次只有一个线程执行同步代码块。每一个监视器都和一个<br>对象引用相关联。线程在获取锁之前不允许执行同步代码。</p>
+<h3 id="同步方法和同步代码块的区别？"><a href="#同步方法和同步代码块的区别？" class="headerlink" title="同步方法和同步代码块的区别？"></a>同步方法和同步代码块的区别？</h3><p>同步方法默认用this或者当前类class对象作为锁；<br>同步代码块可以选择以什么来加锁，比同步方法要更细颗粒度，我们可以选择只同步会发生同步问题的部分代码而不是整个方法；</p>
+<p>应用程序可以使用Executor框架来创建线程池 (创建线程的方式还有 继承Thread类，实现Runnable接口 )</p>
+<h3 id="重载和重写"><a href="#重载和重写" class="headerlink" title="重载和重写"></a>重载和重写</h3><p>重载发生在同一个类里面，多个方法名相同但是形参列表不同的情况，返回类型可以相同也可以不同。<br>重写发生在父类子类里面，子类重新定义了父类方法，方法重写（覆盖）必须有相同的方法名、形参列表和返回类型。</p>
+<h3 id="接口和抽象类的区别是什么？"><a href="#接口和抽象类的区别是什么？" class="headerlink" title="接口和抽象类的区别是什么？"></a>接口和抽象类的区别是什么？</h3><p>Java 提供和支持创建抽象类和接口。它们的实现有共同点，不同点在于：<br>接口中所有的方法隐含的都是抽象的。而抽象类则可以同时包含抽象和非抽象的方法。<br>类可以实现很多个接口，但是只能继承一个抽象类<br>类可以不实现抽象类和接口声明的所有方法，当然，在这种情况下，类也必须得声明成是抽象的。<br>抽象类可以在不提供接口方法实现的情况下实现接口。<br>Java 接口中声明的变量默认都是final的。抽象类可以包含非final的变量。<br>Java 接口中的成员函数默认是public的。抽象类的成员函数可以是private，protected或者是public。<br>接口是绝对抽象的，不可以被实例化。抽象类也不可以被实例化，但是，如果它包含main方法的话是可以被调用的。<br>也可以参考JDK8中抽象类和接口的区别</p>
+<h3 id="HashMap和Hashtable区别？"><a href="#HashMap和Hashtable区别？" class="headerlink" title="HashMap和Hashtable区别？"></a>HashMap和Hashtable区别？</h3><p>HashMap和Hashtable都实现了Map接口，因此很多特性非常相似。但是，他们有以下不同点：<br>HashMap允许键和值是null，而Hashtable不允许键或者值是null。<br>Hashtable是同步的，而HashMap不是。因此，HashMap更适合于单线程环境，而Hashtable适合于多线程环境。</p>
+<h3 id="Java中的HashMap的工作原理？"><a href="#Java中的HashMap的工作原理？" class="headerlink" title="Java中的HashMap的工作原理？"></a>Java中的HashMap的工作原理？</h3><p>Java中的HashMap是以键值对(key-value)的形式存储元素的。HashMap需要一个hash函数，它使用hashCode()和equals()方法来向集合<br>/从集合添加和检索元素。当调用put()方法的时候，HashMap会计算key的hash值，然后把键值对存储在集合中合适的索引上。如果key<br>已经存在了，value会被更新成新值;若计算出来的索引位置相同，形成Entry链。</p>
+<p>快速失败(fail-fast)和安全失败(fail-safe)的区别是什么？<br>Iterator的安全失败是基于对底层集合做拷贝，因此，它不受源集合上修改的影响。java.util包下面的所有的集合类都是快速失败的，<br>而java.util.concurrent包下面的所有的类都是安全失败的。快速失败的迭代器会抛出ConcurrentModificationException异常，而安全<br>失败的迭代器永远不会抛出这样的异常。</p>
+<h3 id="ArrayList和LinkedList区别？"><a href="#ArrayList和LinkedList区别？" class="headerlink" title="ArrayList和LinkedList区别？"></a>ArrayList和LinkedList区别？</h3><p>ArrayList和LinkedList都实现了List接口，他们有以下的不同点：<br>ArrayList是基于索引的数据接口，它的底层是数组。它可以以O(1)时间复杂度对元素进行随机访问。与此对应，LinkedList是以元素列表的形式存储它的数据，每一个元素都和它的前一个和后一个元素链接在一起，在这种情况下，查找某个元素的时间复杂度是O(n)。<br>相对于ArrayList，LinkedList的插入，添加，删除操作速度更快，因为当元素被添加到集合任意位置的时候，不需要像数组那样重新计算大小或者是更新索引。<br>LinkedList比ArrayList更占内存，因为LinkedList为每一个节点存储了两个引用，一个指向前一个元素，一个指向下一个元素。</p>
+<h3 id="Array和ArrayList区别？"><a href="#Array和ArrayList区别？" class="headerlink" title="Array和ArrayList区别？"></a>Array和ArrayList区别？</h3><p>Array可以包含基本类型和对象类型，ArrayList只能包含对象类型。<br>Array大小是固定的，ArrayList的大小是动态变化的。<br>ArrayList提供了更多的方法和特性，比如：addAll()，removeAll()，iterator()等等。</p>
+<h3 id="Iterator和ListIterator的区别？"><a href="#Iterator和ListIterator的区别？" class="headerlink" title="Iterator和ListIterator的区别？"></a>Iterator和ListIterator的区别？</h3><p>Iterator可用来遍历Set和List集合，但是ListIterator只能用来遍历List。<br>Iterator对集合只能是前向遍历，ListIterator既可以前向也可以后向。<br>ListIterator实现了Iterator接口，并包含其他的功能，比如：增加元素，替换元素，获取前一个和后一个元素的索引</p>
+<h3 id="Comparable和Comparator接口"><a href="#Comparable和Comparator接口" class="headerlink" title="Comparable和Comparator接口"></a>Comparable和Comparator接口</h3><p>Java提供了只包含一个compareTo()方法的Comparable接口。这个方法可以个给两个对象排序。<br>Java提供了包含compare()和equals()两个方法的Comparator接口。compare()方法用来给两个输入参数排序。</p>
+<h3 id="Java优先级队列-Priority-Queue-？"><a href="#Java优先级队列-Priority-Queue-？" class="headerlink" title="Java优先级队列(Priority Queue)？"></a>Java优先级队列(Priority Queue)？</h3><p>PriorityQueue是一个基于优先级堆的无界队列，它的元素是按照自然顺序(natural order)排序的。在创建的时候，我们可以给它提供<br>一个负责给元素排序的比较器。PriorityQueue不允许null值，因为他们没有自然顺序，或者说他们没有任何的相关联的比较器。最后，<br>riorityQueue不是线程安全的，入队和出队的时间复杂度是O(log(n))。</p>
+<p>什么时候使用CallableStatement？用来准备CallableStatement的方法是什么？<br>CallableStatement用来执行存储过程。存储过程是由数据库存储和提供的。存储过程可以接受输入参数，也可以有返回结果。非常鼓励<br>用存储过程，因为它提供了安全性和模块化。准备一个CallableStatement的方法是：CallableStament.prepareCall();</p>
+<p>PreparedStatement比Statement有什么优势？<br>PreparedStatements是预编译的，因此，性能会更好。同时，不同的查询参数值，PreparedStatement可以重用。</p>
+<h3 id="URL编码和URL解码？"><a href="#URL编码和URL解码？" class="headerlink" title="URL编码和URL解码？"></a>URL编码和URL解码？</h3><p>URL编码是负责把URL里面的空格和其他的特殊字符替换成对应的十六进制表示，反之就是解码。</p>
+<h3 id="doGet-方法和doPost-方法区别？"><a href="#doGet-方法和doPost-方法区别？" class="headerlink" title="doGet()方法和doPost()方法区别？"></a>doGet()方法和doPost()方法区别？</h3><p>doGet: GET 方法会把键值对追加在请求的URL后面。因为URL对字符数目有限制， 限制了用在客户端请求的参数值的数目。并且请求中<br>的参数值是可见的 ，不够安全。<br>doPOST：POST方法通过把请求参数值放在请求体中来克服GET方法的限制，因此，可以发送的参数的数目是没有限制的。<br>最后，通过POST请求传递的敏感信息对外部客户端是不可见的。</p>
+<h3 id="解释下Servlet的生命周期。"><a href="#解释下Servlet的生命周期。" class="headerlink" title="解释下Servlet的生命周期。"></a>解释下Servlet的生命周期。</h3><p>对每一个客户端的请求，Servlet引擎 载入Servlet，调用它的init()方法，完成Servlet的初始化。然后，Servlet 对象通过为每一个<br>请求单独调用service()方法来处理所有随后来自客户端的请求，最后，调用Servlet的destroy()方法把Servlet卸载掉。</p>
+<h3 id="什么是Servlet？"><a href="#什么是Servlet？" class="headerlink" title="什么是Servlet？"></a>什么是Servlet？</h3><p>Servlet 是用来处理客户端请求并产生动态网页内容的Java类。Servlet 主要是用来处理或者是存储HTML表单提交的数据，产生动态内容</p>
+<h3 id="什么是反射？"><a href="#什么是反射？" class="headerlink" title="什么是反射？"></a>什么是反射？</h3><p>Java 程序可以加载一个运行时才得知名称的 class，获悉其完整构造（但不包括methods定义），并生成其对象实体、<br>或对其fields设值、或唤起其methods。</p>
+<h3 id="匿名内部类的变量必须final修饰？"><a href="#匿名内部类的变量必须final修饰？" class="headerlink" title="匿名内部类的变量必须final修饰？"></a>匿名内部类的变量必须final修饰？</h3><p>首先内部类的生命周期是成员级别的，而局部变量的生命周期是在方法体之类，当mRun方法执行，new<br>的线程运行，新线程里面会睡一秒。主线程会继续执行，mRun执行完毕，name属性生命周期结束，Java就是为了杜绝这种错误，严格要求<br>内部类中方位局部变量，必须使用final关键字修饰。局部变量被final修饰之后，此时会在内存中保有一份局部变得的复制品，当内部类<br>访问的时候其实访问的是这个复制品。</p>
+<h3 id="小知识"><a href="#小知识" class="headerlink" title="小知识"></a>小知识</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">@Test</div><div class="line">public void test() &#123;</div><div class="line">	Integer a = new Integer(1000) ; int b = 1000;</div><div class="line">	Integer c = new Integer(10); Integer d = new Integer(10);</div><div class="line">	System.out.println(a == b);    //true   自动拆箱为int</div><div class="line">	System.out.println(c == d);    //false</div><div class="line">&#125;</div><div class="line">//Integer.java valueOf 方法中把-128-127 缓存了下来。官方解释是小的数字使用的频率比较高， 为了优化性能，把这之间的数缓存了下来</div><div class="line">@Test</div><div class="line">public void testInteger()&#123;</div><div class="line">	Integer a = 1000,b=1000;</div><div class="line">	Integer c = 100,d=100;</div><div class="line">	System.out.println(a==b);   //false  new出来的</div><div class="line">	System.out.println(c==d);   //true   缓存中的</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>[reference] <a href="http://www.imooc.com/article/2964" target="_blank" rel="external">http://www.imooc.com/article/2964</a></p>
+<h3 id="调用三种方式"><a href="#调用三种方式" class="headerlink" title="调用三种方式"></a>调用三种方式</h3><p>模块之间都存在一定的调用关系，从调用方式上看，可以分为三类同步调用、异步调用和回调。同步调用是一种阻塞式调用，异步调用是一种<br>类似消息或事件的机制解决了同步阻塞的问题，回调是一种双向的调用模式，也就是说，被调用的接口被调用时也会调用对方的接口，例如A<br>要调用B,B在执行完又要调用A。<br>public interface FileNameFilter{<br>    boolean accept(File dir,String name);<br>}</p>
+<h3 id="标记接口"><a href="#标记接口" class="headerlink" title="标记接口"></a>标记接口</h3><p>如果实现接口的类是抽象类，那么就没必要实现该接口的方法。<br>一个接口能继承另一个接口，这和类之间的继承比较相似。也就是说实现某一个接口之后，可能要实现的方法不是直接接口定义的方法，<br>可能是该接口继承于另外一个接口的方法。<br>没有任何方法的接口被称为标记接口。标记接口主要用于以下两种目的：<br>1.建立一个公共的父接口<br>2.向一个类添加数据类型</p>
+<h3 id="SQL三范式"><a href="#SQL三范式" class="headerlink" title="SQL三范式"></a>SQL三范式</h3><p>SQL语言支持关系数据库的三级模式结构，其中，视图对应外模式，基本表对应模式，存储文件对应内模式。<br>通过分解，可以将一个低一级别的关系模式转换成若干个高一级范式的关系模式，这种过程叫做规范化。<br>eg: FIRST(Sno,Sname,Status,City,Pno,Qty)<br>依赖关系： F={ Sno-&gt; Sname,Sno-&gt;Status,Status-&gt;City,(Sno,Pno)-&gt;Qty}</p>
+<ul>
+<li>1NF(第一范式)<br>定义：若关系模式R的每一个分量是不可再分的数据项，则关系模式R属于第一范式<br>FIRST属于第一范式，但1NF存在4个问题：<br>冗余度大，每个Sno,Sname,Status,City 要与其供应的零件的种类一样多<br>引起修改操作的不一致性<br>插入异常，若某个供应者某些信息没有提供(比如没有Pno)则不能进行插入操作</li>
+<li>2NF(第二范式)<br>定义：若关系模式R属于1NF,且每一个非主属性完全依赖于码，则关系模式R属于2NF<br>也就是说，当1NF消除了非主属性对码的部分函数依赖，则成为2NF<br>将FIRST分解为 FIRST1(Sno,Sname,Status,City) 和 FIRST2(Sno,Pno,Qty) 分解后，FIRST1 的 非主属性 Sname,Status,City 完全依赖<br>于码 Sno,FIRST2的非主属性 Qty 完全依赖于码 Sno,Pno,所以属于2NF</li>
+<li>3NF(第三范式)<br>若关系模式中不存在这样的码X，属性组Y以及非主属性Z，使得X-&gt;Y,Y-Z成立，则关系模式R属于3NF<br>即当2NF消除了非主属性对码的传递函数依赖，则成为3NF<br>分解为 FIRST1(Sno,Sname,Status)  FIRST2(Status,City)   FIRST3(Sno,Pno,Qty)<br>3NF的模式肯定是2NF,产生冗余和异常的两个重要原因是部分依赖和传递依赖，因为3NF模式中不存在非主属性对码的部分函数依赖和<br>传递函数依赖，所以具有较高的性能，通常变换为3NF或更高级别的凡是，这种变化过程成为“关系模式的规范化处理”<h3 id="Webservice"><a href="#Webservice" class="headerlink" title="Webservice"></a>Webservice</h3>W  ebService是一种跨编程语言和跨操作系统平台的远程调用技术。<br>远程调用，就是一台计算机a上的一个程序可以调用到另外一台计算机b上的一个对象的方法，譬如，银联提供给商场的pos刷卡系统，<br>商场的POS机转账调用的转账方法的代码其实是跑在银行服务器上。再比如，amazon，天气预报系统，淘宝网，校内网，百度等把自己的<br>系统服务以webservice服务的形式暴露出来，让第三方网站和程序可以调用这些服务功能，这样扩展了自己系统的市场占有率，就是<br>所谓的SOA应用。<br> WebService是建立可互操作的分布式应用程序的新平台，是一个平台，是一套标准。它定义了应用程序如何在Web上实现互操作性<br>Web service平台必须提供一种标准来描述Web service，让客户可以得到足够的信息来调用这个Web service<br>XML+XSD,SOAP和WSDL就是构成WebService平台的三大技术。<br>WebService采用HTTP协议传输数据，采用XML格式封装数据（即XML中说明调用远程服务对象的哪个方法，传递的参数是什么，以及服务<br>对象的返回结果是什么）。XML是WebService平台中表示数据的格式。<br>SOAP协议 = HTTP协议 + XML数据格式<br>WSDL(Web Services Description Language)就是这样一个基于XML的语言，用于描述Web Service及其函数、参数和返回值。<br>它是WebService客户端和服务器端都能理解的标准格式。<h3 id="Java-String-split-用法"><a href="#Java-String-split-用法" class="headerlink" title="Java String.split()用法"></a>Java String.split()用法</h3>String.split(“\.”) //用 . 分割字符串<br>acount=?and uu =? or n=?”,把三个都分隔出来可以用String.split(“and|or”); //分割多个</li>
+</ul>
+<p>需要在程序中存储许多字符串常量，所以就想到了枚举</p>
+<h3 id="获取用户IP"><a href="#获取用户IP" class="headerlink" title="获取用户IP"></a>获取用户IP</h3><p>public static String getIpAddr(HttpServletRequest request) {<br>        String ip = request.getHeader(“x-forwarded-for”);<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“WL-Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getRemoteAddr();<br>        }<br>        return ip;<br>    }</p>
 ]]></content>
     </entry>
     
@@ -8297,20 +7926,6 @@ return &quot;ProductDetails&quot;;
 </blockquote>
 <p>函数签名如下：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">public static ThreadFactory defaultThreadFactory()</div></pre></td></tr></table></figure>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[垃圾回收算法概述]]></title>
-      <url>https://fudawei.github.io/2013/08/09/%5BJava%5D%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E7%AE%97%E6%B3%95%E6%A6%82%E8%BF%B0/</url>
-      <content type="html"><![CDATA[<ul>
-<li><strong>引用计数</strong>：一个对象被引用计数器加一，取消引用计数器减一，引用计数器为0才能被回收。优点：简单。缺点：不能解决循环引用的问题，比如A引用B，B引用A，但是这两个对象没有被其他任何对象引用，属于垃圾对象，却不能回收；每次引用都会附件一个加减法，影响性能。<a id="more"></a></li>
-<li><strong>标记清除法</strong>：分为两个阶段：标记阶段和清除阶段。标记阶段通过根节点标记所有可达对象，清除阶段清除所有不可达对象。缺点：因为清除不可达对象之后剩余的内存不连续，会产生大量内存碎片，不利于大对象的分配。</li>
-<li><strong>复制算法</strong>：将内存空间分成相同的两块，每次只是用其中的一块，垃圾回收时，将正在使用的内存中的存活对象复制到另外一块空间，然后清除正在使用的内存空间中的所有对象，这种回收算法适用于新生代垃圾回收。优点：垃圾回收对象比较多时需要复制的对象恨少，性能较好；不会存在内存碎片。缺点：将系统内存折半。</li>
-<li><strong>标记压缩算法</strong>：是一种老年代回收算法，在标记清除的基础上做了一些优化，首先从根节点开始标记所有不可达的对象，然后将所有可达的对象移动到内存的一端，最后清除所有不可达的对象。优点：不用将内存分为两块；不会产生内存碎片。</li>
-<li><strong>分代算法</strong>：新生代使用复制算法，老生带使用标记清除算法或者标记压缩算法。几乎所有的垃圾回收期都区分新生代和老生带。</li>
-<li><strong>分区算法</strong>：将整个堆空间分成很多个连续的不同的小空间，每个小空间独立使用，独立回收。为了更好的控制gc停顿时间，可以根据目标停顿时间合理地回收若干个小区间，而不是整个堆空间，从而减少gc停顿时间。</li>
-</ul>
 ]]></content>
     </entry>
     

@@ -43,7 +43,7 @@
 <meta name="description" content="自旋锁我们知道一个线程在尝试获取锁失败后将被阻塞并加入等待队列中，它是一个怎样的队列？又是如何管理此队列？这节聊聊CHL Node FIFO队列。 在谈到CHL Node FIFO队列之前，我们先分析这种队列的几个要素。首先要了解的是自旋锁，所谓自旋锁即是某一线程去尝试获取某个锁时，如果该锁已经被其他线程占用的话，此线程将不断循环检查该锁是否被释放，而不是让此线程挂起或睡眠。它属于为了保证共享资源">
 <meta property="og:type" content="article">
 <meta property="og:title" content="[并发锁(二)]AQS阻塞队列">
-<meta property="og:url" content="https://fudawei.github.io/2017/02/14/[并发锁(二)]AQS阻塞队列/index.html">
+<meta property="og:url" content="https://fudawei.github.io/2017/02/14/[并发锁(三)]AQS阻塞队列/index.html">
 <meta property="og:site_name" content="冰鸟">
 <meta property="og:description" content="自旋锁我们知道一个线程在尝试获取锁失败后将被阻塞并加入等待队列中，它是一个怎样的队列？又是如何管理此队列？这节聊聊CHL Node FIFO队列。 在谈到CHL Node FIFO队列之前，我们先分析这种队列的几个要素。首先要了解的是自旋锁，所谓自旋锁即是某一线程去尝试获取某个锁时，如果该锁已经被其他线程占用的话，此线程将不断循环检查该锁是否被释放，而不是让此线程挂起或睡眠。它属于为了保证共享资源">
 <meta property="og:image" content="https://fudawei.github.io/img/sy/sy-1.jpg">
@@ -371,11 +371,11 @@
             <span class="post-comments-count">
               &nbsp; | &nbsp;
               <!--
-              <a href="/2017/02/14/[并发锁(二)]AQS阻塞队列/#comments" itemprop="discussionUrl">
-                <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/14/[并发锁(二)]AQS阻塞队列/" itemprop="commentsCount"></span>
+              <a href="/2017/02/14/[并发锁(三)]AQS阻塞队列/#comments" itemprop="discussionUrl">
+                <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/14/[并发锁(三)]AQS阻塞队列/" itemprop="commentsCount"></span>
               </a>
               -->
-              <a href="/2017/02/14/[并发锁(二)]AQS阻塞队列/#comments" itemprop="discussionUrl">
+              <a href="/2017/02/14/[并发锁(三)]AQS阻塞队列/#comments" itemprop="discussionUrl">
                 <span>评论</span>
               </a>
             </span>
@@ -386,7 +386,7 @@
 
 
 &nbsp; | &nbsp;
-<span id="/2017/02/14/[并发锁(二)]AQS阻塞队列/"class="leancloud_visitors" data-flag-title="[并发锁(二)]AQS阻塞队列">
+<span id="/2017/02/14/[并发锁(三)]AQS阻塞队列/"class="leancloud_visitors" data-flag-title="[并发锁(二)]AQS阻塞队列">
          &nbsp;阅读次数
         </span>
 
@@ -666,8 +666,8 @@
         
           <div class="comments" id="comments">
             
-              <div class="ds-thread" data-thread-key="2017/02/14/[并发锁(二)]AQS阻塞队列/"
-                   data-title="[并发锁(二)]AQS阻塞队列" data-url="https://fudawei.github.io/2017/02/14/[并发锁(二)]AQS阻塞队列/">
+              <div class="ds-thread" data-thread-key="2017/02/14/[并发锁(三)]AQS阻塞队列/"
+                   data-title="[并发锁(二)]AQS阻塞队列" data-url="https://fudawei.github.io/2017/02/14/[并发锁(三)]AQS阻塞队列/">
               </div>
             
           </div>
@@ -707,21 +707,21 @@
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">142</span>
+              <span class="site-state-item-count">137</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>
 
           <div class="site-state-item site-state-categories">
             <a href="/categories">
-              <span class="site-state-item-count">39</span>
+              <span class="site-state-item-count">38</span>
               <span class="site-state-item-name">分类</span>
               </a>
           </div>
 
           <div class="site-state-item site-state-tags">
             <a href="/tags">
-              <span class="site-state-item-count">73</span>
+              <span class="site-state-item-count">71</span>
               <span class="site-state-item-name">标签</span>
               </a>
           </div>
