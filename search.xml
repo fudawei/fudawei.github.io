@@ -1312,6 +1312,24 @@
     </entry>
     
     <entry>
+      <title><![CDATA[Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系]]></title>
+      <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/</url>
+      <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
+<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
+<p>Spring的总体架构</p>
+<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
+<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
+<p>Spring的设计理念</p>
+<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
+<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
+<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
+<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
+<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
+<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[Spring架构详解：Bean详解和Context组件详解]]></title>
       <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ABean%E8%AF%A6%E8%A7%A3%E5%92%8CContext%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3/</url>
       <content type="html"><![CDATA[<h1 id="Bean详解"><a href="#Bean详解" class="headerlink" title="Bean详解"></a>Bean详解</h1><p>前面已经说明了Bean组件对Spring的重要性，下面看看Bean这个组件式怎么设计的。Bean组件在Spring的org.springframework.beans包下。这个包下的所有类主要解决了三件事：Bean的定义、Bean 的创建以及对Bean的解析。对Spring的使用者来说唯一需要关心的就是Bean的创建，其他两个由Spring在内部帮你完成了，对你来说是透明的。</p>
@@ -1328,24 +1346,6 @@
 <p>再往下分就是按照构建Context的文件类型，接着就是访问Context的方式。这样一级一级构成了完整的Context等级层次。</p>
 <p>总体来说ApplicationContext必须要完成以下几件事：</p>
 <p>标识一个应用环境<br>利用BeanFactory创建Bean对象<br>保存对象关系表<br>能够捕获各种事件<br>Context作为Spring的Ioc容器，基本上整合了Spring的大部分功能，或者说是大部分功能的基础。</p>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[Spring架构详解：spring总体架构与设计理念个内部组件的作用和关系]]></title>
-      <url>https://fudawei.github.io/2016/12/15/Spring%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9ASpring%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5%E5%92%8C%E5%86%85%E9%83%A8%E7%BB%84%E4%BB%B6%E7%9A%84%E4%BD%9C%E7%94%A8%E5%92%8C%E5%85%B3%E7%B3%BB/</url>
-      <content type="html"><![CDATA[<p>Spring总体架构与设计理念<br>概述：</p>
-<p>Spring作为现在最优秀的框架之一，已被广泛的使用。本系列文章将从以下角度对Spring的架构进行剖析：设计Spring框架总体结构的理念是什么？包含哪几个核心组件？为什么需要这些组件？它们又是如何结合在一起构成Spring的总体架构？Spring的AOP特性又是如何利用这些基础架构来工作的？</p>
-<p>Spring的总体架构</p>
-<p>Spring总共有十几个组件，但是真正核心的组件只有几个，下面是Spring框架的总体架构图：<br><img src="/img/spring/spring_infrastructure.png" alt=""></p>
-<p>从上图中可以看出Spring框架中的核心组件只有三个：Core、Context和Beans。它们构建起了整个Spring的骨骼架构。没有它们就不可能有AOP、Web等上层的特性功能。下面也将主要从这三个组件入手分析Spring。</p>
-<p>Spring的设计理念</p>
-<p>前面介绍了Spring的三个核心组件，如果再在它们三个中选出核心的话，那就非Beans组件莫属了，为何这样说，其实Spring就是面向Bean的编程（BOP,Bean Oriented Programming），Bean在Spring 中才是真正的主角。</p>
-<p>Bean在Spring中作用就像Object对OOP的意义一样，没有对象的概念就像没有面向对象编程，Spring中没有Bean也就没有Spring存在的意义。就像一次演出舞台都准备好了但是却没有演员一样。为什 么要Bean这种角色Bean或者为何在Spring如此重要，这由Spring框架的设计目标决定，Spring为何如此流行，我们用Spring的原因是什么，想想你会发现原来Spring解决了一个非常关键的问题他可以让 你把对象之间的依赖关系转而用配置文件来管理，也就是他的依赖注入机制。而这个注入关系在一个叫Ioc容器中管理，那Ioc容器中有又是什么就是被Bean包裹的对象。Spring正是通过把对象包装在 Bean中而达到对这些对象管理以及一些列额外操作的目的。</p>
-<p>它这种设计策略完全类似于Java实现OOP的设计理念，当然了Java本身的设计要比Spring复杂太多太多，但是都是构建一个数据结构，然后根据这个数据结构设计他的生存环境，并让它在这个环境中 按照一定的规律在不停的运动，在它们的不停运动中设计一系列与环境或者与其他个体完成信息交换。这样想来回过头想想我们用到的其他框架都是大慨类似的设计理念。</p>
-<p>Spring内部组件的作用和关系<br>前面说Bean是Spring中关键因素，那Context和Core又有何作用呢？前面吧Bean比作一场演出中的演员的话，那Context就是这场演出的舞台背景，而Core应该就是演出的道具了。只有他们在一起才能 具备能演出一场好戏的最基本的条件。当然有最基本的条件还不能使这场演出脱颖而出，还要他表演的节目足够的精彩，这些节目就是Spring能提供的特色功能了。</p>
-<p>我们知道Bean包装的是Object，而Object必然有数据，如何给这些数据提供生存环境就是Context要解决的问题，对Context来说他就是要发现每个Bean之间的关系，为它们建立这种关系并且要维护好 这种关系。所以Context就是一个Bean关系的集合，这个关系集合又叫Ioc容器，一旦建立起这个Ioc容器后Spring就可以为你工作了。那Core组件又有什么用武之地呢？其实Core就是发现、建立和维护每 个Bean之间的关系所需要的一些列的工具，从这个角度看来，Core这个组件叫Util更能让你理解。</p>
-<p>它们之间可以用下图来表示：<br><img src="/img/spring/spring_components.png" alt=""></p>
 ]]></content>
     </entry>
     
@@ -1466,6 +1466,38 @@ val waiter = new JobWaiter(this, jobId, partitions.size, resultHandler)
 eventProcessActor ! JobSubmitted(jobId, rdd, func2, partitions.toArray, allowLocal, callSite, waiter, properties)
 </code></pre><p>走到这里，感觉有点儿绕了，为什么到了这里，还不直接运行呢，还要给DAGSchedulerEventProcessLoop发送一个JobSubmitted请求呢，new一个线程和这个区别有多大？</p>
 <p>不管了，搜索一下DAGSchedulerEventProcessLoop吧，结果发现它是一个DAGSchedulerEventProcessLoop，它的定义也在DAGScheduler这个类里面。它的receive方法里面定义了12种事件的处理方法，这里我们只需要看JobSubmitted的就行，它也是调用了自身的handleJobSubmitted方法。但是这里很奇怪，没办法打断点调试，但是它的结果倒是能返回的，因此我们得用另外一种方式，打开test工程，找到scheduler目录下的DAGSchedulerSuite这个类，我们自己写一个test方法，首先我们要在import那里加上import org.apache.spark.SparkContext._  ，然后加上这一段测试代码。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[ubuntu下恢复rm删除的数据]]></title>
+      <url>https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/</url>
+      <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
+<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
+<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
+<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
+<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
+<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
+<li>安装extundelete</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
+<pre><code>umount /dev/sdb2 
+mount -o remount,ro /dev/sdb2
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
+extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
+<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
+</code></pre><p>```</p>
+<ul>
+<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
+</ul>
+<ul>
+<li><p>总结经验</p>
+<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
+</li>
+</ul>
+<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
 ]]></content>
     </entry>
     
@@ -1602,38 +1634,6 @@ c)   关键字的个数n必须满足： ceil(m / 2)-1 &lt;= n &lt;= m-1。
   在大规模数据存储的文件系统中，B~tree系列数据结构，起着很重要的作用，对于存储不同的数据，节点相关的信息也是有所不同，这里根据自己的理解，画的一个查找以职工号为关键字，职工号为38的记录的简单示意图。(这里假设每个物理块容纳3个索引，磁盘的I/O操作的基本单位是块（block),磁盘访问很费时，采用B+-tree有效的减少了访问磁盘的次数。）
 </code></pre><p>对于像MySQL，DB2，Oracle等数据库中的索引结构有待深入的了解才行，不过网上可以找到很多B-tree相关的开源代码可以用来研究。</p>
 <p><img src="/img/btree_24.png" alt=""></p>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[ubuntu下恢复rm删除的数据]]></title>
-      <url>https://fudawei.github.io/2016/10/19/ubuntu%E4%B8%8B%E6%81%A2%E5%A4%8Drm%E5%88%A0%E9%99%A4%E7%9A%84%E6%95%B0%E6%8D%AE/</url>
-      <content type="html"><![CDATA[<h1 id="1-论“备份”的重要性"><a href="#1-论“备份”的重要性" class="headerlink" title="1. 论“备份”的重要性"></a>1. 论“备份”的重要性</h1><p>今天手真快，Tab补全文件名后回车，昨天一天写的代码就被我remove了。虽然自己写了脚本备份系统和home目录，但系统是1天一备份，home是2天一次增量备份。又恰巧昨晚没有备份home，并且Git也没有提交，欲哭无泪的感觉5555~~。</p>
-<p>被remove掉的文件其实是可以恢复的，删除命令只是在文件节点中作了删除标记，并不是真正清空内容，但是其他用户和一些有写盘动作的进程会很快覆盖这些数据。所以要想恢复磁盘信息，必须马上停止任何写磁盘操作。</p>
-<p>我是将整个磁盘卸载下来，用转接线挂到同学笔记本上才恢复成功的，下面将介绍具体的恢复过程。<br><a id="more"></a></p>
-<h1 id="2-恢复工具介绍"><a href="#2-恢复工具介绍" class="headerlink" title="2. 恢复工具介绍"></a>2. 恢复工具介绍</h1><p>针对Linux下的EXT文件系统来说，常用的误删恢复工具有debugfs、ext3grep、extundelete等等。extundelete是一个开源的数据恢复工具，支持ext3、ext4文件系统。</p>
-<p>我的系统是Ubuntu15.04，文件系统是ext4。尝试了debugfs来恢复，但没有成功。如果文件系统不是ext4的同学可以尝试下该方式，这里有篇参考文档。</p>
-<h1 id="3-extundelete恢复文件"><a href="#3-extundelete恢复文件" class="headerlink" title="3. extundelete恢复文件"></a>3. extundelete恢复文件</h1><ul>
-<li>安装extundelete</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">     sudo apt-get install extundelete</div><div class="line">```        </div><div class="line">- 任何的文件恢复工具，在使用前，均要将要恢复的分区卸载或挂载为只读，防止数据被覆盖使用。</div></pre></td></tr></table></figure>
-<pre><code>umount /dev/sdb2 
-mount -o remount,ro /dev/sdb2
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- 如果删的文件和操作系统是在同一个分区上，就只有把硬盘卸下来，挂载到另一台主机上。我就是这么干的^_^。</div><div class="line"></div><div class="line">- 在另一台主机上用df -h查看挂载分区。我的分区是/dev/sdb2。</div><div class="line"></div><div class="line">- 在该主机上执行：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-file /home/zhangchengfei/server.scala
-extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里面即是恢复出来的文件。
-</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">- 如果想恢复某个文件夹的内容，可以使用下面命令：</div></pre></td></tr></table></figure>
-<pre><code>extundelete /dev/sdb2 --restore-directory /hom/zhangchengfei/tmp
-</code></pre><p>```</p>
-<ul>
-<li>关于extundelete更多的使用细节，可以用extundelete -h进行查看，本文不再叙述。</li>
-</ul>
-<ul>
-<li><p>总结经验</p>
-<p>其实良好的备份和同步习惯才是最重要的，绝对比恢复数据要更简单。常见的备份策略有tar，rsync，git等等。为了防止以后rm误删数据，还有种做法是自己重新定义rm，每次不是直接删除文件或文件夹，而是将它们move到你指定的一个目录下存放。具体的实现可以上google搜索。</p>
-</li>
-</ul>
-<p>看这篇博客的朋友一定是遇到和我一样的窘境，祝好运O(∩_∩)O~~</p>
 ]]></content>
     </entry>
     
@@ -1802,48 +1802,6 @@ extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里
     </entry>
     
     <entry>
-      <title><![CDATA[Redis数据结构和对象-(三)跳跃表]]></title>
-      <url>https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E4%B8%89%EF%BC%89%E8%B7%B3%E8%B7%83%E8%A1%A8/</url>
-      <content type="html"><![CDATA[<h2 id="定义"><a href="#定义" class="headerlink" title="定义:"></a>定义:</h2><p>它是一种有序数据结构,通过在每个节点中维持多个 指向其他节点<br>的指针,从而达到快速访问节点的目的。</p>
-<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景:"></a>使用场景:</h2><p>Redis使用跳跃表作为有序集合键的底层实现之一,如果一个有序集合包含的元素数量比较多,又或者有序集合中元素的成(member)是比较长的字符串时,Redis就会使用跳跃表来作为有序集合键的底层实现。<br>另外,在集群节点中跳跃表被用作内部数据结构。除此之外在Redis中在无他用</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现:"></a>实现:</h2><p>跳跃表由zskiplistNode和zskiplist两个结构定义,其中zskiplistNode用<br>于表示跳跃表节点,而zskiplist用于保存跳跃表节点的相关信息。</p>
-<p><img src="/img/skipList-1.png" alt=""></p>
-<p>上图为zskiplist结构,其中</p>
-<ul>
-<li>header指向跳跃表的表头节点。</li>
-<li>tail指向表尾节点。</li>
-<li>level记录层数最大的那个节点的层数(注意:表头节点的层数不计算在内),是1-32之间的一个随机数,越大的数出现的概率越小。</li>
-</ul>
-<p>下图右为zskiplist结构,其中层(level):L1、L2、L3等标记各个节点的层,每个层都有前进指针和跨度,当程序从表头向表尾进行遍历时,访问会沿着层的前进指针进行。</p>
-<p><strong>跨度</strong>:层的跨度(level[i].span属性)用于记录两个节点间的距离,节点间的跨度越大,它们相聚的就越远,指向NULL的所有前进指针的跨度都为0,因为它们没有连向任何节点。跨度跟遍历操作无关,是用来计算排位的(可根据排位获取元素节点),如下图,查找分值为3.0、对象为o3的节点时,只经过了一个层,并且层的跨度为3,所以该节点在跳跃表中的排位为3。</p>
-<p><img src="/img/skipList-2.png" alt=""></p>
-<ul>
-<li><strong>后退(backward)指针</strong>:BW标记节点的后退指针,它指向位于当前节点的前一个节点,后退指针在程序从表尾向表头遍历时使用,与前进指针不同,后退针每次只能后退至前一个节点,因为每个节点只有一个后退指针。</li>
-<li><strong>分值</strong>(score):1.0、2.0和3.0是节点所保存的分值,分值是一个double类型的浮点数,可重复,用于节点排序(分值相同则按在字典中大小排)。</li>
-<li><strong>成员对象</strong>(obj):o1、o2和o3是节点所保存的成员对象,成员对象是一个指针,它指向一个字符串对象,而字符串对象则保存着一个SDS值,并且是唯一的。<br><em>注意:表头节点跟其他节点一样,也有后退指针、分值、成员对象等属性,但都不会被用到,故在图中没有画出。</em></li>
-</ul>
-<h2 id="跳跃表API"><a href="#跳跃表API" class="headerlink" title="跳跃表API"></a>跳跃表API</h2><p><img src="/img/skipList-3.png" alt=""></p>
-<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><p>a.跳表具有如下性质:</p>
-<ol>
-<li>由很多层结构组成</li>
-<li>每一层都是一个有序的链表</li>
-<li>最底层(Level 1)的链表包含所有元素</li>
-<li>如果一个元素出现在 Level i 的链表中,则它在 Level i 之下的链表也都会出现。</li>
-<li>每个节点包含两个指针,一个指向同一链表中的下一个元素,一个指向下面一层的元素。</li>
-</ol>
-<p>b.插入</p>
-<p>先确定该元素要占据的层数 K(采用丢硬币的方式,这完全是随机的)<br>然后在 Level 1 … Level K 各个层的链表都插入元素。<br>例子:插入 119, K = 2<br><img src="/img/skipList-4.png" alt=""></p>
-<p>如果 K 大于链表的层数,则要添加新的层。<br>例子:插入 119, K = 4<br><img src="/img/skipList-5.png" alt=""></p>
-<p>c.删除<br>三个步骤:</p>
-<ol>
-<li>在跳跃表中查找到这个元素的位置(如果未找到,则退出)</li>
-<li>将该元素所在整列从表中删除</li>
-<li>将多余的“空链”删除<br><img src="/img/skipList-6.png" alt=""></li>
-</ol>
-]]></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[Redis数据结构和对象-(四)整数集合]]></title>
       <url>https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E5%9B%9B%EF%BC%89%E6%95%B4%E6%95%B0%E9%9B%86%E5%90%88/</url>
       <content type="html"><![CDATA[<h1 id="整数集合"><a href="#整数集合" class="headerlink" title="整数集合"></a>整数集合</h1><p>整数集合（intset）是集合键的底层实现之一： 当一个集合只包含整数值元素， 并且这个集合的元素数量不多时， Redis 就会使用整数集合作为集合键的底层实现。</p>
@@ -1916,6 +1874,48 @@ extundelete执行完毕后在当前目录生产一个RECOVERED_FILES目录，里
 <h2 id="降级"><a href="#降级" class="headerlink" title="降级"></a>降级</h2><p>整数集合不支持降级操作， 一旦对数组进行了升级， 编码就会一直保持升级后的状态。</p>
 <p>举个例子， 对于图 6-11 所示的整数集合来说， 即使我们将集合里唯一一个真正需要使用 int64_t 类型来保存的元素 4294967295 删除了， 整数集合的编码仍然会维持 INTSET_ENC_INT64 ， 底层数组也仍然会是 int64_t 类型的， 如图 6-12 所示。</p>
 <p><img src="/img/intlist-11.png" alt=""><br><img src="/img/intlist-12.png" alt=""></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Redis数据结构和对象-(三)跳跃表]]></title>
+      <url>https://fudawei.github.io/2016/09/24/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E5%AF%B9%E8%B1%A1--%EF%BC%88%E4%B8%89%EF%BC%89%E8%B7%B3%E8%B7%83%E8%A1%A8/</url>
+      <content type="html"><![CDATA[<h2 id="定义"><a href="#定义" class="headerlink" title="定义:"></a>定义:</h2><p>它是一种有序数据结构,通过在每个节点中维持多个 指向其他节点<br>的指针,从而达到快速访问节点的目的。</p>
+<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景:"></a>使用场景:</h2><p>Redis使用跳跃表作为有序集合键的底层实现之一,如果一个有序集合包含的元素数量比较多,又或者有序集合中元素的成(member)是比较长的字符串时,Redis就会使用跳跃表来作为有序集合键的底层实现。<br>另外,在集群节点中跳跃表被用作内部数据结构。除此之外在Redis中在无他用</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现:"></a>实现:</h2><p>跳跃表由zskiplistNode和zskiplist两个结构定义,其中zskiplistNode用<br>于表示跳跃表节点,而zskiplist用于保存跳跃表节点的相关信息。</p>
+<p><img src="/img/skipList-1.png" alt=""></p>
+<p>上图为zskiplist结构,其中</p>
+<ul>
+<li>header指向跳跃表的表头节点。</li>
+<li>tail指向表尾节点。</li>
+<li>level记录层数最大的那个节点的层数(注意:表头节点的层数不计算在内),是1-32之间的一个随机数,越大的数出现的概率越小。</li>
+</ul>
+<p>下图右为zskiplist结构,其中层(level):L1、L2、L3等标记各个节点的层,每个层都有前进指针和跨度,当程序从表头向表尾进行遍历时,访问会沿着层的前进指针进行。</p>
+<p><strong>跨度</strong>:层的跨度(level[i].span属性)用于记录两个节点间的距离,节点间的跨度越大,它们相聚的就越远,指向NULL的所有前进指针的跨度都为0,因为它们没有连向任何节点。跨度跟遍历操作无关,是用来计算排位的(可根据排位获取元素节点),如下图,查找分值为3.0、对象为o3的节点时,只经过了一个层,并且层的跨度为3,所以该节点在跳跃表中的排位为3。</p>
+<p><img src="/img/skipList-2.png" alt=""></p>
+<ul>
+<li><strong>后退(backward)指针</strong>:BW标记节点的后退指针,它指向位于当前节点的前一个节点,后退指针在程序从表尾向表头遍历时使用,与前进指针不同,后退针每次只能后退至前一个节点,因为每个节点只有一个后退指针。</li>
+<li><strong>分值</strong>(score):1.0、2.0和3.0是节点所保存的分值,分值是一个double类型的浮点数,可重复,用于节点排序(分值相同则按在字典中大小排)。</li>
+<li><strong>成员对象</strong>(obj):o1、o2和o3是节点所保存的成员对象,成员对象是一个指针,它指向一个字符串对象,而字符串对象则保存着一个SDS值,并且是唯一的。<br><em>注意:表头节点跟其他节点一样,也有后退指针、分值、成员对象等属性,但都不会被用到,故在图中没有画出。</em></li>
+</ul>
+<h2 id="跳跃表API"><a href="#跳跃表API" class="headerlink" title="跳跃表API"></a>跳跃表API</h2><p><img src="/img/skipList-3.png" alt=""></p>
+<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><p>a.跳表具有如下性质:</p>
+<ol>
+<li>由很多层结构组成</li>
+<li>每一层都是一个有序的链表</li>
+<li>最底层(Level 1)的链表包含所有元素</li>
+<li>如果一个元素出现在 Level i 的链表中,则它在 Level i 之下的链表也都会出现。</li>
+<li>每个节点包含两个指针,一个指向同一链表中的下一个元素,一个指向下面一层的元素。</li>
+</ol>
+<p>b.插入</p>
+<p>先确定该元素要占据的层数 K(采用丢硬币的方式,这完全是随机的)<br>然后在 Level 1 … Level K 各个层的链表都插入元素。<br>例子:插入 119, K = 2<br><img src="/img/skipList-4.png" alt=""></p>
+<p>如果 K 大于链表的层数,则要添加新的层。<br>例子:插入 119, K = 4<br><img src="/img/skipList-5.png" alt=""></p>
+<p>c.删除<br>三个步骤:</p>
+<ol>
+<li>在跳跃表中查找到这个元素的位置(如果未找到,则退出)</li>
+<li>将该元素所在整列从表中删除</li>
+<li>将多余的“空链”删除<br><img src="/img/skipList-6.png" alt=""></li>
+</ol>
 ]]></content>
     </entry>
     
@@ -7309,6 +7309,65 @@ return numbers
     </entry>
     
     <entry>
+      <title><![CDATA[面试题]]></title>
+      <url>https://fudawei.github.io/2014/03/02/Java%E9%9D%A2%E8%AF%95%E5%9F%BA%E7%A1%80/</url>
+      <content type="html"><![CDATA[<p>判断一块内存空间是否符合垃圾收集器标准是：</p>
+<ol>
+<li>给对象赋予了控制null，以后再也没掉用过</li>
+<li>给对象赋予了新值，即重新分配了内存空间<h3 id="Object-基类方法包含"><a href="#Object-基类方法包含" class="headerlink" title="Object 基类方法包含"></a>Object 基类方法包含</h3>clone()  创建并返回对象的一个副本<br>equals()  notify()  notifyAll()   wait()  toString()<br>finalize()   当垃圾回收器确定不存在对该对象的更多引用时，由对象的垃圾回收器调用此方法<br>hashCode()   返回该对象的哈希值</li>
+</ol>
+<h3 id="不通过构造函数能创建对象吗？"><a href="#不通过构造函数能创建对象吗？" class="headerlink" title="不通过构造函数能创建对象吗？"></a>不通过构造函数能创建对象吗？</h3><p>1.用new语句创建<br>2.运用反射，调用java.lang.Class 或者  java.lang.reflect.ConStruct 类的newInstance()实例方法<br>3.调用对象的clone() 方法<br>4.运用反序列手段，调用java.io.ObjectInputStream 对象的readObject() 方法</p>
+<h3 id="有哪几种存储结构？"><a href="#有哪几种存储结构？" class="headerlink" title="有哪几种存储结构？"></a>有哪几种存储结构？</h3><p>1.随机存取。可以任意存取任意一个元素<br>2.顺序存取。只能从前到后逐个访问，比如链表结构<br>3.索引存取。索引存取是为某个关键字建立索引表，从所有的表中得到地址，在直接访问<br>4.散列存取。建立散列表，根据key计算出存储位置，相当于一种索引</p>
+<p>百度或淘宝搜索时，出现搜索建议，采用什么数据结构实现？<br>字典树，是一种噶洗漱的变种，一种用于快速检索的多叉树结构。用于统计和排序大量的字符串，经常被搜索引擎用于文本词频<br>统计。核心思想是空间换时间。利用该字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。</p>
+<p>String s = “a”+”b”+”c”+”d”+”e”  产生了一个对象，因为赋值符号右边的字母都是常量，对于常量，编译时就直接存储他们<br>的字面值，而不是他们的引用。在编译时就把他们连接的结果提取出来变成了”abcde”<br>new String(“jinder”) 实际创建了2个对象，一个是”jinder”通过””双引号创建的，另一个是通过new创建的，只不过他们创建<br>的时期不同，一个是编译期，一个是运行期。<br>运行期调用String类型的intern()方法可以向StringPool中动态添加对象</p>
+<p>简述 synchronized 和 java.util.concurrent.locks.Lock 的异同？<br>Lock 能完成synchronized所实现的所有功能。主要不同点是，Lock 有比synchronized更精确的线程语义和更好的性能。synchronized<br>会自动释放锁，而Lock一定要求程序员手工释放，并且必须在finally从句中释放。</p>
+<p>只要当前JVM实例尚存在任何一个非守护线程没有结束，守护线程就全部工作;只有当最后一个非守护线程结束时，守护线程随着JVM一同<br>结束任务。守护线程最典型的应用就是GC。</p>
+<h3 id="存储过程和函数的区别是什么？"><a href="#存储过程和函数的区别是什么？" class="headerlink" title="存储过程和函数的区别是什么？"></a>存储过程和函数的区别是什么？</h3><p>存储过程是用户定义的一系列SQL语句的集合，设计特定表或其他对象的任务，用户可以调用存储过程，而函数通常是数据库已经定义的<br>方法，它接受参数并返回某种类型的值，而且不涉及特定用户表。<br>游标作用是什么？怎样判断游标到了最后？<br>游标用来定位结果集中的行，通过判断@@FETCH_STATUS，可以判断游标是否到了最后，通常此变量不等于0表示出错或者到了最后。<br>行级触发器在所影响的每一行触发一次。</p>
+<h3 id="数据库查询优化"><a href="#数据库查询优化" class="headerlink" title="数据库查询优化"></a>数据库查询优化</h3><p>执行数据库查询时，如果要查询的数据有很多，假设1000万，用什么办法可以提高查询效率？在数据库方面或java代码方面优化 ？<br>1.在数据库方面<br>建立索引   分区（MySQL，比如按时间分区）   尽量使用固定长度的字段    限制字段长度<br>2.在数据库 I/O 方面<br>增加缓冲区    如果涉及表的级联，不同的表存储在不同的磁盘上，以增加IO速度<br>3.在SQL方面<br>优化sql语句，减少比较次数     限制返回的条目数（MySQL 里面用limit）<br>4.在java方面<br>对于反复查询使用的查询，使用PreparedStatement 减少查询次数</p>
+<p>unique 约束能够约束一列保证该列值唯一，但允许有空值</p>
+<h3 id="NAT技术"><a href="#NAT技术" class="headerlink" title="NAT技术"></a>NAT技术</h3><p>NAT 技术（网络地址转换）是一种将一个IP地址域映射到另一个IP地址域的技术，从而为终端主机提供透明路由。NAT 包括静态网络地址<br>转换、动态网络地址转换、端口映射等。NAT 常用语私有地址域与工友地址的转换，解决IP地址匮乏的问题、在防火墙上实现了NAT以后<br>可以隐藏受保护网络的内部拓扑结构，在一定程度上提高网络的安全性。</p>
+<h3 id="IP-地址分配"><a href="#IP-地址分配" class="headerlink" title="IP 地址分配"></a>IP 地址分配</h3><p>A 类地址 １-127      0<br>B 类地址 128 - 191   10<br>C 类地址 192-223     110<br>FTP 是有连接的服务，必须基于TCP协议</p>
+<h3 id="TCP-的三次握手"><a href="#TCP-的三次握手" class="headerlink" title="TCP 的三次握手"></a>TCP 的三次握手</h3><p>第一次握手：建立连接时，客户端发送SYN包到服务器，并进入SYN_SEND状态，等待服务器确认。<br>第二次握手：服务器收到SYN包，必须确认客户的SYN（ack=j+1），同时自己也发送一个SYN包（SYN=k），即SYN+ACK包，此时服务器<br>进入SYN_RECV状态。<br>第三次握手：客户端收到服务器的SYN+ACK包，向服务器发送确认宝ACK（ack=k+1）,此包发送完毕，客户端和服务器进入ESTABLISHED<br>状态，完成三次握手。<br>完成三次握手后，客户端和服务器开始传送数据。<br>未连接队列：在三次握手协议中，服务器维护一个未连接队列，该队列未每个客户端的SYN包开设一个条目，该条目表明服务器已收到SYN<br>包，并向客户发出确认，正在等待客户的确认包。这些条目所标识的连接在服务器处于SYN_RECV状态，当服务器收到客户端的确认包，<br>删除该条目，服务器进入ESTABLISHED状态。</p>
+<h3 id="ping命令基于什么协议？"><a href="#ping命令基于什么协议？" class="headerlink" title="ping命令基于什么协议？"></a>ping命令基于什么协议？</h3><p>ICMP Internet 控制消息协议是TCP/IP 协议族的一个自协议，用于在IP主机、路由器之间传递控制消息，控制消息是指网路通不通，<br>主机是否可达，路由是否可用等网络本身的消息。ping命令向指定的IP地址发送一定长度的数据包，按照约定，若指定的IP存在的话，<br>会返回同样大小的数据包，若在特定的时间没有返回，超时，则认为IP不存在。</p>
+<p>子网掩码是用来判断任意两台计算机的IP地址是否属于同一子网络的根据。两台计算机各自的IP地址域子网掩码进行AND运算之后，<br>如果得出的结果是相同的额，则说明两台计算机是处于同一个子网络的，可以进行直接的通信。</p>
+<h3 id="什么是迭代器-Iterator-？"><a href="#什么是迭代器-Iterator-？" class="headerlink" title="什么是迭代器(Iterator)？"></a>什么是迭代器(Iterator)？</h3><p>Iterator 接口提供了很多对集合元素进行迭代的方法。每一个集合类都包含了可以返回迭代器实例的迭代方法。迭代器可以在迭代的<br>过程中删除底层集合的元素,但是不可以直接调用集合的remove(Object Obj)删除，可以通过迭代器的remove()方法删除。<br>如何确保N个线程可以访问N个资源同时又不导致死锁？<br>指定获取锁的顺序，并强制线程按照指定的顺序获取锁。</p>
+<h3 id="在监视器-Monitor-内部，是如何做线程同步的？"><a href="#在监视器-Monitor-内部，是如何做线程同步的？" class="headerlink" title="在监视器(Monitor)内部，是如何做线程同步的？"></a>在监视器(Monitor)内部，是如何做线程同步的？</h3><p>监视器和锁在Java虚拟机中是一块使用的。监视器监视一块同步代码块，确保一次只有一个线程执行同步代码块。每一个监视器都和一个<br>对象引用相关联。线程在获取锁之前不允许执行同步代码。</p>
+<h3 id="同步方法和同步代码块的区别？"><a href="#同步方法和同步代码块的区别？" class="headerlink" title="同步方法和同步代码块的区别？"></a>同步方法和同步代码块的区别？</h3><p>同步方法默认用this或者当前类class对象作为锁；<br>同步代码块可以选择以什么来加锁，比同步方法要更细颗粒度，我们可以选择只同步会发生同步问题的部分代码而不是整个方法；</p>
+<p>应用程序可以使用Executor框架来创建线程池 (创建线程的方式还有 继承Thread类，实现Runnable接口 )</p>
+<h3 id="重载和重写"><a href="#重载和重写" class="headerlink" title="重载和重写"></a>重载和重写</h3><p>重载发生在同一个类里面，多个方法名相同但是形参列表不同的情况，返回类型可以相同也可以不同。<br>重写发生在父类子类里面，子类重新定义了父类方法，方法重写（覆盖）必须有相同的方法名、形参列表和返回类型。</p>
+<h3 id="接口和抽象类的区别是什么？"><a href="#接口和抽象类的区别是什么？" class="headerlink" title="接口和抽象类的区别是什么？"></a>接口和抽象类的区别是什么？</h3><p>Java 提供和支持创建抽象类和接口。它们的实现有共同点，不同点在于：<br>接口中所有的方法隐含的都是抽象的。而抽象类则可以同时包含抽象和非抽象的方法。<br>类可以实现很多个接口，但是只能继承一个抽象类<br>类可以不实现抽象类和接口声明的所有方法，当然，在这种情况下，类也必须得声明成是抽象的。<br>抽象类可以在不提供接口方法实现的情况下实现接口。<br>Java 接口中声明的变量默认都是final的。抽象类可以包含非final的变量。<br>Java 接口中的成员函数默认是public的。抽象类的成员函数可以是private，protected或者是public。<br>接口是绝对抽象的，不可以被实例化。抽象类也不可以被实例化，但是，如果它包含main方法的话是可以被调用的。<br>也可以参考JDK8中抽象类和接口的区别</p>
+<h3 id="HashMap和Hashtable区别？"><a href="#HashMap和Hashtable区别？" class="headerlink" title="HashMap和Hashtable区别？"></a>HashMap和Hashtable区别？</h3><p>HashMap和Hashtable都实现了Map接口，因此很多特性非常相似。但是，他们有以下不同点：<br>HashMap允许键和值是null，而Hashtable不允许键或者值是null。<br>Hashtable是同步的，而HashMap不是。因此，HashMap更适合于单线程环境，而Hashtable适合于多线程环境。</p>
+<h3 id="Java中的HashMap的工作原理？"><a href="#Java中的HashMap的工作原理？" class="headerlink" title="Java中的HashMap的工作原理？"></a>Java中的HashMap的工作原理？</h3><p>Java中的HashMap是以键值对(key-value)的形式存储元素的。HashMap需要一个hash函数，它使用hashCode()和equals()方法来向集合<br>/从集合添加和检索元素。当调用put()方法的时候，HashMap会计算key的hash值，然后把键值对存储在集合中合适的索引上。如果key<br>已经存在了，value会被更新成新值;若计算出来的索引位置相同，形成Entry链。</p>
+<p>快速失败(fail-fast)和安全失败(fail-safe)的区别是什么？<br>Iterator的安全失败是基于对底层集合做拷贝，因此，它不受源集合上修改的影响。java.util包下面的所有的集合类都是快速失败的，<br>而java.util.concurrent包下面的所有的类都是安全失败的。快速失败的迭代器会抛出ConcurrentModificationException异常，而安全<br>失败的迭代器永远不会抛出这样的异常。</p>
+<h3 id="ArrayList和LinkedList区别？"><a href="#ArrayList和LinkedList区别？" class="headerlink" title="ArrayList和LinkedList区别？"></a>ArrayList和LinkedList区别？</h3><p>ArrayList和LinkedList都实现了List接口，他们有以下的不同点：<br>ArrayList是基于索引的数据接口，它的底层是数组。它可以以O(1)时间复杂度对元素进行随机访问。与此对应，LinkedList是以元素列表的形式存储它的数据，每一个元素都和它的前一个和后一个元素链接在一起，在这种情况下，查找某个元素的时间复杂度是O(n)。<br>相对于ArrayList，LinkedList的插入，添加，删除操作速度更快，因为当元素被添加到集合任意位置的时候，不需要像数组那样重新计算大小或者是更新索引。<br>LinkedList比ArrayList更占内存，因为LinkedList为每一个节点存储了两个引用，一个指向前一个元素，一个指向下一个元素。</p>
+<h3 id="Array和ArrayList区别？"><a href="#Array和ArrayList区别？" class="headerlink" title="Array和ArrayList区别？"></a>Array和ArrayList区别？</h3><p>Array可以包含基本类型和对象类型，ArrayList只能包含对象类型。<br>Array大小是固定的，ArrayList的大小是动态变化的。<br>ArrayList提供了更多的方法和特性，比如：addAll()，removeAll()，iterator()等等。</p>
+<h3 id="Iterator和ListIterator的区别？"><a href="#Iterator和ListIterator的区别？" class="headerlink" title="Iterator和ListIterator的区别？"></a>Iterator和ListIterator的区别？</h3><p>Iterator可用来遍历Set和List集合，但是ListIterator只能用来遍历List。<br>Iterator对集合只能是前向遍历，ListIterator既可以前向也可以后向。<br>ListIterator实现了Iterator接口，并包含其他的功能，比如：增加元素，替换元素，获取前一个和后一个元素的索引</p>
+<h3 id="Comparable和Comparator接口"><a href="#Comparable和Comparator接口" class="headerlink" title="Comparable和Comparator接口"></a>Comparable和Comparator接口</h3><p>Java提供了只包含一个compareTo()方法的Comparable接口。这个方法可以个给两个对象排序。<br>Java提供了包含compare()和equals()两个方法的Comparator接口。compare()方法用来给两个输入参数排序。</p>
+<h3 id="Java优先级队列-Priority-Queue-？"><a href="#Java优先级队列-Priority-Queue-？" class="headerlink" title="Java优先级队列(Priority Queue)？"></a>Java优先级队列(Priority Queue)？</h3><p>PriorityQueue是一个基于优先级堆的无界队列，它的元素是按照自然顺序(natural order)排序的。在创建的时候，我们可以给它提供<br>一个负责给元素排序的比较器。PriorityQueue不允许null值，因为他们没有自然顺序，或者说他们没有任何的相关联的比较器。最后，<br>riorityQueue不是线程安全的，入队和出队的时间复杂度是O(log(n))。</p>
+<p>什么时候使用CallableStatement？用来准备CallableStatement的方法是什么？<br>CallableStatement用来执行存储过程。存储过程是由数据库存储和提供的。存储过程可以接受输入参数，也可以有返回结果。非常鼓励<br>用存储过程，因为它提供了安全性和模块化。准备一个CallableStatement的方法是：CallableStament.prepareCall();</p>
+<p>PreparedStatement比Statement有什么优势？<br>PreparedStatements是预编译的，因此，性能会更好。同时，不同的查询参数值，PreparedStatement可以重用。</p>
+<h3 id="URL编码和URL解码？"><a href="#URL编码和URL解码？" class="headerlink" title="URL编码和URL解码？"></a>URL编码和URL解码？</h3><p>URL编码是负责把URL里面的空格和其他的特殊字符替换成对应的十六进制表示，反之就是解码。</p>
+<h3 id="doGet-方法和doPost-方法区别？"><a href="#doGet-方法和doPost-方法区别？" class="headerlink" title="doGet()方法和doPost()方法区别？"></a>doGet()方法和doPost()方法区别？</h3><p>doGet: GET 方法会把键值对追加在请求的URL后面。因为URL对字符数目有限制， 限制了用在客户端请求的参数值的数目。并且请求中<br>的参数值是可见的 ，不够安全。<br>doPOST：POST方法通过把请求参数值放在请求体中来克服GET方法的限制，因此，可以发送的参数的数目是没有限制的。<br>最后，通过POST请求传递的敏感信息对外部客户端是不可见的。</p>
+<h3 id="解释下Servlet的生命周期。"><a href="#解释下Servlet的生命周期。" class="headerlink" title="解释下Servlet的生命周期。"></a>解释下Servlet的生命周期。</h3><p>对每一个客户端的请求，Servlet引擎 载入Servlet，调用它的init()方法，完成Servlet的初始化。然后，Servlet 对象通过为每一个<br>请求单独调用service()方法来处理所有随后来自客户端的请求，最后，调用Servlet的destroy()方法把Servlet卸载掉。</p>
+<h3 id="什么是Servlet？"><a href="#什么是Servlet？" class="headerlink" title="什么是Servlet？"></a>什么是Servlet？</h3><p>Servlet 是用来处理客户端请求并产生动态网页内容的Java类。Servlet 主要是用来处理或者是存储HTML表单提交的数据，产生动态内容</p>
+<h3 id="什么是反射？"><a href="#什么是反射？" class="headerlink" title="什么是反射？"></a>什么是反射？</h3><p>Java 程序可以加载一个运行时才得知名称的 class，获悉其完整构造（但不包括methods定义），并生成其对象实体、<br>或对其fields设值、或唤起其methods。</p>
+<h3 id="匿名内部类的变量必须final修饰？"><a href="#匿名内部类的变量必须final修饰？" class="headerlink" title="匿名内部类的变量必须final修饰？"></a>匿名内部类的变量必须final修饰？</h3><p>首先内部类的生命周期是成员级别的，而局部变量的生命周期是在方法体之类，当mRun方法执行，new<br>的线程运行，新线程里面会睡一秒。主线程会继续执行，mRun执行完毕，name属性生命周期结束，Java就是为了杜绝这种错误，严格要求<br>内部类中方位局部变量，必须使用final关键字修饰。局部变量被final修饰之后，此时会在内存中保有一份局部变得的复制品，当内部类<br>访问的时候其实访问的是这个复制品。</p>
+<h3 id="小知识"><a href="#小知识" class="headerlink" title="小知识"></a>小知识</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">@Test</div><div class="line">public void test() &#123;</div><div class="line">	Integer a = new Integer(1000) ; int b = 1000;</div><div class="line">	Integer c = new Integer(10); Integer d = new Integer(10);</div><div class="line">	System.out.println(a == b);    //true   自动拆箱为int</div><div class="line">	System.out.println(c == d);    //false</div><div class="line">&#125;</div><div class="line">//Integer.java valueOf 方法中把-128-127 缓存了下来。官方解释是小的数字使用的频率比较高， 为了优化性能，把这之间的数缓存了下来</div><div class="line">@Test</div><div class="line">public void testInteger()&#123;</div><div class="line">	Integer a = 1000,b=1000;</div><div class="line">	Integer c = 100,d=100;</div><div class="line">	System.out.println(a==b);   //false  new出来的</div><div class="line">	System.out.println(c==d);   //true   缓存中的</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>[reference] <a href="http://www.imooc.com/article/2964" target="_blank" rel="external">http://www.imooc.com/article/2964</a></p>
+<h3 id="调用三种方式"><a href="#调用三种方式" class="headerlink" title="调用三种方式"></a>调用三种方式</h3><p>模块之间都存在一定的调用关系，从调用方式上看，可以分为三类同步调用、异步调用和回调。同步调用是一种阻塞式调用，异步调用是一种<br>类似消息或事件的机制解决了同步阻塞的问题，回调是一种双向的调用模式，也就是说，被调用的接口被调用时也会调用对方的接口，例如A<br>要调用B,B在执行完又要调用A。<br>public interface FileNameFilter{<br>    boolean accept(File dir,String name);<br>}</p>
+<h3 id="标记接口"><a href="#标记接口" class="headerlink" title="标记接口"></a>标记接口</h3><p>如果实现接口的类是抽象类，那么就没必要实现该接口的方法。<br>一个接口能继承另一个接口，这和类之间的继承比较相似。也就是说实现某一个接口之后，可能要实现的方法不是直接接口定义的方法，<br>可能是该接口继承于另外一个接口的方法。<br>没有任何方法的接口被称为标记接口。标记接口主要用于以下两种目的：<br>1.建立一个公共的父接口<br>2.向一个类添加数据类型</p>
+<h3 id="SQL三范式"><a href="#SQL三范式" class="headerlink" title="SQL三范式"></a>SQL三范式</h3><p>SQL语言支持关系数据库的三级模式结构，其中，视图对应外模式，基本表对应模式，存储文件对应内模式。<br>通过分解，可以将一个低一级别的关系模式转换成若干个高一级范式的关系模式，这种过程叫做规范化。<br>eg: FIRST(Sno,Sname,Status,City,Pno,Qty)<br>依赖关系： F={ Sno-&gt; Sname,Sno-&gt;Status,Status-&gt;City,(Sno,Pno)-&gt;Qty}</p>
+<ul>
+<li>1NF(第一范式)<br>定义：若关系模式R的每一个分量是不可再分的数据项，则关系模式R属于第一范式<br>FIRST属于第一范式，但1NF存在4个问题：<br>冗余度大，每个Sno,Sname,Status,City 要与其供应的零件的种类一样多<br>引起修改操作的不一致性<br>插入异常，若某个供应者某些信息没有提供(比如没有Pno)则不能进行插入操作</li>
+<li>2NF(第二范式)<br>定义：若关系模式R属于1NF,且每一个非主属性完全依赖于码，则关系模式R属于2NF<br>也就是说，当1NF消除了非主属性对码的部分函数依赖，则成为2NF<br>将FIRST分解为 FIRST1(Sno,Sname,Status,City) 和 FIRST2(Sno,Pno,Qty) 分解后，FIRST1 的 非主属性 Sname,Status,City 完全依赖<br>于码 Sno,FIRST2的非主属性 Qty 完全依赖于码 Sno,Pno,所以属于2NF</li>
+<li>3NF(第三范式)<br>若关系模式中不存在这样的码X，属性组Y以及非主属性Z，使得X-&gt;Y,Y-Z成立，则关系模式R属于3NF<br>即当2NF消除了非主属性对码的传递函数依赖，则成为3NF<br>分解为 FIRST1(Sno,Sname,Status)  FIRST2(Status,City)   FIRST3(Sno,Pno,Qty)<br>3NF的模式肯定是2NF,产生冗余和异常的两个重要原因是部分依赖和传递依赖，因为3NF模式中不存在非主属性对码的部分函数依赖和<br>传递函数依赖，所以具有较高的性能，通常变换为3NF或更高级别的凡是，这种变化过程成为“关系模式的规范化处理”<h3 id="Webservice"><a href="#Webservice" class="headerlink" title="Webservice"></a>Webservice</h3>W  ebService是一种跨编程语言和跨操作系统平台的远程调用技术。<br>远程调用，就是一台计算机a上的一个程序可以调用到另外一台计算机b上的一个对象的方法，譬如，银联提供给商场的pos刷卡系统，<br>商场的POS机转账调用的转账方法的代码其实是跑在银行服务器上。再比如，amazon，天气预报系统，淘宝网，校内网，百度等把自己的<br>系统服务以webservice服务的形式暴露出来，让第三方网站和程序可以调用这些服务功能，这样扩展了自己系统的市场占有率，就是<br>所谓的SOA应用。<br> WebService是建立可互操作的分布式应用程序的新平台，是一个平台，是一套标准。它定义了应用程序如何在Web上实现互操作性<br>Web service平台必须提供一种标准来描述Web service，让客户可以得到足够的信息来调用这个Web service<br>XML+XSD,SOAP和WSDL就是构成WebService平台的三大技术。<br>WebService采用HTTP协议传输数据，采用XML格式封装数据（即XML中说明调用远程服务对象的哪个方法，传递的参数是什么，以及服务<br>对象的返回结果是什么）。XML是WebService平台中表示数据的格式。<br>SOAP协议 = HTTP协议 + XML数据格式<br>WSDL(Web Services Description Language)就是这样一个基于XML的语言，用于描述Web Service及其函数、参数和返回值。<br>它是WebService客户端和服务器端都能理解的标准格式。<h3 id="Java-String-split-用法"><a href="#Java-String-split-用法" class="headerlink" title="Java String.split()用法"></a>Java String.split()用法</h3>String.split(“\.”) //用 . 分割字符串<br>acount=?and uu =? or n=?”,把三个都分隔出来可以用String.split(“and|or”); //分割多个</li>
+</ul>
+<p>需要在程序中存储许多字符串常量，所以就想到了枚举</p>
+<h3 id="获取用户IP"><a href="#获取用户IP" class="headerlink" title="获取用户IP"></a>获取用户IP</h3><p>public static String getIpAddr(HttpServletRequest request) {<br>        String ip = request.getHeader(“x-forwarded-for”);<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“WL-Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getRemoteAddr();<br>        }<br>        return ip;<br>    }</p>
+]]></content>
+    </entry>
+    
+    <entry>
       <title><![CDATA[Java面试问题总结]]></title>
       <url>https://fudawei.github.io/2014/03/02/Java%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/</url>
       <content type="html"><![CDATA[<h4 id="java锁类型"><a href="#java锁类型" class="headerlink" title="java锁类型"></a>java锁类型</h4><ul>
@@ -7493,65 +7552,6 @@ return numbers
 <h3 id="线程池的好处-2"><a href="#线程池的好处-2" class="headerlink" title="线程池的好处"></a>线程池的好处</h3><p>1.降低资源消耗，重用已经创建好的线程，降低创建和销毁的开销<br>2.提高响应速度，不用等待创建线程就能立即执行<br>3.提高线程的可管理性，统一分配、调优和监控<br>4.防止服务器过载，防止内存溢出或者CPU耗尽</p>
 <h3 id="对象引用的类型-2"><a href="#对象引用的类型-2" class="headerlink" title="对象引用的类型"></a>对象引用的类型</h3><p>Reference(or named Strong Reference)（ 强引用）：普通类型的引用。<br>SoftReference（ 软引用）：被这种引用指向的对象，如果此对象没要再被其他Strong Reference引用的话，可能在任何时候被GC。虽然是可能在任何时候被GC，但是通常是在可用内存数比较低的时候，并且在程序抛出OutOfMemoryError之前才发生对此对象的GC。SoftReference通常被用作实现Cache的对象引用，如果这个对象被GC了，那么他可以在任何时候再重新被创建。另外，根据JDK文档中介绍，实际JVM的实现是鼓励不回收最近创建和最近使用的对象。SoftReference 类的一个典型用途就是用于内存敏感的高速缓存。<br>WeakReference（弱引用）：如果一个被WeakReference引用的对象，当没要任何SoftReference和StrongReference引用时，立即会被GC。和SoftReference的区别是：WeakReference对象是被eagerly collected，即一旦没要任何SoftReference和StrongReference引用，立即被清楚；而只被SoftReference引用的对象，不回立即被清楚，只有当内存不够，即将发生OutOfMemoryError时才被清除，而且是先清除不常用的。SoftReference适合实现Cache用。WeakReference 类的一个典型用途就是规范化映射（ canonicalized mapping ）<br>PhantomReference（虚引用）：当没有StrongReference，SoftReference和WeakReference引用时，随时可被GC。通常和ReferenceQueue联合使用，管理和清除与被引用对象（没有finalize方法）相关的本地资源。</p>
 <h3 id="简单工厂-工厂方法-抽象工厂-2"><a href="#简单工厂-工厂方法-抽象工厂-2" class="headerlink" title="简单工厂 工厂方法 抽象工厂"></a>简单工厂 工厂方法 抽象工厂</h3><p>简单工厂: 抽象了同一类型(比如不同品牌的笔记本电脑)产品的生产过程,通过工厂类来实现对不同产品生产过程的选择<br>工厂方法: 不仅抽象了产品类的生产过程,还抽象了工厂类本身. 将特定的产品的生产过程和特定的工厂相对应. 将原先工厂类中的选择提升到工程类以上的层级—即客户层级. 通过选择特定的工厂,来选择生产特定的产品.<br>抽象工厂: 在工厂方法的基础上,将特定的产品生产过程和特定的工厂类之间的对应关系解除,使得工厂类和产品类之间能够产生更多灵活的组合方式.</p>
-]]></content>
-    </entry>
-    
-    <entry>
-      <title><![CDATA[面试题]]></title>
-      <url>https://fudawei.github.io/2014/03/02/Java%E9%9D%A2%E8%AF%95%E5%9F%BA%E7%A1%80/</url>
-      <content type="html"><![CDATA[<p>判断一块内存空间是否符合垃圾收集器标准是：</p>
-<ol>
-<li>给对象赋予了控制null，以后再也没掉用过</li>
-<li>给对象赋予了新值，即重新分配了内存空间<h3 id="Object-基类方法包含"><a href="#Object-基类方法包含" class="headerlink" title="Object 基类方法包含"></a>Object 基类方法包含</h3>clone()  创建并返回对象的一个副本<br>equals()  notify()  notifyAll()   wait()  toString()<br>finalize()   当垃圾回收器确定不存在对该对象的更多引用时，由对象的垃圾回收器调用此方法<br>hashCode()   返回该对象的哈希值</li>
-</ol>
-<h3 id="不通过构造函数能创建对象吗？"><a href="#不通过构造函数能创建对象吗？" class="headerlink" title="不通过构造函数能创建对象吗？"></a>不通过构造函数能创建对象吗？</h3><p>1.用new语句创建<br>2.运用反射，调用java.lang.Class 或者  java.lang.reflect.ConStruct 类的newInstance()实例方法<br>3.调用对象的clone() 方法<br>4.运用反序列手段，调用java.io.ObjectInputStream 对象的readObject() 方法</p>
-<h3 id="有哪几种存储结构？"><a href="#有哪几种存储结构？" class="headerlink" title="有哪几种存储结构？"></a>有哪几种存储结构？</h3><p>1.随机存取。可以任意存取任意一个元素<br>2.顺序存取。只能从前到后逐个访问，比如链表结构<br>3.索引存取。索引存取是为某个关键字建立索引表，从所有的表中得到地址，在直接访问<br>4.散列存取。建立散列表，根据key计算出存储位置，相当于一种索引</p>
-<p>百度或淘宝搜索时，出现搜索建议，采用什么数据结构实现？<br>字典树，是一种噶洗漱的变种，一种用于快速检索的多叉树结构。用于统计和排序大量的字符串，经常被搜索引擎用于文本词频<br>统计。核心思想是空间换时间。利用该字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。</p>
-<p>String s = “a”+”b”+”c”+”d”+”e”  产生了一个对象，因为赋值符号右边的字母都是常量，对于常量，编译时就直接存储他们<br>的字面值，而不是他们的引用。在编译时就把他们连接的结果提取出来变成了”abcde”<br>new String(“jinder”) 实际创建了2个对象，一个是”jinder”通过””双引号创建的，另一个是通过new创建的，只不过他们创建<br>的时期不同，一个是编译期，一个是运行期。<br>运行期调用String类型的intern()方法可以向StringPool中动态添加对象</p>
-<p>简述 synchronized 和 java.util.concurrent.locks.Lock 的异同？<br>Lock 能完成synchronized所实现的所有功能。主要不同点是，Lock 有比synchronized更精确的线程语义和更好的性能。synchronized<br>会自动释放锁，而Lock一定要求程序员手工释放，并且必须在finally从句中释放。</p>
-<p>只要当前JVM实例尚存在任何一个非守护线程没有结束，守护线程就全部工作;只有当最后一个非守护线程结束时，守护线程随着JVM一同<br>结束任务。守护线程最典型的应用就是GC。</p>
-<h3 id="存储过程和函数的区别是什么？"><a href="#存储过程和函数的区别是什么？" class="headerlink" title="存储过程和函数的区别是什么？"></a>存储过程和函数的区别是什么？</h3><p>存储过程是用户定义的一系列SQL语句的集合，设计特定表或其他对象的任务，用户可以调用存储过程，而函数通常是数据库已经定义的<br>方法，它接受参数并返回某种类型的值，而且不涉及特定用户表。<br>游标作用是什么？怎样判断游标到了最后？<br>游标用来定位结果集中的行，通过判断@@FETCH_STATUS，可以判断游标是否到了最后，通常此变量不等于0表示出错或者到了最后。<br>行级触发器在所影响的每一行触发一次。</p>
-<h3 id="数据库查询优化"><a href="#数据库查询优化" class="headerlink" title="数据库查询优化"></a>数据库查询优化</h3><p>执行数据库查询时，如果要查询的数据有很多，假设1000万，用什么办法可以提高查询效率？在数据库方面或java代码方面优化 ？<br>1.在数据库方面<br>建立索引   分区（MySQL，比如按时间分区）   尽量使用固定长度的字段    限制字段长度<br>2.在数据库 I/O 方面<br>增加缓冲区    如果涉及表的级联，不同的表存储在不同的磁盘上，以增加IO速度<br>3.在SQL方面<br>优化sql语句，减少比较次数     限制返回的条目数（MySQL 里面用limit）<br>4.在java方面<br>对于反复查询使用的查询，使用PreparedStatement 减少查询次数</p>
-<p>unique 约束能够约束一列保证该列值唯一，但允许有空值</p>
-<h3 id="NAT技术"><a href="#NAT技术" class="headerlink" title="NAT技术"></a>NAT技术</h3><p>NAT 技术（网络地址转换）是一种将一个IP地址域映射到另一个IP地址域的技术，从而为终端主机提供透明路由。NAT 包括静态网络地址<br>转换、动态网络地址转换、端口映射等。NAT 常用语私有地址域与工友地址的转换，解决IP地址匮乏的问题、在防火墙上实现了NAT以后<br>可以隐藏受保护网络的内部拓扑结构，在一定程度上提高网络的安全性。</p>
-<h3 id="IP-地址分配"><a href="#IP-地址分配" class="headerlink" title="IP 地址分配"></a>IP 地址分配</h3><p>A 类地址 １-127      0<br>B 类地址 128 - 191   10<br>C 类地址 192-223     110<br>FTP 是有连接的服务，必须基于TCP协议</p>
-<h3 id="TCP-的三次握手"><a href="#TCP-的三次握手" class="headerlink" title="TCP 的三次握手"></a>TCP 的三次握手</h3><p>第一次握手：建立连接时，客户端发送SYN包到服务器，并进入SYN_SEND状态，等待服务器确认。<br>第二次握手：服务器收到SYN包，必须确认客户的SYN（ack=j+1），同时自己也发送一个SYN包（SYN=k），即SYN+ACK包，此时服务器<br>进入SYN_RECV状态。<br>第三次握手：客户端收到服务器的SYN+ACK包，向服务器发送确认宝ACK（ack=k+1）,此包发送完毕，客户端和服务器进入ESTABLISHED<br>状态，完成三次握手。<br>完成三次握手后，客户端和服务器开始传送数据。<br>未连接队列：在三次握手协议中，服务器维护一个未连接队列，该队列未每个客户端的SYN包开设一个条目，该条目表明服务器已收到SYN<br>包，并向客户发出确认，正在等待客户的确认包。这些条目所标识的连接在服务器处于SYN_RECV状态，当服务器收到客户端的确认包，<br>删除该条目，服务器进入ESTABLISHED状态。</p>
-<h3 id="ping命令基于什么协议？"><a href="#ping命令基于什么协议？" class="headerlink" title="ping命令基于什么协议？"></a>ping命令基于什么协议？</h3><p>ICMP Internet 控制消息协议是TCP/IP 协议族的一个自协议，用于在IP主机、路由器之间传递控制消息，控制消息是指网路通不通，<br>主机是否可达，路由是否可用等网络本身的消息。ping命令向指定的IP地址发送一定长度的数据包，按照约定，若指定的IP存在的话，<br>会返回同样大小的数据包，若在特定的时间没有返回，超时，则认为IP不存在。</p>
-<p>子网掩码是用来判断任意两台计算机的IP地址是否属于同一子网络的根据。两台计算机各自的IP地址域子网掩码进行AND运算之后，<br>如果得出的结果是相同的额，则说明两台计算机是处于同一个子网络的，可以进行直接的通信。</p>
-<h3 id="什么是迭代器-Iterator-？"><a href="#什么是迭代器-Iterator-？" class="headerlink" title="什么是迭代器(Iterator)？"></a>什么是迭代器(Iterator)？</h3><p>Iterator 接口提供了很多对集合元素进行迭代的方法。每一个集合类都包含了可以返回迭代器实例的迭代方法。迭代器可以在迭代的<br>过程中删除底层集合的元素,但是不可以直接调用集合的remove(Object Obj)删除，可以通过迭代器的remove()方法删除。<br>如何确保N个线程可以访问N个资源同时又不导致死锁？<br>指定获取锁的顺序，并强制线程按照指定的顺序获取锁。</p>
-<h3 id="在监视器-Monitor-内部，是如何做线程同步的？"><a href="#在监视器-Monitor-内部，是如何做线程同步的？" class="headerlink" title="在监视器(Monitor)内部，是如何做线程同步的？"></a>在监视器(Monitor)内部，是如何做线程同步的？</h3><p>监视器和锁在Java虚拟机中是一块使用的。监视器监视一块同步代码块，确保一次只有一个线程执行同步代码块。每一个监视器都和一个<br>对象引用相关联。线程在获取锁之前不允许执行同步代码。</p>
-<h3 id="同步方法和同步代码块的区别？"><a href="#同步方法和同步代码块的区别？" class="headerlink" title="同步方法和同步代码块的区别？"></a>同步方法和同步代码块的区别？</h3><p>同步方法默认用this或者当前类class对象作为锁；<br>同步代码块可以选择以什么来加锁，比同步方法要更细颗粒度，我们可以选择只同步会发生同步问题的部分代码而不是整个方法；</p>
-<p>应用程序可以使用Executor框架来创建线程池 (创建线程的方式还有 继承Thread类，实现Runnable接口 )</p>
-<h3 id="重载和重写"><a href="#重载和重写" class="headerlink" title="重载和重写"></a>重载和重写</h3><p>重载发生在同一个类里面，多个方法名相同但是形参列表不同的情况，返回类型可以相同也可以不同。<br>重写发生在父类子类里面，子类重新定义了父类方法，方法重写（覆盖）必须有相同的方法名、形参列表和返回类型。</p>
-<h3 id="接口和抽象类的区别是什么？"><a href="#接口和抽象类的区别是什么？" class="headerlink" title="接口和抽象类的区别是什么？"></a>接口和抽象类的区别是什么？</h3><p>Java 提供和支持创建抽象类和接口。它们的实现有共同点，不同点在于：<br>接口中所有的方法隐含的都是抽象的。而抽象类则可以同时包含抽象和非抽象的方法。<br>类可以实现很多个接口，但是只能继承一个抽象类<br>类可以不实现抽象类和接口声明的所有方法，当然，在这种情况下，类也必须得声明成是抽象的。<br>抽象类可以在不提供接口方法实现的情况下实现接口。<br>Java 接口中声明的变量默认都是final的。抽象类可以包含非final的变量。<br>Java 接口中的成员函数默认是public的。抽象类的成员函数可以是private，protected或者是public。<br>接口是绝对抽象的，不可以被实例化。抽象类也不可以被实例化，但是，如果它包含main方法的话是可以被调用的。<br>也可以参考JDK8中抽象类和接口的区别</p>
-<h3 id="HashMap和Hashtable区别？"><a href="#HashMap和Hashtable区别？" class="headerlink" title="HashMap和Hashtable区别？"></a>HashMap和Hashtable区别？</h3><p>HashMap和Hashtable都实现了Map接口，因此很多特性非常相似。但是，他们有以下不同点：<br>HashMap允许键和值是null，而Hashtable不允许键或者值是null。<br>Hashtable是同步的，而HashMap不是。因此，HashMap更适合于单线程环境，而Hashtable适合于多线程环境。</p>
-<h3 id="Java中的HashMap的工作原理？"><a href="#Java中的HashMap的工作原理？" class="headerlink" title="Java中的HashMap的工作原理？"></a>Java中的HashMap的工作原理？</h3><p>Java中的HashMap是以键值对(key-value)的形式存储元素的。HashMap需要一个hash函数，它使用hashCode()和equals()方法来向集合<br>/从集合添加和检索元素。当调用put()方法的时候，HashMap会计算key的hash值，然后把键值对存储在集合中合适的索引上。如果key<br>已经存在了，value会被更新成新值;若计算出来的索引位置相同，形成Entry链。</p>
-<p>快速失败(fail-fast)和安全失败(fail-safe)的区别是什么？<br>Iterator的安全失败是基于对底层集合做拷贝，因此，它不受源集合上修改的影响。java.util包下面的所有的集合类都是快速失败的，<br>而java.util.concurrent包下面的所有的类都是安全失败的。快速失败的迭代器会抛出ConcurrentModificationException异常，而安全<br>失败的迭代器永远不会抛出这样的异常。</p>
-<h3 id="ArrayList和LinkedList区别？"><a href="#ArrayList和LinkedList区别？" class="headerlink" title="ArrayList和LinkedList区别？"></a>ArrayList和LinkedList区别？</h3><p>ArrayList和LinkedList都实现了List接口，他们有以下的不同点：<br>ArrayList是基于索引的数据接口，它的底层是数组。它可以以O(1)时间复杂度对元素进行随机访问。与此对应，LinkedList是以元素列表的形式存储它的数据，每一个元素都和它的前一个和后一个元素链接在一起，在这种情况下，查找某个元素的时间复杂度是O(n)。<br>相对于ArrayList，LinkedList的插入，添加，删除操作速度更快，因为当元素被添加到集合任意位置的时候，不需要像数组那样重新计算大小或者是更新索引。<br>LinkedList比ArrayList更占内存，因为LinkedList为每一个节点存储了两个引用，一个指向前一个元素，一个指向下一个元素。</p>
-<h3 id="Array和ArrayList区别？"><a href="#Array和ArrayList区别？" class="headerlink" title="Array和ArrayList区别？"></a>Array和ArrayList区别？</h3><p>Array可以包含基本类型和对象类型，ArrayList只能包含对象类型。<br>Array大小是固定的，ArrayList的大小是动态变化的。<br>ArrayList提供了更多的方法和特性，比如：addAll()，removeAll()，iterator()等等。</p>
-<h3 id="Iterator和ListIterator的区别？"><a href="#Iterator和ListIterator的区别？" class="headerlink" title="Iterator和ListIterator的区别？"></a>Iterator和ListIterator的区别？</h3><p>Iterator可用来遍历Set和List集合，但是ListIterator只能用来遍历List。<br>Iterator对集合只能是前向遍历，ListIterator既可以前向也可以后向。<br>ListIterator实现了Iterator接口，并包含其他的功能，比如：增加元素，替换元素，获取前一个和后一个元素的索引</p>
-<h3 id="Comparable和Comparator接口"><a href="#Comparable和Comparator接口" class="headerlink" title="Comparable和Comparator接口"></a>Comparable和Comparator接口</h3><p>Java提供了只包含一个compareTo()方法的Comparable接口。这个方法可以个给两个对象排序。<br>Java提供了包含compare()和equals()两个方法的Comparator接口。compare()方法用来给两个输入参数排序。</p>
-<h3 id="Java优先级队列-Priority-Queue-？"><a href="#Java优先级队列-Priority-Queue-？" class="headerlink" title="Java优先级队列(Priority Queue)？"></a>Java优先级队列(Priority Queue)？</h3><p>PriorityQueue是一个基于优先级堆的无界队列，它的元素是按照自然顺序(natural order)排序的。在创建的时候，我们可以给它提供<br>一个负责给元素排序的比较器。PriorityQueue不允许null值，因为他们没有自然顺序，或者说他们没有任何的相关联的比较器。最后，<br>riorityQueue不是线程安全的，入队和出队的时间复杂度是O(log(n))。</p>
-<p>什么时候使用CallableStatement？用来准备CallableStatement的方法是什么？<br>CallableStatement用来执行存储过程。存储过程是由数据库存储和提供的。存储过程可以接受输入参数，也可以有返回结果。非常鼓励<br>用存储过程，因为它提供了安全性和模块化。准备一个CallableStatement的方法是：CallableStament.prepareCall();</p>
-<p>PreparedStatement比Statement有什么优势？<br>PreparedStatements是预编译的，因此，性能会更好。同时，不同的查询参数值，PreparedStatement可以重用。</p>
-<h3 id="URL编码和URL解码？"><a href="#URL编码和URL解码？" class="headerlink" title="URL编码和URL解码？"></a>URL编码和URL解码？</h3><p>URL编码是负责把URL里面的空格和其他的特殊字符替换成对应的十六进制表示，反之就是解码。</p>
-<h3 id="doGet-方法和doPost-方法区别？"><a href="#doGet-方法和doPost-方法区别？" class="headerlink" title="doGet()方法和doPost()方法区别？"></a>doGet()方法和doPost()方法区别？</h3><p>doGet: GET 方法会把键值对追加在请求的URL后面。因为URL对字符数目有限制， 限制了用在客户端请求的参数值的数目。并且请求中<br>的参数值是可见的 ，不够安全。<br>doPOST：POST方法通过把请求参数值放在请求体中来克服GET方法的限制，因此，可以发送的参数的数目是没有限制的。<br>最后，通过POST请求传递的敏感信息对外部客户端是不可见的。</p>
-<h3 id="解释下Servlet的生命周期。"><a href="#解释下Servlet的生命周期。" class="headerlink" title="解释下Servlet的生命周期。"></a>解释下Servlet的生命周期。</h3><p>对每一个客户端的请求，Servlet引擎 载入Servlet，调用它的init()方法，完成Servlet的初始化。然后，Servlet 对象通过为每一个<br>请求单独调用service()方法来处理所有随后来自客户端的请求，最后，调用Servlet的destroy()方法把Servlet卸载掉。</p>
-<h3 id="什么是Servlet？"><a href="#什么是Servlet？" class="headerlink" title="什么是Servlet？"></a>什么是Servlet？</h3><p>Servlet 是用来处理客户端请求并产生动态网页内容的Java类。Servlet 主要是用来处理或者是存储HTML表单提交的数据，产生动态内容</p>
-<h3 id="什么是反射？"><a href="#什么是反射？" class="headerlink" title="什么是反射？"></a>什么是反射？</h3><p>Java 程序可以加载一个运行时才得知名称的 class，获悉其完整构造（但不包括methods定义），并生成其对象实体、<br>或对其fields设值、或唤起其methods。</p>
-<h3 id="匿名内部类的变量必须final修饰？"><a href="#匿名内部类的变量必须final修饰？" class="headerlink" title="匿名内部类的变量必须final修饰？"></a>匿名内部类的变量必须final修饰？</h3><p>首先内部类的生命周期是成员级别的，而局部变量的生命周期是在方法体之类，当mRun方法执行，new<br>的线程运行，新线程里面会睡一秒。主线程会继续执行，mRun执行完毕，name属性生命周期结束，Java就是为了杜绝这种错误，严格要求<br>内部类中方位局部变量，必须使用final关键字修饰。局部变量被final修饰之后，此时会在内存中保有一份局部变得的复制品，当内部类<br>访问的时候其实访问的是这个复制品。</p>
-<h3 id="小知识"><a href="#小知识" class="headerlink" title="小知识"></a>小知识</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">@Test</div><div class="line">public void test() &#123;</div><div class="line">	Integer a = new Integer(1000) ; int b = 1000;</div><div class="line">	Integer c = new Integer(10); Integer d = new Integer(10);</div><div class="line">	System.out.println(a == b);    //true   自动拆箱为int</div><div class="line">	System.out.println(c == d);    //false</div><div class="line">&#125;</div><div class="line">//Integer.java valueOf 方法中把-128-127 缓存了下来。官方解释是小的数字使用的频率比较高， 为了优化性能，把这之间的数缓存了下来</div><div class="line">@Test</div><div class="line">public void testInteger()&#123;</div><div class="line">	Integer a = 1000,b=1000;</div><div class="line">	Integer c = 100,d=100;</div><div class="line">	System.out.println(a==b);   //false  new出来的</div><div class="line">	System.out.println(c==d);   //true   缓存中的</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>[reference] <a href="http://www.imooc.com/article/2964" target="_blank" rel="external">http://www.imooc.com/article/2964</a></p>
-<h3 id="调用三种方式"><a href="#调用三种方式" class="headerlink" title="调用三种方式"></a>调用三种方式</h3><p>模块之间都存在一定的调用关系，从调用方式上看，可以分为三类同步调用、异步调用和回调。同步调用是一种阻塞式调用，异步调用是一种<br>类似消息或事件的机制解决了同步阻塞的问题，回调是一种双向的调用模式，也就是说，被调用的接口被调用时也会调用对方的接口，例如A<br>要调用B,B在执行完又要调用A。<br>public interface FileNameFilter{<br>    boolean accept(File dir,String name);<br>}</p>
-<h3 id="标记接口"><a href="#标记接口" class="headerlink" title="标记接口"></a>标记接口</h3><p>如果实现接口的类是抽象类，那么就没必要实现该接口的方法。<br>一个接口能继承另一个接口，这和类之间的继承比较相似。也就是说实现某一个接口之后，可能要实现的方法不是直接接口定义的方法，<br>可能是该接口继承于另外一个接口的方法。<br>没有任何方法的接口被称为标记接口。标记接口主要用于以下两种目的：<br>1.建立一个公共的父接口<br>2.向一个类添加数据类型</p>
-<h3 id="SQL三范式"><a href="#SQL三范式" class="headerlink" title="SQL三范式"></a>SQL三范式</h3><p>SQL语言支持关系数据库的三级模式结构，其中，视图对应外模式，基本表对应模式，存储文件对应内模式。<br>通过分解，可以将一个低一级别的关系模式转换成若干个高一级范式的关系模式，这种过程叫做规范化。<br>eg: FIRST(Sno,Sname,Status,City,Pno,Qty)<br>依赖关系： F={ Sno-&gt; Sname,Sno-&gt;Status,Status-&gt;City,(Sno,Pno)-&gt;Qty}</p>
-<ul>
-<li>1NF(第一范式)<br>定义：若关系模式R的每一个分量是不可再分的数据项，则关系模式R属于第一范式<br>FIRST属于第一范式，但1NF存在4个问题：<br>冗余度大，每个Sno,Sname,Status,City 要与其供应的零件的种类一样多<br>引起修改操作的不一致性<br>插入异常，若某个供应者某些信息没有提供(比如没有Pno)则不能进行插入操作</li>
-<li>2NF(第二范式)<br>定义：若关系模式R属于1NF,且每一个非主属性完全依赖于码，则关系模式R属于2NF<br>也就是说，当1NF消除了非主属性对码的部分函数依赖，则成为2NF<br>将FIRST分解为 FIRST1(Sno,Sname,Status,City) 和 FIRST2(Sno,Pno,Qty) 分解后，FIRST1 的 非主属性 Sname,Status,City 完全依赖<br>于码 Sno,FIRST2的非主属性 Qty 完全依赖于码 Sno,Pno,所以属于2NF</li>
-<li>3NF(第三范式)<br>若关系模式中不存在这样的码X，属性组Y以及非主属性Z，使得X-&gt;Y,Y-Z成立，则关系模式R属于3NF<br>即当2NF消除了非主属性对码的传递函数依赖，则成为3NF<br>分解为 FIRST1(Sno,Sname,Status)  FIRST2(Status,City)   FIRST3(Sno,Pno,Qty)<br>3NF的模式肯定是2NF,产生冗余和异常的两个重要原因是部分依赖和传递依赖，因为3NF模式中不存在非主属性对码的部分函数依赖和<br>传递函数依赖，所以具有较高的性能，通常变换为3NF或更高级别的凡是，这种变化过程成为“关系模式的规范化处理”<h3 id="Webservice"><a href="#Webservice" class="headerlink" title="Webservice"></a>Webservice</h3>W  ebService是一种跨编程语言和跨操作系统平台的远程调用技术。<br>远程调用，就是一台计算机a上的一个程序可以调用到另外一台计算机b上的一个对象的方法，譬如，银联提供给商场的pos刷卡系统，<br>商场的POS机转账调用的转账方法的代码其实是跑在银行服务器上。再比如，amazon，天气预报系统，淘宝网，校内网，百度等把自己的<br>系统服务以webservice服务的形式暴露出来，让第三方网站和程序可以调用这些服务功能，这样扩展了自己系统的市场占有率，就是<br>所谓的SOA应用。<br> WebService是建立可互操作的分布式应用程序的新平台，是一个平台，是一套标准。它定义了应用程序如何在Web上实现互操作性<br>Web service平台必须提供一种标准来描述Web service，让客户可以得到足够的信息来调用这个Web service<br>XML+XSD,SOAP和WSDL就是构成WebService平台的三大技术。<br>WebService采用HTTP协议传输数据，采用XML格式封装数据（即XML中说明调用远程服务对象的哪个方法，传递的参数是什么，以及服务<br>对象的返回结果是什么）。XML是WebService平台中表示数据的格式。<br>SOAP协议 = HTTP协议 + XML数据格式<br>WSDL(Web Services Description Language)就是这样一个基于XML的语言，用于描述Web Service及其函数、参数和返回值。<br>它是WebService客户端和服务器端都能理解的标准格式。<h3 id="Java-String-split-用法"><a href="#Java-String-split-用法" class="headerlink" title="Java String.split()用法"></a>Java String.split()用法</h3>String.split(“\.”) //用 . 分割字符串<br>acount=?and uu =? or n=?”,把三个都分隔出来可以用String.split(“and|or”); //分割多个</li>
-</ul>
-<p>需要在程序中存储许多字符串常量，所以就想到了枚举</p>
-<h3 id="获取用户IP"><a href="#获取用户IP" class="headerlink" title="获取用户IP"></a>获取用户IP</h3><p>public static String getIpAddr(HttpServletRequest request) {<br>        String ip = request.getHeader(“x-forwarded-for”);<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getHeader(“WL-Proxy-Client-IP”);<br>        }<br>        if (ip == null || ip.length() == 0 || “unknown”.equalsIgnoreCase(ip)) {<br>            ip = request.getRemoteAddr();<br>        }<br>        return ip;<br>    }</p>
 ]]></content>
     </entry>
     
